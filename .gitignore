@@ -1,0 +1,9 @@
+# Editors
+.bloop
+.metals
+.bsp
+.idea
+.vscode
+
+# sbt & scala
+target/
