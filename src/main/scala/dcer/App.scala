@@ -1,55 +1,12 @@
 package dcer
 
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorSystem, Behavior}
-import akka.cluster.typed.Cluster
-import dcer.data.{Port, Role}
-import scala.concurrent.duration.DurationInt
+import akka.actor.typed.ActorSystem
 import com.typesafe.config.ConfigFactory
-
+import dcer.actors.Root
+import dcer.data.{Port, Role}
 import scala.util.Try
 
 object App {
-  object RootBehavior {
-    // TODO
-    // The actor system is not stopped despite EngineManager and Workers being stopped.
-
-    def apply(): Behavior[Nothing] = Behaviors.setup[Nothing] { ctx =>
-      val cluster = Cluster(ctx.system)
-
-      if (cluster.selfMember.hasRole(data.Worker.toString)) {
-        val workersPerNode =
-          ctx.system.settings.config.getInt("my-config.workers-per-node")
-        (1 to workersPerNode).foreach { n =>
-          ctx.spawn(actors.Worker(), s"Worker-$n")
-        }
-      }
-
-      if (cluster.selfMember.hasRole(data.Engine.toString)) {
-        // Recall it is possible to create a cluster singleton actor.
-        val query0Path: String = "./src/main/resources/query_0"
-        val warmUpTime =
-          ctx.system.settings.config
-            .getInt("my-config.warmup-time-seconds")
-            .seconds
-        ctx.spawn(actors.EngineManager(query0Path, warmUpTime), "EngineManager")
-      }
-
-      Behaviors.stopped
-    }
-  }
-
-  def startup(role: Role, port: Port): Unit = {
-    val config = ConfigFactory
-      .parseString(s"""
-        akka.remote.artery.canonical.port=${port.port}
-        akka.cluster.roles = [${role.toString}]
-        """)
-      .withFallback(ConfigFactory.load())
-
-    val _ = ActorSystem[Nothing](RootBehavior(), "ClusterSystem", config)
-  }
-
   /*
   For a demo: $ sbt run
   To run on multiple machines, run each on a different machine (also works on multiple terminals):
@@ -90,5 +47,16 @@ object App {
           startup(role, port)
       }
     }
+  }
+
+  def startup(role: Role, port: Port): Unit = {
+    val config = ConfigFactory
+      .parseString(s"""
+        akka.remote.artery.canonical.port=${port.port}
+        akka.cluster.roles = [${role.toString}]
+        """)
+      .withFallback(ConfigFactory.load())
+
+    val _ = ActorSystem(Root(), "ClusterSystem", config)
   }
 }
