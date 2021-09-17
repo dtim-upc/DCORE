@@ -49,7 +49,7 @@ object Engine {
             Behaviors.same
           case None =>
             BaseEngine.LOGGER.info("No more events.\nExiting...")
-            engineManager ! EngineManager.Done
+            engineManager ! EngineManager.Stop
             Behaviors.stopped
         }
     }
