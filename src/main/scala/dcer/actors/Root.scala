@@ -3,8 +3,8 @@ package dcer.actors
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.cluster.typed.Cluster
-import dcer.actors.EngineManager.DistributionStrategy
-import dcer.actors.Worker.SecondOrderPredicate
+import dcer.data.Configuration
+import dcer.distribution.{DistributionStrategy, SecondOrderPredicate}
 import dcer.{actors, data}
 
 import scala.concurrent.duration.DurationInt
@@ -15,35 +15,51 @@ object Root {
 
   def apply(): Behavior[Root.ActorTerminated] = Behaviors.setup { ctx =>
     val cluster = Cluster(ctx.system)
+    val config = Configuration(ctx)
 
     cluster.selfMember.roles match {
       case roles if roles.contains(data.Worker.toString) =>
         val workersPerNode =
-          ctx.system.settings.config.getInt("my-config.workers-per-node")
+          config.getInt(Configuration.WorkersPerNodeKey)
+
         (1 to workersPerNode).foreach { n =>
           val actorName = s"Worker-$n"
-          // TODO predicate should be an input param
-          val sop = SecondOrderPredicate.Linear
-          val actor = ctx.spawn(actors.Worker(sop), actorName)
+          val actor = ctx.spawn(actors.Worker(), actorName)
           ctx.watchWith(actor, ActorTerminated(actorName))
         }
+
         running(ctx, workersPerNode)
 
+      // Recall it is possible to create a cluster singleton actor.
       case roles if roles.contains(data.Engine.toString) =>
-        // Recall it is possible to create a cluster singleton actor.
-        val query0Path: String = "./src/main/resources/query_0"
-        // TODO ds should be an input param
-        val ds = DistributionStrategy.RoundRobin
+        val queryPath =
+          config.getString(Configuration.QueryPathKey)
+
         val warmUpTime =
-          ctx.system.settings.config
-            .getInt("my-config.warmup-time-seconds")
-            .seconds
+          config.getInt(Configuration.WarmUpTimeKey).seconds
+
+        val distributionStrategy: DistributionStrategy =
+          config.getValueOrThrow(Configuration.DistributionStrategyKey)(
+            DistributionStrategy.parse
+          )
+
+        val secondOrderPredicate: SecondOrderPredicate =
+          config.getValueOrThrow(Configuration.SecondOrderPredicateKey)(
+            SecondOrderPredicate.parse
+          )
+
         val actorName = "EngineManager"
         val actor = ctx.spawn(
-          actors.EngineManager(query0Path, warmUpTime, ds),
+          actors.EngineManager(
+            queryPath,
+            warmUpTime,
+            distributionStrategy,
+            secondOrderPredicate
+          ),
           actorName
         )
         ctx.watchWith(actor, ActorTerminated(actorName))
+
         running(ctx, activeActors = 1, isSeedNode = true)
 
       case _ =>
@@ -66,6 +82,7 @@ object Root {
           if (isSeedNode) {
             // FIXME
             // Seed nodes must be stopped after regular nodes.
+            // But this is not a reliable way to achieve this.
             Thread.sleep(5000)
           }
           Behaviors.stopped

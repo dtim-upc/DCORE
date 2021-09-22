@@ -21,7 +21,12 @@ case class Event(
     index: Long,
     name: String,
     streamName: String
-) extends CborSerializable
+) extends CborSerializable {
+  // In the java version, this also prints the fields of the event
+  override def toString: String = {
+    s"Event($streamName, $name, idx=$index, ts=$timestamp)"
+  }
+}
 
 object Event {
   def apply(javaEvent: JEvent): Event = {

@@ -4,16 +4,25 @@ import akka.actor.typed.ActorSystem
 import com.typesafe.config.ConfigFactory
 import dcer.actors.Root
 import dcer.data.{Port, Role}
+
 import scala.util.Try
 
+/* TODO
+- [ ] Proper CLI parsing: https://github.com/bkirwi/decline
+ */
 object App {
   /*
-  For a demo: $ sbt run
+  For a demo:
+  - $ sbt run
+
   To run on multiple machines, run each on a different machine (also works on multiple terminals):
    - $ sbt "run Engine"
    - $ sbt "run Worker"
    - $ sbt "run Worker"
    - $ sbt "run Worker"
+
+   The distribution strategy, second order predicate, etc. are specified at
+   src/main/resources/application.conf
    */
   def main(args: Array[String]): Unit = {
     if (args.isEmpty) {
@@ -49,7 +58,10 @@ object App {
     }
   }
 
-  def startup(role: Role, port: Port): Unit = {
+  def startup(
+      role: Role,
+      port: Port
+  ): Unit = {
     val config = ConfigFactory
       .parseString(s"""
         akka.remote.artery.canonical.port=${port.port}

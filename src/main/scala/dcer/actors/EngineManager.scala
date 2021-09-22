@@ -1,12 +1,18 @@
 package dcer.actors
 
-import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
-import dcer.serialization.CborSerializable
-import edu.puc.core.execution.structures.output.{Match, MatchGrouping}
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import akka.actor.typed.{ActorRef, Behavior}
 import dcer.data
+import dcer.data.Match
+import dcer.distribution.{DistributionStrategy, SecondOrderPredicate}
+import dcer.serialization.CborSerializable
+import edu.puc.core.execution.structures.output.{
+  MatchGrouping => JMatchGrouping
+}
+
+import scala.collection.JavaConverters._
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 object EngineManager {
 
@@ -20,14 +26,15 @@ object EngineManager {
       updatedWorkers: Set[ActorRef[Worker.Command]]
   ) extends Event
   final case object WarmUpDone extends Event
-  final case class MatchGroupFound(matchGroup: MatchGrouping) extends Event
+  final case class MatchGroupFound(matchGroup: JMatchGrouping) extends Event
   final case class MatchValidated(m: Match) extends Event with CborSerializable
   final case object Stop extends Event
 
   def apply(
       queryPath: String,
       warmUpTime: FiniteDuration = 5.seconds,
-      ds: DistributionStrategy
+      ds: DistributionStrategy,
+      sop: SecondOrderPredicate
   ): Behavior[Event] =
     Behaviors.setup { ctx =>
       Behaviors.withTimers { timers =>
@@ -42,7 +49,7 @@ object EngineManager {
           subscriptionAdapter
         )
 
-        warming(ctx, queryPath, Set.empty, ds)
+        warming(ctx, queryPath, Set.empty, ds, sop)
       }
     }
 
@@ -50,7 +57,8 @@ object EngineManager {
       ctx: ActorContext[Event],
       queryPath: String,
       workers: Set[ActorRef[Worker.Command]],
-      ds: DistributionStrategy
+      ds: DistributionStrategy,
+      sop: SecondOrderPredicate
   ): Behavior[Event] =
     Behaviors.receiveMessage {
       case WorkersUpdated(newWorkers) =>
@@ -58,32 +66,36 @@ object EngineManager {
           "List of services registered with the receptionist changed: {}",
           newWorkers
         )
-        warming(ctx, queryPath, newWorkers, ds)
+        warming(ctx, queryPath, newWorkers, ds, sop)
 
       case WarmUpDone =>
         ctx.log.info("Warm up finished.")
-        startEngine(queryPath, workers, ds).narrow
+        startEngine(queryPath, workers, ds, sop).narrow
 
       case e: Event =>
-        ctx.log.error(s"Received a ${e.toString} at warming.")
+        ctx.log.error(
+          s"Received an unexpected Event.${e.getClass.getName} at warming state"
+        )
         Behaviors.stopped
     }
 
   private def startEngine(
       queryPath: String,
       workers: Set[ActorRef[Worker.Command]],
-      ds: DistributionStrategy
+      ds: DistributionStrategy,
+      sop: SecondOrderPredicate
   ): Behavior[Event] =
     Behaviors.setup { ctx =>
       val engine = ctx.spawn(Engine(queryPath, ctx.self), "Engine")
       engine ! Engine.Start
-      running(ctx, workers, ds)
+      running(ctx, workers, ds, sop)
     }
 
   private def running(
       ctx: ActorContext[Event],
       workers: Set[ActorRef[Worker.Command]],
-      ds: DistributionStrategy
+      ds: DistributionStrategy,
+      sop: SecondOrderPredicate
   ): Behavior[Event] = {
     Behaviors.receiveMessage {
       case WorkersUpdated(newWorkers) =>
@@ -92,7 +104,7 @@ object EngineManager {
           "List of services registered with the receptionist changed: {}",
           newWorkers
         )
-        running(ctx, workers, ds)
+        running(ctx, workers, ds, sop)
 
       case Stop =>
         ctx.log.info("Stopping EngineManager...")
@@ -102,54 +114,48 @@ object EngineManager {
         Behaviors.stopped
 
       case MatchGroupFound(matchGroup) =>
-        distributeMatchGroup(ctx, workers, matchGroup, ds)
+        distributeMatchGroup(ctx, workers, matchGroup, ds, sop)
         Behaviors.same
 
       // TODO
       // We need to implement different strategies such as store to file.
       case MatchValidated(m) =>
-        val pretty = data.Match.pretty(m)
-        ctx.log.info(s"**** Match found *****\n${pretty}")
-        ctx.log.info(s"**********************")
+        ctx.log.info(s"*********** Match found ***********")
+        ctx.log.info(data.Match.pretty(m))
+        ctx.log.info(s"***********************************")
         Behaviors.same
 
       case e: Event =>
-        ctx.log.error(s"Received a ${e.toString} at warming.")
+        ctx.log.error(
+          s"Received an unexpected Event.${e.getClass.getName} at running state"
+        )
         Behaviors.stopped
     }
   }
 
-  // ***** Move out *******
-
-  sealed trait DistributionStrategy
-  object DistributionStrategy {
-    case object None extends DistributionStrategy
-    case object RoundRobin extends DistributionStrategy
-    case object DoubleHashing extends DistributionStrategy
-    case object SubMatchesFromMaximalMatch extends DistributionStrategy
-    case object SubMatchesBySizeFromMaximalMatch extends DistributionStrategy
-    case object NoCollisionsEnumeration extends DistributionStrategy
-  }
-
-  import scala.collection.JavaConverters._
-
   private def distributeMatchGroup(
       ctx: ActorContext[EngineManager.Event],
       workers: Set[ActorRef[Worker.Command]],
-      matchGroup: MatchGrouping,
-      ds: DistributionStrategy
+      matchGroup: JMatchGrouping,
+      ds: DistributionStrategy,
+      sop: SecondOrderPredicate
   ): Unit =
+    // TODO
+    // We could create an abstract class with one class for each strategy
+    // Each class would store its own state.
+    // But share the same interface.
     ds match {
-      case DistributionStrategy.None =>
+      case DistributionStrategy.NoStrategy =>
         throw new RuntimeException("Not implemented")
       case DistributionStrategy.RoundRobin =>
         // FIXME
         // The implementation doesn't take into account previous MatchGroupings
-        // We need some mechanism to store the state
         val nWorkers = workers.size
         val workersMap = workers.zipWithIndex.map(_.swap).toMap
-        matchGroup.iterator().asScala.zipWithIndex.foreach { case (m, i) =>
-          workersMap(i % nWorkers) ! Worker.Process(m, ctx.self)
+        matchGroup.iterator().asScala.zipWithIndex.foreach {
+          case (coreMatch, i) =>
+            val dcerMatch = Match(coreMatch)
+            workersMap(i % nWorkers) ! Worker.Process(dcerMatch, sop, ctx.self)
         }
       case DistributionStrategy.DoubleHashing =>
         throw new RuntimeException("Not implemented")
@@ -160,6 +166,4 @@ object EngineManager {
       case DistributionStrategy.NoCollisionsEnumeration =>
         throw new RuntimeException("Not implemented")
     }
-
-  // *********************
 }

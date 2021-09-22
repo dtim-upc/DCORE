@@ -3,8 +3,9 @@ package dcer.actors
 import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
+import dcer.data.Match
+import dcer.distribution.SecondOrderPredicate
 import dcer.serialization.CborSerializable
-import edu.puc.core.execution.structures.output.Match
 
 import scala.concurrent.duration.DurationInt
 
@@ -15,14 +16,13 @@ object Worker {
   sealed trait Command
   final case class Process(
       m: Match,
+      sop: SecondOrderPredicate,
       replyTo: ActorRef[EngineManager.MatchValidated]
   ) extends Command
       with CborSerializable
   final case object Stop extends Command with CborSerializable
 
-  def apply(
-      sop: SecondOrderPredicate
-  ): Behavior[Worker.Command] = {
+  def apply(): Behavior[Worker.Command] = {
     Behaviors.setup { ctx =>
       ctx.system.receptionist ! Receptionist.Register(
         workerServiceKey,
@@ -35,18 +35,17 @@ object Worker {
        */
       Behaviors
         .supervise {
-          running(ctx, sop)
+          running(ctx)
         }
         .onFailure[Exception](SupervisorStrategy.restart)
     }
   }
 
   private def running(
-      ctx: ActorContext[Worker.Command],
-      sop: SecondOrderPredicate
+      ctx: ActorContext[Worker.Command]
   ): Behavior[Worker.Command] =
     Behaviors.receiveMessage[Command] {
-      case Process(m, replyTo) =>
+      case Process(m, sop, replyTo) =>
         ctx.log.info(s"Match received. Started processing...")
         processMatch(m, sop, replyTo)
         Behaviors.same
@@ -56,15 +55,7 @@ object Worker {
         Behaviors.stopped
     }
 
-  // ***** Move out *******
-
-  sealed trait SecondOrderPredicate
-  object SecondOrderPredicate {
-    case object Linear extends SecondOrderPredicate
-    case object Quadratic extends SecondOrderPredicate
-    case object Cubic extends SecondOrderPredicate
-  }
-
+  /** This method is a mock which will be eventually replaced by real second-order predicates. */
   private def processMatch(
       m: Match,
       sop: SecondOrderPredicate,
@@ -72,22 +63,22 @@ object Worker {
   ): Unit = {
     val eventProcessingDuration = 5.millis
     sop match {
-      case SecondOrderPredicate.Linear =>
-        m.forEach { _ =>
+      case SecondOrderPredicate.Linear() =>
+        m.events.foreach { _ =>
           Thread.sleep(eventProcessingDuration.toMillis)
         }
         replyTo ! EngineManager.MatchValidated(m)
-      case SecondOrderPredicate.Quadratic =>
-        m.forEach { _ =>
-          m.forEach { _ =>
+      case SecondOrderPredicate.Quadratic() =>
+        m.events.foreach { _ =>
+          m.events.foreach { _ =>
             Thread.sleep(eventProcessingDuration.toMillis)
           }
         }
         replyTo ! EngineManager.MatchValidated(m)
-      case SecondOrderPredicate.Cubic =>
-        m.forEach { _ =>
-          m.forEach { _ =>
-            m.forEach { _ =>
+      case SecondOrderPredicate.Cubic() =>
+        m.events.foreach { _ =>
+          m.events.foreach { _ =>
+            m.events.foreach { _ =>
               Thread.sleep(eventProcessingDuration.toMillis)
             }
           }
@@ -95,6 +86,4 @@ object Worker {
         replyTo ! EngineManager.MatchValidated(m)
     }
   }
-
-  // ***********************
 }
