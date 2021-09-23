@@ -46,21 +46,25 @@ object Worker {
   ): Behavior[Worker.Command] =
     Behaviors.receiveMessage[Command] {
       case Process(m, sop, replyTo) =>
-        ctx.log.info(s"Match received. Started processing...")
-        processMatch(m, sop, replyTo)
+        ctx.log.info(s"Match received")
+        processMatch(ctx, m, sop, replyTo)
         Behaviors.same
 
       case Stop =>
-        ctx.log.info(s"Stopping...")
+        ctx.log.info(s"Worker stopped")
         Behaviors.stopped
     }
 
   /** This method is a mock which will be eventually replaced by real second-order predicates. */
   private def processMatch(
+      ctx: ActorContext[Worker.Command],
       m: Match,
       sop: SecondOrderPredicate,
       replyTo: ActorRef[EngineManager.MatchValidated]
   ): Unit = {
+    ctx.log.info(
+      s"Processing match:\n\tSize ${m.nodeList.length}\n\tComplexity $sop"
+    )
     val eventProcessingDuration = 5.millis
     sop match {
       case SecondOrderPredicate.Linear() =>

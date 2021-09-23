@@ -133,9 +133,7 @@ object EngineManager {
       // TODO
       // We need to implement different strategies such as store to file.
       case MatchValidated(m) =>
-        ctx.log.info(s"*********** Match found ***********")
-        ctx.log.info(data.Match.pretty(m))
-        ctx.log.info(s"***********************************")
+        ctx.log.info(s"Match found:\n${data.Match.pretty(m)}")
         Behaviors.same
 
       case e: Event =>
@@ -165,6 +163,7 @@ object EngineManager {
         // The implementation doesn't take into account previous MatchGroupings
         val nWorkers = workers.size
         val workersMap = workers.zipWithIndex.map(_.swap).toMap
+        ctx.log.info(s"Distributing ${matchGroup.size()} matches")
         matchGroup.iterator().asScala.zipWithIndex.foreach {
           case (coreMatch, i) =>
             val dcerMatch = Match(coreMatch)

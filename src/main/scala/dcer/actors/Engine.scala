@@ -50,11 +50,12 @@ object Engine {
       case NextEvent(event) =>
         event match {
           case Some(event) =>
+            val result = Option(baseEngine.new_sendEvent(event))
             ctx.log.info("Event send: " + event.toString)
-            Option(baseEngine.new_sendEvent(event)) match {
+            result match {
               case None => ()
               case Some(matchGroup) =>
-                ctx.log.info("Unprocessed MatchGrouping found")
+                ctx.log.info(s"MatchGrouping (${matchGroup.size()}) found")
                 engineManager ! MatchGroupFound(matchGroup)
             }
             ctx.self ! NextEvent(Option(baseEngine.nextEvent()))
