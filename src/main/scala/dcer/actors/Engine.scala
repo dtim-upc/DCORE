@@ -50,16 +50,18 @@ object Engine {
       case NextEvent(event) =>
         event match {
           case Some(event) =>
-            BaseEngine.LOGGER.info("Event send: " + event.toString)
+            ctx.log.info("Event send: " + event.toString)
             Option(baseEngine.new_sendEvent(event)) match {
               case None => ()
               case Some(matchGroup) =>
+                ctx.log.info("Unprocessed MatchGrouping found")
                 engineManager ! MatchGroupFound(matchGroup)
             }
             ctx.self ! NextEvent(Option(baseEngine.nextEvent()))
             Behaviors.same
           case None =>
-            BaseEngine.LOGGER.info("No more events.\nExiting...")
+            ctx.log.info("No more events on the source stream")
+            ctx.log.info("Engine stopped")
             engineManager ! EngineManager.Stop
             Behaviors.stopped
         }

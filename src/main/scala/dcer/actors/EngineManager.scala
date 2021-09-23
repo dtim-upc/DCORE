@@ -95,23 +95,36 @@ object EngineManager {
       ctx: ActorContext[Event],
       workers: Set[ActorRef[Worker.Command]],
       ds: DistributionStrategy,
-      sop: SecondOrderPredicate
+      sop: SecondOrderPredicate,
+      isStopping: Boolean = false
   ): Behavior[Event] = {
     Behaviors.receiveMessage {
       case WorkersUpdated(newWorkers) =>
-        // For now, just ignore changes in the topology since the management could be complicated.
-        ctx.log.warn(
-          "List of services registered with the receptionist changed: {}",
-          newWorkers
-        )
-        running(ctx, workers, ds, sop)
+        if (isStopping) {
+          // FIXME
+          // If a new worker joins during the shutdown process, the EngineManager won't be able to stop.
+          if (newWorkers.isEmpty) {
+            ctx.log.info("EngineManager stopped")
+            Behaviors.stopped
+          } else {
+            running(ctx, newWorkers, ds, sop, isStopping)
+          }
+        } else {
+          // For now, just ignore changes in the topology since the management could be complicated.
+          ctx.log.warn(
+            "List of services registered with the receptionist changed: {}",
+            newWorkers
+          )
+          running(ctx, workers, ds, sop)
+        }
 
       case Stop =>
+        // Workers won't stop until they have finished processing all their work.
         ctx.log.info("Stopping EngineManager...")
         workers.foreach { worker =>
           worker ! Worker.Stop
         }
-        Behaviors.stopped
+        running(ctx, workers, ds, sop, isStopping = true)
 
       case MatchGroupFound(matchGroup) =>
         distributeMatchGroup(ctx, workers, matchGroup, ds, sop)

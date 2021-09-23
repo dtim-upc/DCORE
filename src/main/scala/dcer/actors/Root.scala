@@ -59,8 +59,7 @@ object Root {
           actorName
         )
         ctx.watchWith(actor, ActorTerminated(actorName))
-
-        running(ctx, activeActors = 1, isSeedNode = true)
+        running(ctx, activeActors = 1)
 
       case _ =>
         ctx.log.error("Role not properly set.")
@@ -70,8 +69,7 @@ object Root {
 
   private def running(
       ctx: ActorContext[Root.ActorTerminated],
-      activeActors: Int,
-      isSeedNode: Boolean = false
+      activeActors: Int
   ): Behavior[Root.ActorTerminated] =
     Behaviors.receiveMessage { case Root.ActorTerminated(name) =>
       ctx.log.info(s"Actor $name terminated.")
@@ -79,12 +77,6 @@ object Root {
       remainingActors match {
         case 0 =>
           ctx.log.info("All actors terminated")
-          if (isSeedNode) {
-            // FIXME
-            // Seed nodes must be stopped after regular nodes.
-            // But this is not a reliable way to achieve this.
-            Thread.sleep(5000)
-          }
           Behaviors.stopped
         case n =>
           running(ctx, activeActors = n)
