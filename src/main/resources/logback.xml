@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- More at https://doc.akka.io/docs/akka/2.6/typed/logging.html#logging -->
 <configuration>
-    <!-- This is a development logging configuration that logs to standard out, for an example of a production
-        logging config, see the Akka docs: https://doc.akka.io/docs/akka/2.6/typed/logging.html#logback -->
     <appender name="STDOUT" target="System.out" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>[%date{ISO8601}] [%level] [%logger] [%marker] [%thread] - %msg%n</pattern>
+       <!-- <pattern>[%date{ISO8601}] [%level] [%logger] [%marker] [%thread] - %msg%n</pattern> -->
+            <pattern>[%level] [%X{akkaSource}] - %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -14,7 +14,21 @@
         <appender-ref ref="STDOUT" />
     </appender>
 
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>WARN</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <file>target/error.log</file>
+        <encoder>
+            <pattern>[%level] [%X{akkaSource}] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ERROR, WARN, INFO but not DEBUG nor TRACE -->
     <root level="INFO">
         <appender-ref ref="ASYNC"/>
+        <appender-ref ref="FILE"/>
     </root>
 </configuration>
