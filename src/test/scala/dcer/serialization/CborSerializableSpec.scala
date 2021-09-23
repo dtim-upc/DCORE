@@ -2,6 +2,7 @@ package dcer.serialization
 
 import akka.actor._
 import akka.serialization._
+import com.fasterxml.jackson.databind.exc.InvalidDefinitionException
 import dcer.data.{Event, Match}
 import edu.puc.core.engine.executors.ExecutorManager
 import edu.puc.core.engine.streams.StreamManager
@@ -14,19 +15,48 @@ import org.scalatest.funspec.AnyFunSpec
 
 import scala.util.Random
 
+sealed trait IDoNotSerialize
+case object IJustDoNotSerialize extends IDoNotSerialize
+case class Message(x: IDoNotSerialize) extends CborSerializable
+
+/*
+This test verifies that the messages can be passed from one JVM to another JVM using JacksonCborSerializer.
+The test fails if the message cannot be serialized and deserialized.
+ */
 class CborSerializableSpec extends AnyFunSpec {
-  private def roundTrip(original: AnyRef): Assertion = {
+  private def roundTrip[T <: CborSerializable](
+      original: T
+  )(implicit clazz: Class[_ <: T]): Assertion = {
     val system = ActorSystem("example")
     val serialization = SerializationExtension(system)
 
-    val bytes = serialization.serialize(original).get
-    val serializerId = serialization.findSerializerFor(original).identifier
+    val serializer = serialization.findSerializerFor(original)
+    assert(
+      serializer.getClass.getName === "akka.serialization.jackson.JacksonCborSerializer"
+    )
+
+    val bytes: Array[Byte] = serializer.toBinary(original)
+    val back: AnyRef = serializer.fromBinary(bytes, clazz)
+
+    assert(back === original)
+  }
+
+  private def roundTrip2(original: AnyRef): Assertion = {
+    val system = ActorSystem("example")
+    val serialization = SerializationExtension(system)
+
+    val serializer = serialization.findSerializerFor(original)
+    assert(
+      serializer.getClass.getName === "akka.serialization.jackson.JacksonCborSerializer"
+    )
+    val id = serializer.identifier
     val manifest = Serializers.manifestFor(
       serialization.findSerializerFor(original),
       original
     )
 
-    val back = serialization.deserialize(bytes, serializerId, manifest).get
+    val bytes = serialization.serialize(original).get
+    val back = serialization.deserialize(bytes, id, manifest).get
 
     assert(back === original)
   }
@@ -67,7 +97,8 @@ class CborSerializableSpec extends AnyFunSpec {
 
     it("should round-trip serialize an Event") {
       val event = Event(getEventAtRandom())
-      roundTrip(event)
+      roundTrip(event)(event.getClass)
+      roundTrip2(event)
     }
 
     it("should round-trip serialize a Match") {
@@ -76,7 +107,20 @@ class CborSerializableSpec extends AnyFunSpec {
         jMatch.push(event)
       }
       val m = Match(jMatch)
-      roundTrip(m)
+      roundTrip(m)(m.getClass)
+      roundTrip2(m)
+    }
+
+    it(
+      "should fail the round-trip serialization if the message cannot be serialized"
+    ) {
+      val message = Message(IJustDoNotSerialize)
+      assertThrows[InvalidDefinitionException] {
+        roundTrip(message)(message.getClass)
+      }
+      assertThrows[InvalidDefinitionException] {
+        roundTrip2(message)
+      }
     }
   }
 }
