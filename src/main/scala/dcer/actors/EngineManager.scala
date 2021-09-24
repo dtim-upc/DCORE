@@ -131,7 +131,7 @@ object EngineManager {
         Behaviors.same
 
       // TODO
-      // We need to implement different strategies such as store to file.
+      // - [ ] Store to file
       case MatchValidated(m) =>
         ctx.log.info(s"Match found:\n${data.Match.pretty(m)}")
         Behaviors.same
@@ -159,8 +159,13 @@ object EngineManager {
       case DistributionStrategy.NoStrategy =>
         throw new RuntimeException("Not implemented")
       case DistributionStrategy.RoundRobin =>
-        // FIXME
-        // The implementation doesn't take into account previous MatchGroupings
+        /* FIXME
+        1. RR should recall previously distributed matchings for a proper distribution
+        2. Engine outputs a GroupMatching for each ending event found.
+           The problem is that newer ending events contain previous ending events
+           i.e. most of the patterns are repeated! If we blindly apply Round Robin
+           we are going to send
+         */
         val nWorkers = workers.size
         val workersMap = workers.zipWithIndex.map(_.swap).toMap
         ctx.log.info(s"Distributing ${matchGroup.size()} matches")

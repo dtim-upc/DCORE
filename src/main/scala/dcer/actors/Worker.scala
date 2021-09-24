@@ -46,7 +46,6 @@ object Worker {
   ): Behavior[Worker.Command] =
     Behaviors.receiveMessage[Command] {
       case Process(m, sop, replyTo) =>
-        ctx.log.info(s"Match received")
         processMatch(ctx, m, sop, replyTo)
         Behaviors.same
 
@@ -63,7 +62,7 @@ object Worker {
       replyTo: ActorRef[EngineManager.MatchValidated]
   ): Unit = {
     ctx.log.info(
-      s"Processing match:\n\tSize ${m.nodeList.length}\n\tComplexity $sop"
+      s"Processing match (#events=${m.events.length}, complexity=$sop):"
     )
     val eventProcessingDuration = 5.millis
     sop match {
