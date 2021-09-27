@@ -6,14 +6,13 @@ import edu.puc.core.runtime.events.{Event => CoreEvent}
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
-import scala.util.Try
 
 case class Event(
     name: String,
     streamName: String,
     timestamp: Long = -1,
     index: Long = -1,
-    attributes: Map[String, Any] = Map.empty
+    attributes: Map[String, Value] = Map.empty
 ) extends CborSerializable {
   override def toString: String = {
     val builder = StringBuilder.newBuilder
@@ -23,16 +22,20 @@ case class Event(
     s"Event($streamName, $name, idx=$index, ts=$timestamp ${builder.result()})"
   }
 
-  def getValue[T <: Any](
-      attrName: String
-  )(implicit tag: ClassTag[T]): Either[Throwable, T] = {
-    this.attributes.get(attrName) match {
-      case None =>
-        Left(new RuntimeException(s"Attribute $attrName does not exist"))
-      case Some(v) =>
-        Try(tag.runtimeClass.cast(v).asInstanceOf[T]).toEither
-    }
-  }
+  def getValue(attrName: String): Option[Value] =
+    this.attributes.get(attrName)
+
+  /* Example:
+   *
+   *  val x: Option[Double] =
+   *    get("temp") {
+   *      case DoubleValue(d) => d
+   *      case IntValue(i) => i.toDouble
+   *      case StringValue(s) => s.toDouble
+   *    }
+   */
+  def get[T](attrName: String)(f: PartialFunction[Value, T]): Option[T] =
+    getValue(attrName).flatMap(f.lift)
 }
 
 object Event {
@@ -46,36 +49,30 @@ object Event {
     )
   }
 
-  private def getAttributes(coreEvent: CoreEvent): Map[String, Any] = {
+  private def getAttributes(coreEvent: CoreEvent): Map[String, Value] = {
     def unsafeCast[T](v: AnyRef)(implicit tag: ClassTag[T]): T = {
       tag.runtimeClass.cast(v).asInstanceOf[T]
     }
 
-    coreEvent.getFieldDescriptions.asScala.foldLeft(Map.empty[String, Any]) {
+    coreEvent.getFieldDescriptions.asScala.foldLeft(Map.empty[String, Value]) {
       case (acc, tuple) =>
         val attrName = tuple.getKey
         val description = tuple.getValue
         val obj: java.lang.Object = coreEvent.getValue(attrName)
-        val value: Any =
+        val value: Value =
           description match {
             case ValueType.NUMERIC =>
-              throw new RuntimeException("")
-//              obj.asInstanceOf[java.lang.Double].doubleValue()
+              DoubleValue(unsafeCast[java.lang.Double](obj))
             case ValueType.INTEGER =>
-              throw new RuntimeException("")
-//              obj.asInstanceOf[java.lang.Integer].intValue()
+              IntValue(unsafeCast[java.lang.Integer](obj))
             case ValueType.LONG =>
-              throw new RuntimeException("")
-//              obj.asInstanceOf[java.lang.Long].longValue()
+              LongValue(unsafeCast[java.lang.Long](obj))
             case ValueType.DOUBLE =>
-              println("Double!!!")
-              unsafeCast[java.lang.Double](obj).doubleValue()
+              DoubleValue(unsafeCast[java.lang.Double](obj))
             case ValueType.STRING =>
-              throw new RuntimeException("")
-//              obj.asInstanceOf[java.lang.String]
+              StringValue(unsafeCast[java.lang.String](obj))
             case ValueType.BOOLEAN =>
-              throw new RuntimeException("")
-//              obj.asInstanceOf[java.lang.Boolean].booleanValue()
+              BoolValue(unsafeCast[java.lang.Boolean](obj))
           }
         acc + (attrName -> value)
     }

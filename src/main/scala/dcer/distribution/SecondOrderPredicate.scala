@@ -16,7 +16,7 @@ import dcer.serialization.CborSerializable
     ),
     new JsonSubTypes.Type(
       value = classOf[SecondOrderPredicate.Cubic],
-      name = "cubi"
+      name = "cubic"
     )
   )
 )

@@ -3,7 +3,7 @@ package dcer.serialization
 import akka.actor._
 import akka.serialization._
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException
-import dcer.Implicits
+import dcer.Common
 import dcer.data.{Event, Match}
 import edu.puc.core.execution.structures.output.{Match => JMatch}
 import org.scalatest.Assertion
@@ -58,7 +58,7 @@ class CborSerializableSpec extends AnyFunSpec {
   describe("Serialization") {
     // CORE depends on many static classes and variables.
     // For example, without an engine, Event does not work.
-    val (_, producer) = Implicits.getEngine()
+    val (_, producer) = Common.getGlobalEngine()
 
     it("should round-trip serialize an Event") {
       val event = Event(producer.getEventAtRandom())

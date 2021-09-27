@@ -1,40 +1,49 @@
 package dcer.data
 
-import dcer.Implicits
+import dcer.Common
 import org.scalatest.funspec.AnyFunSpec
 import edu.puc.core.runtime.events.{Event => CoreEvent}
 
 class EventSpec extends AnyFunSpec {
   describe("Event") {
-    val (_, _) = Implicits.getEngine()
+    val (_, _) = Common.getGlobalEngine()
 
     describe("getValue") {
       it(
-        "should return the given value if the attribute exists and the type corresponds"
+        "should return the given value if the attribute exists"
       ) {
-        val temp: Double = 0.2
-        val coreEvent = new CoreEvent("S", "T", temp.asInstanceOf[AnyRef])
+        val temp: java.lang.Double = 0.2
+        val city: java.lang.String = "Osaka"
+        val coreEvent = new CoreEvent(
+          "S",
+          "T",
+          temp,
+          city
+        )
         val event = Event(coreEvent)
-        event.getValue[Double]("temp") match {
-          case Left(throwable) => fail(throwable.getMessage)
-          case Right(result)   => assert(result === temp)
+        event.getValue("temp") match {
+          case Some(DoubleValue(d)) => assert(d === temp)
+          case Some(_)              => fail("temp is not of the expected type")
+          case None                 => fail("temp not found")
+        }
+        event.getValue("city") match {
+          case Some(StringValue(s)) => assert(s === city)
+          case Some(_)              => fail("city is not of the expected type")
+          case None                 => fail("city not found")
         }
       }
-      it("should fail if the attribute does not exist") {
-        val temp: Double = 0.2
-        val coreEvent = new CoreEvent("S", "T", temp.asInstanceOf[AnyRef])
-        val event = Event(coreEvent)
-        val left = event.getValue[Double]("oops").left.get
-        assert(left.getMessage === "Attribute oops does not exist")
-      }
-      it("should fail if the attribute is not of the given type") {
-        val temp: Double = 0.2
-        val coreEvent = new CoreEvent("S", "T", temp.asInstanceOf[AnyRef])
-        val event = Event(coreEvent)
-        val left = event.getValue[String]("temp").left.get
-        assert(
-          left.getMessage === "Cannot cast java.lang.Double to java.lang.String"
+
+      it("should return None if the attribute does not exist") {
+        val temp: java.lang.Double = 0.2
+        val city: java.lang.String = "Osaka"
+        val coreEvent = new CoreEvent(
+          "S",
+          "T",
+          temp,
+          city
         )
+        val event = Event(coreEvent)
+        assert(event.getValue("oops").isEmpty)
       }
     }
   }
