@@ -1,63 +1,69 @@
 package dcer
 
 import akka.actor.typed.ActorSystem
+import cats.implicits._
+import com.monovore.decline._
 import com.typesafe.config.ConfigFactory
+import dcer.App.startup
 import dcer.actors.Root
 import dcer.data.{Port, Role}
 
-import scala.util.Try
+/**  For a demo:
+  *    Machine 1: $ sbt "run --demo"
+  *
+  *  To run on multiple machines:
+  *    Machine 1: $ sbt "run --role engine"
+  *    Machine 2: $ sbt "run --role worker"
+  *    (Optional) Machine 3: $ sbt "run --role worker"
+  *    (Optional) ...
+  *
+  *   Change the configuration at 'src/main/resources/application.conf'.
+  */
+object App
+    extends CommandApp(
+      name = "dcer",
+      header = "Distributed CER",
+      main = {
+        val demo =
+          Opts.flag("demo", help = "Run the demo").orFalse
 
-/* TODO
-- [ ] Proper CLI parsing: https://github.com/bkirwi/decline
- */
-object App {
-  /*
-  For a demo:
-  - $ sbt run
+        val roleOpt =
+          Opts
+            .option[String]("role", help = s"Available roles: ${Role.all}")
+            .mapValidated { r =>
+              Role.parse(r).toValidNel(s"Invalid role: $r")
+            }
 
-  To run on multiple machines, run each on a different machine (also works on multiple terminals):
-   - $ sbt "run Engine"
-   - $ sbt "run Worker"
-   - $ sbt "run Worker"
-   - $ sbt "run Worker"
+        val portOpt =
+          Opts
+            .option[String]("port", help = s"Available ports: [1024, 49152]")
+            .mapValidated { p =>
+              Port.parse(p).toValidNel(s"Invalid port: $p")
+            }
+            .orNone
 
-   The distribution strategy, second order predicate, etc. are specified at
-   src/main/resources/application.conf
-   */
-  def main(args: Array[String]): Unit = {
-    if (args.isEmpty) {
-      startup(data.Engine, Port.SeedPort)
-      startup(data.Worker, Port.RandomPort)
-      startup(data.Worker, Port.RandomPort)
-    } else {
-      val parsedArgs = for {
-        role <- (
-          for {
-            rawRole <- Try(args(0)).toOption
-            role <- Role.parse(rawRole)
-          } yield role
-        ).orElse(Some(data.Worker))
-        port <- (for {
-          rawPort <- Try(args(1)).toOption
-          port <- Port.parse(rawPort)
-        } yield port)
-          .orElse(role match {
-            case data.Engine => Some(Port.SeedPort)
-            case data.Worker => Some(Port.RandomPort)
-          })
-      } yield (role, port)
-
-      parsedArgs match {
-        case None =>
-          val usageMsg: String = "Usage: <role> <port>"
-          println(usageMsg)
-          System.exit(-1)
-        case Some((role, port)) =>
-          startup(role, port)
+        (demo, roleOpt, portOpt).mapN { (demo, role, portOpt) =>
+          if (demo) {
+            startup(data.Engine, Port.SeedPort)
+            startup(data.Worker, Port.RandomPort)
+            startup(data.Worker, Port.RandomPort)
+          } else {
+            val port = portOpt match {
+              case None =>
+                role match {
+                  case data.Engine => Port.SeedPort
+                  case data.Worker => Port.RandomPort
+                }
+              case Some(port) => port
+            }
+            startup(role, port)
+          }
+        }
       }
-    }
-  }
+    )
+    with AkkaSystem
 
+trait AkkaSystem {
   def startup(
       role: Role,
       port: Port
