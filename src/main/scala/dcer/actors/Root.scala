@@ -4,7 +4,6 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.cluster.typed.Cluster
 import dcer.data.Configuration
-import dcer.distribution.{DistributionStrategy, SecondOrderPredicate}
 import dcer.{actors, data}
 
 import scala.concurrent.duration.DurationInt
@@ -38,23 +37,11 @@ object Root {
         val warmUpTime =
           config.getInt(Configuration.WarmUpTimeKey).seconds
 
-        val distributionStrategy: DistributionStrategy =
-          config.getValueOrThrow(Configuration.DistributionStrategyKey)(
-            DistributionStrategy.parse
-          )
-
-        val secondOrderPredicate: SecondOrderPredicate =
-          config.getValueOrThrow(Configuration.SecondOrderPredicateKey)(
-            SecondOrderPredicate.parse
-          )
-
         val actorName = "EngineManager"
         val actor = ctx.spawn(
           actors.EngineManager(
             queryPath,
-            warmUpTime,
-            distributionStrategy,
-            secondOrderPredicate
+            warmUpTime
           ),
           actorName
         )

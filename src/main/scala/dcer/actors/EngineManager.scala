@@ -4,14 +4,11 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import dcer.data
-import dcer.data.Match
+import dcer.data.{Configuration, Match}
 import dcer.distribution.{DistributionStrategy, SecondOrderPredicate}
 import dcer.serialization.CborSerializable
-import edu.puc.core.execution.structures.output.{
-  MatchGrouping => JMatchGrouping
-}
+import edu.puc.core.execution.structures.output.MatchGrouping
 
-import scala.collection.JavaConverters._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 object EngineManager {
@@ -26,15 +23,13 @@ object EngineManager {
       updatedWorkers: Set[ActorRef[Worker.Command]]
   ) extends Event
   final case object WarmUpDone extends Event
-  final case class MatchGroupFound(matchGroup: JMatchGrouping) extends Event
+  final case class MatchGroupFound(matchGroup: MatchGrouping) extends Event
   final case class MatchValidated(m: Match) extends Event with CborSerializable
   final case object Stop extends Event
 
   def apply(
       queryPath: String,
-      warmUpTime: FiniteDuration = 5.seconds,
-      ds: DistributionStrategy,
-      sop: SecondOrderPredicate
+      warmUpTime: FiniteDuration = 5.seconds
   ): Behavior[Event] =
     Behaviors.setup { ctx =>
       Behaviors.withTimers { timers =>
@@ -49,16 +44,14 @@ object EngineManager {
           subscriptionAdapter
         )
 
-        warming(ctx, queryPath, Set.empty, ds, sop)
+        warming(ctx, queryPath, Set.empty)
       }
     }
 
   private def warming(
       ctx: ActorContext[Event],
       queryPath: String,
-      workers: Set[ActorRef[Worker.Command]],
-      ds: DistributionStrategy,
-      sop: SecondOrderPredicate
+      workers: Set[ActorRef[Worker.Command]]
   ): Behavior[Event] =
     Behaviors.receiveMessage {
       case WorkersUpdated(newWorkers) =>
@@ -66,11 +59,11 @@ object EngineManager {
           "List of services registered with the receptionist changed: {}",
           newWorkers
         )
-        warming(ctx, queryPath, newWorkers, ds, sop)
+        warming(ctx, queryPath, newWorkers)
 
       case WarmUpDone =>
         ctx.log.info("Warm up finished.")
-        startEngine(queryPath, workers, ds, sop).narrow
+        startEngine(queryPath, workers).narrow
 
       case e: Event =>
         ctx.log.error(
@@ -81,21 +74,31 @@ object EngineManager {
 
   private def startEngine(
       queryPath: String,
-      workers: Set[ActorRef[Worker.Command]],
-      ds: DistributionStrategy,
-      sop: SecondOrderPredicate
+      workers: Set[ActorRef[Worker.Command]]
   ): Behavior[Event] =
     Behaviors.setup { ctx =>
       val engine = ctx.spawn(Engine(queryPath, ctx.self), "Engine")
       engine ! Engine.Start
-      running(ctx, workers, ds, sop)
+
+      val config = Configuration(ctx)
+
+      val predicate: SecondOrderPredicate =
+        config.getValueOrThrow(Configuration.SecondOrderPredicateKey)(
+          SecondOrderPredicate.parse
+        )
+
+      val ds: DistributionStrategy =
+        config.getValueOrThrow(Configuration.DistributionStrategyKey)(
+          DistributionStrategy.parse(_, ctx, workers, predicate)
+        )
+
+      running(ctx, workers, ds)
     }
 
   private def running(
       ctx: ActorContext[Event],
       workers: Set[ActorRef[Worker.Command]],
       ds: DistributionStrategy,
-      sop: SecondOrderPredicate,
       isStopping: Boolean = false
   ): Behavior[Event] = {
     Behaviors.receiveMessage {
@@ -107,7 +110,7 @@ object EngineManager {
             ctx.log.info("EngineManager stopped")
             Behaviors.stopped
           } else {
-            running(ctx, newWorkers, ds, sop, isStopping)
+            running(ctx, newWorkers, ds, isStopping)
           }
         } else {
           // For now, just ignore changes in the topology since the management could be complicated.
@@ -115,7 +118,7 @@ object EngineManager {
             "List of services registered with the receptionist changed: {}",
             newWorkers
           )
-          running(ctx, workers, ds, sop)
+          running(ctx, workers, ds)
         }
 
       case Stop =>
@@ -124,10 +127,10 @@ object EngineManager {
         workers.foreach { worker =>
           worker ! Worker.Stop
         }
-        running(ctx, workers, ds, sop, isStopping = true)
+        running(ctx, workers, ds, isStopping = true)
 
-      case MatchGroupFound(matchGroup) =>
-        distributeMatchGroup(ctx, workers, matchGroup, ds, sop)
+      case MatchGroupFound(matchGrouping) =>
+        ds.distribute(matchGrouping)
         Behaviors.same
 
       // TODO
@@ -143,44 +146,4 @@ object EngineManager {
         Behaviors.stopped
     }
   }
-
-  private def distributeMatchGroup(
-      ctx: ActorContext[EngineManager.Event],
-      workers: Set[ActorRef[Worker.Command]],
-      matchGroup: JMatchGrouping,
-      ds: DistributionStrategy,
-      sop: SecondOrderPredicate
-  ): Unit =
-    // TODO
-    // We could create an abstract class with one class for each strategy
-    // Each class would store its own state.
-    // But share the same interface.
-    ds match {
-      case DistributionStrategy.NoStrategy =>
-        throw new RuntimeException("Not implemented")
-      case DistributionStrategy.RoundRobin =>
-        /* FIXME
-        1. RR should recall previously distributed matchings for a proper distribution
-        2. Engine outputs a GroupMatching for each ending event found.
-           The problem is that newer ending events contain previous ending events
-           i.e. most of the patterns are repeated! If we blindly apply Round Robin
-           we are going to send
-         */
-        val nWorkers = workers.size
-        val workersMap = workers.zipWithIndex.map(_.swap).toMap
-        ctx.log.info(s"Distributing ${matchGroup.size()} matches")
-        matchGroup.iterator().asScala.zipWithIndex.foreach {
-          case (coreMatch, i) =>
-            val dcerMatch = Match(coreMatch)
-            workersMap(i % nWorkers) ! Worker.Process(dcerMatch, sop, ctx.self)
-        }
-      case DistributionStrategy.DoubleHashing =>
-        throw new RuntimeException("Not implemented")
-      case DistributionStrategy.SubMatchesFromMaximalMatch =>
-        throw new RuntimeException("Not implemented")
-      case DistributionStrategy.SubMatchesBySizeFromMaximalMatch =>
-        throw new RuntimeException("Not implemented")
-      case DistributionStrategy.NoCollisionsEnumeration =>
-        throw new RuntimeException("Not implemented")
-    }
 }
