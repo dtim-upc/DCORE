@@ -6,6 +6,7 @@ import akka.actor.typed.{ActorRef, Behavior}
 import dcer.data
 import dcer.data.{Configuration, Match}
 import dcer.distribution.{DistributionStrategy, SecondOrderPredicate}
+import dcer.logging.MatchFilter
 import dcer.serialization.CborSerializable
 import edu.puc.core.execution.structures.output.MatchGrouping
 
@@ -133,10 +134,14 @@ object EngineManager {
         ds.distribute(matchGrouping)
         Behaviors.same
 
-      // TODO
-      // - [ ] Store to file
       case MatchValidated(m) =>
-        ctx.log.info(s"Match found:\n${data.Match.pretty(m)}")
+        // This is logged into:
+        // * stdout
+        // * target/matches-XXXXX.log
+        ctx.log.info(
+          MatchFilter.marker,
+          s"${data.Match.pretty(m)}"
+        )
         Behaviors.same
 
       case e: Event =>
