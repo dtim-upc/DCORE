@@ -1,67 +1,67 @@
 package dcer
 
 import akka.actor.typed.ActorSystem
+import cats.implicits._
+import com.monovore.decline._
 import com.typesafe.config.ConfigFactory
+import dcer.StartUp.startup
 import dcer.actors.Root
 import dcer.data.{Port, Role}
 
-import scala.util.Try
+// TODO
+// Engine doesn't stop, you have to kill the JVM process.
+// The workers are stopping gracefully with the same code.
+// Probably this is related to Engine being a seed node.
 
-/* TODO
-- [ ] Proper CLI parsing: https://github.com/bkirwi/decline
- */
-object App {
-  /*
-  For a demo:
-  - $ sbt run
+object App
+    extends CommandApp(
+      name = "dcer",
+      header = "A distributed complex event processing engine.",
+      main = {
+        val demo = {
+          val demo = Opts.flag("demo", help = "Run the demo")
+          demo.map { _ =>
+            startup(data.Engine, Port.SeedPort)
+            startup(data.Worker, Port.RandomPort)
+            startup(data.Worker, Port.RandomPort)
+          }
+        }
 
-  To run on multiple machines, run each on a different machine (also works on multiple terminals):
-   - $ sbt "run Engine"
-   - $ sbt "run Worker"
-   - $ sbt "run Worker"
-   - $ sbt "run Worker"
+        val run = {
+          val roleOpt =
+            Opts
+              .option[String]("role", help = s"Available roles: ${Role.all}")
+              .mapValidated { r =>
+                Role.parse(r).toValidNel(s"Invalid role: $r")
+              }
 
-   The distribution strategy, second order predicate, etc. are specified at
-   src/main/resources/application.conf
-   */
-  def main(args: Array[String]): Unit = {
-    if (args.isEmpty) {
-      startup(data.Engine, Port.SeedPort)
-      startup(data.Worker, Port.RandomPort)
-      startup(data.Worker, Port.RandomPort)
-    } else {
-      val parsedArgs = for {
-        role <- (
-          for {
-            rawRole <- Try(args(0)).toOption
-            role <- Role.parse(rawRole)
-          } yield role
-        ).orElse(Some(data.Worker))
-        port <- (for {
-          rawPort <- Try(args(1)).toOption
-          port <- Port.parse(rawPort)
-        } yield port)
-          .orElse(role match {
-            case data.Engine => Some(Port.SeedPort)
-            case data.Worker => Some(Port.RandomPort)
-          })
-      } yield (role, port)
+          val portOpt =
+            Opts
+              .option[String]("port", help = s"Available ports: [1024, 49152]")
+              .mapValidated { p =>
+                Port.parse(p).toValidNel(s"Invalid port: $p")
+              }
+              .orNone
 
-      parsedArgs match {
-        case None =>
-          val usageMsg: String = "Usage: <role> <port>"
-          println(usageMsg)
-          System.exit(-1)
-        case Some((role, port)) =>
-          startup(role, port)
+          (roleOpt, portOpt).mapN { (role, portOpt) =>
+            val port = portOpt match {
+              case None =>
+                role match {
+                  case data.Engine => Port.SeedPort
+                  case data.Worker => Port.RandomPort
+                }
+              case Some(port) => port
+            }
+            startup(role, port)
+          }
+        }
+
+        demo <+> run
       }
-    }
-  }
+    )
 
-  def startup(
-      role: Role,
-      port: Port
-  ): Unit = {
+object StartUp {
+  def startup(role: Role, port: Port): Unit = {
     val config = ConfigFactory
       .parseString(s"""
         akka.remote.artery.canonical.port=${port.port}

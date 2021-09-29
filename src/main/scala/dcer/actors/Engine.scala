@@ -55,7 +55,9 @@ object Engine {
             result match {
               case None => ()
               case Some(matchGroup) =>
-                ctx.log.info(s"MatchGrouping (${matchGroup.size()}) found")
+                ctx.log.info(
+                  s"MatchGrouping (size = ${matchGroup.size()}) found"
+                )
                 engineManager ! MatchGroupFound(matchGroup)
             }
             ctx.self ! NextEvent(Option(baseEngine.nextEvent()))

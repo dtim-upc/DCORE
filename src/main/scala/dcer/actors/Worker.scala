@@ -4,7 +4,7 @@ import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import dcer.data.Match
-import dcer.distribution.SecondOrderPredicate
+import dcer.distribution.Predicate
 import dcer.serialization.CborSerializable
 
 import scala.concurrent.duration.DurationInt
@@ -16,7 +16,7 @@ object Worker {
   sealed trait Command
   final case class Process(
       m: Match,
-      sop: SecondOrderPredicate,
+      sop: Predicate,
       replyTo: ActorRef[EngineManager.MatchValidated]
   ) extends Command
       with CborSerializable
@@ -46,7 +46,6 @@ object Worker {
   ): Behavior[Worker.Command] =
     Behaviors.receiveMessage[Command] {
       case Process(m, sop, replyTo) =>
-        ctx.log.info(s"Match received")
         processMatch(ctx, m, sop, replyTo)
         Behaviors.same
 
@@ -55,31 +54,33 @@ object Worker {
         Behaviors.stopped
     }
 
-  /** This method is a mock which will be eventually replaced by real second-order predicates. */
+  /** This method is a mock which will be eventually replaced by real
+    * second-order predicates.
+    */
   private def processMatch(
       ctx: ActorContext[Worker.Command],
       m: Match,
-      sop: SecondOrderPredicate,
+      sop: Predicate,
       replyTo: ActorRef[EngineManager.MatchValidated]
   ): Unit = {
-    ctx.log.info(
-      s"Processing match:\n\tSize ${m.nodeList.length}\n\tComplexity $sop"
+    ctx.log.debug(
+      s"Processing match (#events=${m.events.length}, complexity=$sop):"
     )
     val eventProcessingDuration = 5.millis
     sop match {
-      case SecondOrderPredicate.Linear() =>
+      case Predicate.Linear() =>
         m.events.foreach { _ =>
           Thread.sleep(eventProcessingDuration.toMillis)
         }
         replyTo ! EngineManager.MatchValidated(m)
-      case SecondOrderPredicate.Quadratic() =>
+      case Predicate.Quadratic() =>
         m.events.foreach { _ =>
           m.events.foreach { _ =>
             Thread.sleep(eventProcessingDuration.toMillis)
           }
         }
         replyTo ! EngineManager.MatchValidated(m)
-      case SecondOrderPredicate.Cubic() =>
+      case Predicate.Cubic() =>
         m.events.foreach { _ =>
           m.events.foreach { _ =>
             m.events.foreach { _ =>

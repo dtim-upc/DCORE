@@ -7,3 +7,6 @@
 
 # sbt & scala
 target/
+
+# Intellij garbage
+.attach_pid*

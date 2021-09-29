@@ -4,16 +4,27 @@ import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 val LibraryVersion = "0.1.0"
 val ScalaVersion = "2.12.14"
 
+// Lib
 val AkkaVersion = "2.6.16"
+val LogbackVersion = "1.2.6"
+val DeclineVersion = "2.2.0"
+
+// Testing
 val ScalaTestVersion = "3.1.4"
+
+// Plugins
 val BetterMonadForVersion = "0.3.1"
 
 val LibraryDependencies =
   Seq(
+    // Distributed and concurrent programming
     "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion,
     "com.typesafe.akka" %% "akka-cluster-typed" % AkkaVersion,
     "com.typesafe.akka" %% "akka-serialization-jackson" % AkkaVersion,
-    "ch.qos.logback" % "logback-classic" % "1.2.3"
+    // Logging
+    "ch.qos.logback" % "logback-classic" % LogbackVersion,
+    // CLI parsing
+    "com.monovore" %% "decline" % DeclineVersion
   )
 
 val TestDependencies =
