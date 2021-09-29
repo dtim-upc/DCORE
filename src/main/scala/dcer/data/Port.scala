@@ -26,7 +26,7 @@ object Port {
     Try(seedNodeRaw.split('@')(1).split(':')(1).toInt) match {
       case Success(rawPort) =>
         Port.parse(rawPort) match {
-          case None       => throw new RuntimeException(s"Invalid port: $rawPort")
+          case None => throw new RuntimeException(s"Invalid port: $rawPort")
           case Some(port) => port
         }
       case Failure(ex) =>

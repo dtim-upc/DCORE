@@ -8,6 +8,11 @@ import dcer.StartUp.startup
 import dcer.actors.Root
 import dcer.data.{Port, Role}
 
+// TODO
+// Engine doesn't stop, you have to kill the JVM process.
+// The workers are stopping gracefully with the same code.
+// Probably this is related to Engine being a seed node.
+
 object App
     extends CommandApp(
       name = "dcer",

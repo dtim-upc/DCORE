@@ -2,7 +2,7 @@
 
 Distributed CER based on CORE engine.
 
-## Build project
+## Installation
 
 This project is build using `jdk11` or `openjdk11`, [sbt](https://www.scala-sbt.org/index.html) and [scala](https://scala-lang.org/). 
 
@@ -13,8 +13,6 @@ sbt compile
 ```
 
 Compilation should work out-of-box. Feel free to open an [issue](https://github.com/dtim-upc/DistributedCER2/) if it does not.
-
-> If you are going to hack on the project, I would also recommend installing [bloop](https://scalacenter.github.io/bloop) to speedup compilation and testing.
 
 ### Unmanaged dependencies
 
@@ -58,3 +56,18 @@ sbt "run --role worker"
 ``` sh
 $ sbt test
 ```
+
+## Contributing
+
+> If you are going to hack on the project, I would recommend installing [bloop](https://scalacenter.github.io/bloop) to speedup compilation and testing.
+
+This project is developed using `Intellij` but also tested on [metals](https://scalameta.org/metals).
+So, we focus on being able to compile, test and run the project on `sbt`.
+
+The project is **formatted** using [scalafmt](https://scalameta.org/scalafmt/docs/installation.html).
+You can format all sources by calling: `sbt scalafmt`
+
+Before commiting:
+- Check the code compiles: `sbt compile`
+- Check the tests pass: `sbt test`
+- Check the sources are formatted: `sbt scalafmtCheck`

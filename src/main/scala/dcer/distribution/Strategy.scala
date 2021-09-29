@@ -11,20 +11,20 @@ import scala.collection.JavaConverters._
 // Add workers dynamically
 // This would affect the distribution strategies e.g. rebalance of work.
 
-sealed trait DistributionStrategy {
+sealed trait Strategy {
   val ctx: ActorContext[EngineManager.Event]
   val workers: Set[ActorRef[Worker.Command]]
-  val predicate: SecondOrderPredicate
+  val predicate: Predicate
   def distribute(matchGroup: MatchGrouping): Unit
 }
 
-object DistributionStrategy {
+object Strategy {
 
   case class Sequential(
       ctx: ActorContext[EngineManager.Event],
       workers: Set[ActorRef[Worker.Command]],
-      predicate: SecondOrderPredicate
-  ) extends DistributionStrategy {
+      predicate: Predicate
+  ) extends Strategy {
     override def distribute(matchGroup: MatchGrouping): Unit = {
       throw new RuntimeException("Not implemented")
     }
@@ -33,24 +33,19 @@ object DistributionStrategy {
   case class RoundRobin(
       ctx: ActorContext[EngineManager.Event],
       workers: Set[ActorRef[Worker.Command]],
-      predicate: SecondOrderPredicate
-  ) extends DistributionStrategy {
+      predicate: Predicate
+  ) extends Strategy {
+    var lastIndex: Int = 0
+
     override def distribute(matchGroup: MatchGrouping): Unit = {
-      /* FIXME
-      1. RR should recall previously distributed matchings for a proper distribution
-      2. Engine outputs a GroupMatching for each ending event found.
-         The problem is that newer ending events contain previous ending events
-         i.e. most of the patterns are repeated! If we blindly apply Round Robin
-         we are going to send
-       */
-      val nWorkers = workers.size
-      val workersMap = workers.zipWithIndex.map(_.swap).toMap
       ctx.log.info(s"Distributing ${matchGroup.size()} matches")
-      matchGroup.iterator().asScala.zipWithIndex.foreach {
-        case (coreMatch, i) =>
-          val dcerMatch = Match(coreMatch)
-          workersMap(i % nWorkers) ! Worker
-            .Process(dcerMatch, predicate, ctx.self)
+      val nWorkers = workers.size
+      val workersMap = workers.zipWithIndex.map(_.swap).toMap // from 0 to n-1
+      matchGroup.iterator().asScala.foreach { coreMatch =>
+        val worker = workersMap(lastIndex)
+        ctx.log.debug(s"Sending match to worker: ${worker.path}")
+        worker ! Worker.Process(Match(coreMatch), predicate, ctx.self)
+        lastIndex = (lastIndex + 1) % nWorkers
       }
     }
   }
@@ -59,8 +54,8 @@ object DistributionStrategy {
       str: String,
       ctx: ActorContext[EngineManager.Event],
       workers: Set[ActorRef[Worker.Command]],
-      predicate: SecondOrderPredicate
-  ): Option[DistributionStrategy] = {
+      predicate: Predicate
+  ): Option[Strategy] = {
     str.toLowerCase match {
       case "sequential" => Some(Sequential(ctx, workers, predicate))
       case "roundrobin" => Some(RoundRobin(ctx, workers, predicate))

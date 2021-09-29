@@ -7,39 +7,39 @@ import dcer.serialization.CborSerializable
 @JsonSubTypes(
   Array(
     new JsonSubTypes.Type(
-      value = classOf[SecondOrderPredicate.Linear],
+      value = classOf[Predicate.Linear],
       name = "linear"
     ),
     new JsonSubTypes.Type(
-      value = classOf[SecondOrderPredicate.Quadratic],
+      value = classOf[Predicate.Quadratic],
       name = "quadratic"
     ),
     new JsonSubTypes.Type(
-      value = classOf[SecondOrderPredicate.Cubic],
+      value = classOf[Predicate.Cubic],
       name = "cubic"
     )
   )
 )
-sealed trait SecondOrderPredicate extends CborSerializable
+sealed trait Predicate extends CborSerializable
 
-object SecondOrderPredicate {
+object Predicate {
   // These should be case objects but serialization doesn't work out
   // of the box for case objects (see https://doc.akka.io/docs/akka/current/serialization-jackson.html#adt-with-trait-and-case-object)
   //
   // This is why we decided to use case classes with no parameters.
-  case class Linear() extends SecondOrderPredicate
-  case class Quadratic() extends SecondOrderPredicate
-  case class Cubic() extends SecondOrderPredicate
+  case class Linear() extends Predicate
+  case class Quadratic() extends Predicate
+  case class Cubic() extends Predicate
 
   // Don't forget to update this
-  val all: List[SecondOrderPredicate] =
+  val all: List[Predicate] =
     List(
       Linear(),
       Quadratic(),
       Cubic()
     )
 
-  def parse(str: String): Option[SecondOrderPredicate] = {
+  def parse(str: String): Option[Predicate] = {
     // Here we use .startsWith because case classes .toString
     all.find(_.toString.toLowerCase.startsWith(str.toLowerCase))
   }

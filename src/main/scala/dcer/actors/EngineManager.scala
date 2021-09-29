@@ -5,7 +5,7 @@ import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import dcer.data
 import dcer.data.{Configuration, Match}
-import dcer.distribution.{DistributionStrategy, SecondOrderPredicate}
+import dcer.distribution.{Strategy, Predicate}
 import dcer.logging.MatchFilter
 import dcer.serialization.CborSerializable
 import edu.puc.core.execution.structures.output.MatchGrouping
@@ -16,6 +16,7 @@ object EngineManager {
 
   // Having different "states" would be grate to avoid having a default case in the matches
   // but it is difficult to implement since Behavior is contravariant.
+  //
   // sealed trait RunningEvent extends Event
   // sealed trait WarmUpEvent extends Event
 
@@ -83,14 +84,14 @@ object EngineManager {
 
       val config = Configuration(ctx)
 
-      val predicate: SecondOrderPredicate =
+      val predicate: Predicate =
         config.getValueOrThrow(Configuration.SecondOrderPredicateKey)(
-          SecondOrderPredicate.parse
+          Predicate.parse
         )
 
-      val ds: DistributionStrategy =
+      val ds: Strategy =
         config.getValueOrThrow(Configuration.DistributionStrategyKey)(
-          DistributionStrategy.parse(_, ctx, workers, predicate)
+          Strategy.parse(_, ctx, workers, predicate)
         )
 
       running(ctx, workers, ds)
@@ -99,7 +100,7 @@ object EngineManager {
   private def running(
       ctx: ActorContext[Event],
       workers: Set[ActorRef[Worker.Command]],
-      ds: DistributionStrategy,
+      ds: Strategy,
       isStopping: Boolean = false
   ): Behavior[Event] = {
     Behaviors.receiveMessage {
@@ -140,7 +141,7 @@ object EngineManager {
         // * target/matches-XXXXX.log
         ctx.log.info(
           MatchFilter.marker,
-          s"${data.Match.pretty(m)}"
+          s"\n${data.Match.pretty(m)}"
         )
         Behaviors.same
 
