@@ -1,12 +1,13 @@
 package dcer.actors
 
-import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
+import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
 import dcer.data.Match
 import dcer.distribution.Predicate
 import dcer.serialization.CborSerializable
 
+import scala.collection.immutable.Queue
 import scala.concurrent.duration.DurationInt
 
 object Worker {
@@ -21,14 +22,14 @@ object Worker {
   ) extends Command
       with CborSerializable
   final case object Stop extends Command with CborSerializable
+  final case object Tick extends Command with CborSerializable
 
-  def apply(): Behavior[Worker.Command] = {
+  def apply(): Behavior[Command] = {
     Behaviors.setup { ctx =>
       ctx.system.receptionist ! Receptionist.Register(
         workerServiceKey,
         ctx.self
       )
-
       /*
       Is restarting for any exception a good idea? We could also use `watch`.
       With our current implementation, when a worker dies, the EngineManager is not aware.
@@ -42,53 +43,70 @@ object Worker {
   }
 
   private def running(
-      ctx: ActorContext[Worker.Command]
-  ): Behavior[Worker.Command] =
+      ctx: ActorContext[Command]
+  ): Behavior[Command] =
     Behaviors.receiveMessage[Command] {
       case Process(m, sop, replyTo) =>
         processMatch(ctx, m, sop, replyTo)
-        Behaviors.same
 
       case Stop =>
         ctx.log.info(s"Worker stopped")
         Behaviors.stopped
+
+      case e =>
+        ctx.log.error(s"Unexpected event: ${e.getClass.getName}")
+        Behaviors.same
     }
 
   /** This method is a mock which will be eventually replaced by real
     * second-order predicates.
     */
   private def processMatch(
-      ctx: ActorContext[Worker.Command],
+      ctx: ActorContext[Command],
       m: Match,
       sop: Predicate,
       replyTo: ActorRef[EngineManager.MatchValidated]
-  ): Unit = {
+  ): Behavior[Command] = {
     ctx.log.debug(
       s"Processing match (#events=${m.events.length}, complexity=$sop):"
     )
     val eventProcessingDuration = 5.millis
-    sop match {
-      case Predicate.Linear() =>
-        m.events.foreach { _ =>
-          Thread.sleep(eventProcessingDuration.toMillis)
-        }
-        replyTo ! EngineManager.MatchValidated(m)
-      case Predicate.Quadratic() =>
-        m.events.foreach { _ =>
-          m.events.foreach { _ =>
-            Thread.sleep(eventProcessingDuration.toMillis)
+    // Why such a complex logic when we could Thread.sleep(n) ?
+    // Thread.sleep may be problematic in the concurrency model of Akka.
+    // If the scheduler is not clever enough, it may queue more than one actor per thread and
+    // if the thread is blocked, all actors will be blocked although the rest could be
+    // doing actual work.
+    def go(
+        n: Int,
+        queue: Queue[Command]
+    ): Behavior[Command] = {
+      Behaviors.receiveMessage[Command] {
+        case Tick =>
+          val rem = n - 1
+          if (rem <= 0) {
+            replyTo ! EngineManager.MatchValidated(m)
+            queue.foreach { msg => ctx.self ! msg }
+            running(ctx)
+          } else {
+            val _ = ctx.scheduleOnce(eventProcessingDuration, ctx.self, Tick)
+            go(rem, queue)
           }
-        }
-        replyTo ! EngineManager.MatchValidated(m)
-      case Predicate.Cubic() =>
-        m.events.foreach { _ =>
-          m.events.foreach { _ =>
-            m.events.foreach { _ =>
-              Thread.sleep(eventProcessingDuration.toMillis)
-            }
-          }
-        }
-        replyTo ! EngineManager.MatchValidated(m)
+
+        case e: Command =>
+          go(n, queue.enqueue(e))
+      }
     }
+    val n =
+      sop match {
+        case Predicate.Linear() =>
+          m.events.length.toDouble
+        case Predicate.Quadratic() =>
+          scala.math.pow(m.events.length.toDouble, 2)
+        case Predicate.Cubic() =>
+          scala.math.pow(m.events.length.toDouble, 3)
+      }
+
+    ctx.self ! Tick
+    go(n.toInt, Queue.empty)
   }
 }

@@ -9,10 +9,25 @@ import dcer.actors.Root
 import dcer.data.{Port, Role}
 
 // TODO
-// Engine doesn't stop, you have to kill the JVM process.
-// The workers are stopping gracefully with the same code.
-// Probably this is related to Engine being a seed node.
+// - [ ] Benchmarks: use jmh and implement something like in FlinkCore_test.java i.e. an incremental kleene star to see that time increases exponentially.
+// - [ ] Sequential strategy: only 1 worker
+// - [ ] Read paper about double hasing and implement it
+// - [ ] Serialization of MatchGrouping
 
+/*
+The 'worker's are stopping gracefully with the same code.
+But, the 'engine' process does not stop, you have to kill it.
+
+var system: ActorSystem[ActorTerminated] = null
+val terminate = () => { system.terminate() }
+system = ActorSystem(Root(terminate), "ClusterSystem", config)
+
+I have tried calling terminate but this doesn't work.
+Although, calling system.terminate() right after the start works.
+
+There is probably a security mechanism that prevents the seed node from
+stopping after some workers have been connected.
+ */
 object App
     extends CommandApp(
       name = "dcer",
