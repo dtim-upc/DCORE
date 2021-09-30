@@ -3,7 +3,7 @@ package dcer.actors
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
-import dcer.data.Match
+import dcer.data.{ActorAddress, Match}
 import dcer.distribution.Predicate
 import dcer.serialization.CborSerializable
 
@@ -84,7 +84,10 @@ object Worker {
         case Tick =>
           val rem = n - 1
           if (rem <= 0) {
-            replyTo ! EngineManager.MatchValidated(m)
+            replyTo ! EngineManager.MatchValidated(
+              m,
+              ActorAddress.parse(ctx.self.path.name).get
+            )
             queue.foreach { msg => ctx.self ! msg }
             running(ctx)
           } else {

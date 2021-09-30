@@ -3,8 +3,7 @@
 <configuration>
     <appender name="STDOUT" target="System.out" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-       <!-- <pattern>[%date{ISO8601}] [%level] [%logger] [%marker] [%thread] - %msg%n</pattern> -->
-            <pattern>[%level] [%X{akkaSource}] - %msg%n</pattern>
+            <pattern>[%level] [%X{akkaAddress}] - %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -25,7 +24,7 @@
         <immediateFlush>true</immediateFlush>
         <file>target/error-${bySecond}.log</file>
         <encoder>
-            <pattern>[%level] [%X{akkaSource}] - %msg%n</pattern>
+            <pattern>[%level] [%X{akkaAddress}] - %msg%n</pattern>
         </encoder>
     </appender>
 

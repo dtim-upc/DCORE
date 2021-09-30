@@ -9,26 +9,16 @@ import dcer.actors.Root
 import dcer.data.{Port, Role}
 
 // TODO
-// - [ ] Benchmarks: use jmh and implement something like in FlinkCore_test.java i.e. an incremental kleene star to see that time increases exponentially.
+// - [ ] Benchmark execution time
+//   - JMH would be a rocky path since it works on terminating functions
+//   - We could run a regular execution that stores execution time since the start.
+//     But we need a way to input different streams.
+//     The easiest way is to add an input filepath. And prepare a couple of inputs of increasing size.
 // - [ ] Test outputs are the one expected for each strategy
 // - [ ] Sequential strategy: only 1 worker
 // - [ ] Read paper about double hasing and implement it
 // - [ ] Serialization of MatchGrouping
 
-/*
-The 'worker's are stopping gracefully with the same code.
-But, the 'engine' process does not stop, you have to kill it.
-
-var system: ActorSystem[ActorTerminated] = null
-val terminate = () => { system.terminate() }
-system = ActorSystem(Root(terminate), "ClusterSystem", config)
-
-I have tried calling terminate but this doesn't work.
-Although, calling system.terminate() right after the start works.
-
-There is probably a security mechanism that prevents the seed node from
-stopping after some workers have been connected.
- */
 object App
     extends CommandApp(
       name = "dcer",

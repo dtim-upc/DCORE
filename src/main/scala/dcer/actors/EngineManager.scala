@@ -4,8 +4,8 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import dcer.data
-import dcer.data.{Configuration, Match}
-import dcer.distribution.{Strategy, Predicate}
+import dcer.data.{ActorAddress, Configuration, Match}
+import dcer.distribution.{Predicate, Strategy}
 import dcer.logging.MatchFilter
 import dcer.serialization.CborSerializable
 import edu.puc.core.execution.structures.output.MatchGrouping
@@ -26,7 +26,9 @@ object EngineManager {
   ) extends Event
   final case object WarmUpDone extends Event
   final case class MatchGroupFound(matchGroup: MatchGrouping) extends Event
-  final case class MatchValidated(m: Match) extends Event with CborSerializable
+  final case class MatchValidated(m: Match, from: ActorAddress)
+      extends Event
+      with CborSerializable
   final case object Stop extends Event
 
   def apply(
@@ -135,13 +137,13 @@ object EngineManager {
         ds.distribute(matchGrouping)
         Behaviors.same
 
-      case MatchValidated(m) =>
+      case MatchValidated(m, from) =>
         // This is logged into:
         // * stdout
         // * target/matches-XXXXX.log
         ctx.log.info(
           MatchFilter.marker,
-          s"\n${data.Match.pretty(m)}"
+          s"Match found at ${from.actorName}(${from.id.get})[${from.address}]:\n${data.Match.pretty(m)}"
         )
         Behaviors.same
 

@@ -14,8 +14,14 @@ object SampleMultiJvmNode2 {
   }
 }
 
-//object SampleMultiJvmNode3 {
-//  def main(args: Array[String]): Unit = {
-//    StartUp.startup(data.Worker, Port.RandomPort)
-//  }
-//}
+object SampleMultiJvmNode3 {
+  def main(args: Array[String]): Unit = {
+    StartUp.startup(data.Worker, Port.RandomPort)
+  }
+}
+
+object SampleMultiJvmNode4 {
+  def main(args: Array[String]): Unit = {
+    StartUp.startup(data.Worker, Port.RandomPort)
+  }
+}
