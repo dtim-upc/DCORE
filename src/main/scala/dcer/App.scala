@@ -10,6 +10,7 @@ import dcer.data.{Port, Role}
 
 // TODO
 // - [ ] Benchmarks: use jmh and implement something like in FlinkCore_test.java i.e. an incremental kleene star to see that time increases exponentially.
+// - [ ] Test outputs are the one expected for each strategy
 // - [ ] Sequential strategy: only 1 worker
 // - [ ] Read paper about double hasing and implement it
 // - [ ] Serialization of MatchGrouping

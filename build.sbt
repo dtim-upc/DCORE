@@ -35,20 +35,22 @@ val TestDependencies =
     "org.scalatest" %% "scalatest-funspec" % "3.2.9"
   ).map(_ % Test)
 
+val initHeapSizeOpt = "-Xms128m"
+val maxHeapSizeOpt = "-Xmx1024m"
+
 lazy val root = (project in file("."))
   .enablePlugins(
     // https://www.scala-sbt.org/sbt-native-packager/archetypes/java_app/index.html
     JavaAppPackaging
   )
+  .enablePlugins(MultiJvmPlugin)
   .settings(multiJvmSettings: _*)
   .settings(
     name := "DistributedCER",
     version := LibraryVersion,
     scalaVersion := ScalaVersion,
-//    run / javaOptions ++= Seq(
-//      "-Xms128m",
-//      "-Xmx1024m"
-//    ),
+    run / javaOptions ++= Seq(initHeapSizeOpt, maxHeapSizeOpt),
+    MultiJvm / javaOptions ++= Seq(initHeapSizeOpt, maxHeapSizeOpt),
     run / fork := false,
     Global / cancelable := false,
     Test / parallelExecution := false,

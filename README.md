@@ -33,9 +33,18 @@ Change the configuration at `src/main/resources/application.conf`:
 
 ### Demo
 
+The following command will run 1 Engine and 'n' Workers in a single JVM.
+All the communications will be inside the JVM i.e. this is not a realistic demo.
+
 ``` sh
-# Machine 1
 sbt "run --demo"
+```
+
+The following command will run 1 Engine and 'n' Workers, each own on its own JVM.
+This is more realistic than the previous command, although, it is not running on  different machines.
+
+```sh
+sbt "multi-jvm:run Sample"
 ```
 
 ### Production
