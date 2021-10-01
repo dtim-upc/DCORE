@@ -82,7 +82,13 @@ object Engine {
       executorManager <- Try(ExecutorManager.fromCOREFile(queryFile)).toEither
       streamManager <- Try(StreamManager.fromCOREFile(streamFile)).toEither
       engine <- Try(
-        BaseEngine.newEngine(executorManager, streamManager)
+        BaseEngine.newEngine(
+          executorManager,
+          streamManager,
+          false, // logMetrics
+          true, // fastRun: do not wait between events using the timestamps
+          true // offline: do not create the RMI server
+        )
       ).toEither
     } yield engine
 }

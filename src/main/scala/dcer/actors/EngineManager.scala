@@ -13,13 +13,6 @@ import edu.puc.core.execution.structures.output.MatchGrouping
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 object EngineManager {
-
-  // Having different "states" would be grate to avoid having a default case in the matches
-  // but it is difficult to implement since Behavior is contravariant.
-  //
-  // sealed trait RunningEvent extends Event
-  // sealed trait WarmUpEvent extends Event
-
   sealed trait Event
   private final case class WorkersUpdated(
       updatedWorkers: Set[ActorRef[Worker.Command]]
@@ -146,9 +139,6 @@ object EngineManager {
         Behaviors.same
 
       case MatchValidated(m, from) =>
-        // This is logged into:
-        // * stdout
-        // * target/matches-XXXXX.log
         ctx.log.info(
           MatchFilter.marker,
           s"Match found at ${from.actorName}(${from.id.get})[${from.address}]:\n${data.Match.pretty(m)}"

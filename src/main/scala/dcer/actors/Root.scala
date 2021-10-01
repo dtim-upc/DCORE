@@ -68,8 +68,6 @@ object Root {
       remainingActors match {
         case 0 =>
           ctx.log.info("All actors terminated")
-          // Doesn't terminate the Engine
-          // ctx.system.terminate()
           Behaviors.stopped
         case n =>
           running(ctx, activeActors = n)
