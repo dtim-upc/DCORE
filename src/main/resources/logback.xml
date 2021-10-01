@@ -39,10 +39,22 @@
         </encoder>
     </appender>
 
+    <!-- This should only log messages marked with the TimeFilter.marker -->
+    <appender name="TIME FILE" class="ch.qos.logback.core.FileAppender">
+        <filter class="dcer.logging.TimeFilter" />
+        <file>target/time-${bySecond}.log</file>
+        <!-- set immediateFlush to false for much higher logging throughput -->
+        <immediateFlush>true</immediateFlush>
+        <encoder>
+            <pattern>%msg%n</pattern>
+        </encoder>
+    </appender>
+
     <!-- ERROR, WARN, INFO but not DEBUG nor TRACE -->
     <root level="INFO">
         <appender-ref ref="ASYNC STDOUT"/>
         <appender-ref ref="ERROR FILE"/>
         <appender-ref ref="MATCHES FILE"/>
+        <appender-ref ref="TIME FILE"/>
     </root>
 </configuration>

@@ -3,8 +3,9 @@ package dcer.actors
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
-import dcer.data.{ActorAddress, Match}
+import dcer.data.{ActorAddress, Match, Timer}
 import dcer.distribution.Predicate
+import dcer.logging.TimeFilter
 import dcer.serialization.CborSerializable
 
 import scala.collection.immutable.Queue
@@ -47,7 +48,7 @@ object Worker {
   ): Behavior[Command] =
     Behaviors.receiveMessage[Command] {
       case Process(m, sop, replyTo) =>
-        processMatch(ctx, m, sop, replyTo)
+        processMatch(ctx, m, sop, replyTo, Timer())
 
       case Stop =>
         ctx.log.info(s"Worker stopped")
@@ -65,12 +66,17 @@ object Worker {
       ctx: ActorContext[Command],
       m: Match,
       sop: Predicate,
-      replyTo: ActorRef[EngineManager.MatchValidated]
+      replyTo: ActorRef[EngineManager.MatchValidated],
+      timer: Timer
   ): Behavior[Command] = {
     ctx.log.debug(
       s"Processing match (#events=${m.events.length}, complexity=$sop):"
     )
-    val eventProcessingDuration = 5.millis
+
+    // This amount of time is kinda arbitrary.
+    // At some point, this would be replaced by a real evaluation of SOL predicates.
+    val eventProcessingDuration = 10.millis
+
     // Why such a complex logic when we could Thread.sleep(n) ?
     // Thread.sleep may be problematic in the concurrency model of Akka.
     // If the scheduler is not clever enough, it may queue more than one actor per thread and
@@ -84,6 +90,10 @@ object Worker {
         case Tick =>
           val rem = n - 1
           if (rem <= 0) {
+            ctx.log.info(
+              TimeFilter.marker,
+              s"Match (#events=${m.events.length}, complexity=$sop) processed in ${timer.elapsedTime().toMillis} milliseconds"
+            )
             replyTo ! EngineManager.MatchValidated(
               m,
               ActorAddress.parse(ctx.self.path.name).get

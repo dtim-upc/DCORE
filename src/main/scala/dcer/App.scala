@@ -10,13 +10,12 @@ import dcer.data.{Port, Role}
 
 // TODO
 // - [ ] Benchmark execution time
-//   - JMH would be a rocky path since it works on terminating functions
-//   - We could run a regular execution that stores execution time since the start.
 //     But we need a way to input different streams.
 //     The easiest way is to add an input filepath. And prepare a couple of inputs of increasing size.
 // - [ ] Test outputs are the one expected for each strategy
+//       You will need to implement a method to signal finalization e.g. startup returns an actor that can be query
 // - [ ] Sequential strategy: only 1 worker
-// - [ ] Read paper about double hasing and implement it
+// - [ ] Read paper about double hashing and implement it
 // - [ ] Serialization of MatchGrouping
 
 object App

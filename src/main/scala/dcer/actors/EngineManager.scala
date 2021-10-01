@@ -4,9 +4,9 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import dcer.data
-import dcer.data.{ActorAddress, Configuration, Match}
+import dcer.data.{ActorAddress, Configuration, Match, Timer}
 import dcer.distribution.{Predicate, Strategy}
-import dcer.logging.MatchFilter
+import dcer.logging.{MatchFilter, TimeFilter}
 import dcer.serialization.CborSerializable
 import edu.puc.core.execution.structures.output.MatchGrouping
 
@@ -67,7 +67,8 @@ object EngineManager {
 
       case WarmUpDone =>
         ctx.log.info("Warm up finished.")
-        startEngine(queryPath, workers).narrow
+        ctx.log.info(s"Number of workers: ${workers.size}")
+        startEngine(queryPath, workers, Timer()).narrow
 
       case e: Event =>
         ctx.log.error(
@@ -78,7 +79,8 @@ object EngineManager {
 
   private def startEngine(
       queryPath: String,
-      workers: Set[ActorRef[Worker.Command]]
+      workers: Set[ActorRef[Worker.Command]],
+      timer: Timer
   ): Behavior[Event] =
     Behaviors.setup { ctx =>
       val engine = ctx.spawn(Engine(queryPath, ctx.self), "Engine")
@@ -91,18 +93,19 @@ object EngineManager {
           Predicate.parse
         )
 
-      val ds: Strategy =
+      val strategy: Strategy =
         config.getValueOrThrow(Configuration.DistributionStrategyKey)(
           Strategy.parse(_, ctx, workers, predicate)
         )
 
-      running(ctx, workers, ds)
+      running(ctx, workers, strategy, timer)
     }
 
   private def running(
       ctx: ActorContext[Event],
       workers: Set[ActorRef[Worker.Command]],
-      ds: Strategy,
+      strategy: Strategy,
+      timer: Timer,
       isStopping: Boolean = false
   ): Behavior[Event] = {
     Behaviors.receiveMessage {
@@ -111,10 +114,15 @@ object EngineManager {
           // FIXME
           // If a new worker joins during the shutdown process, the EngineManager won't be able to stop.
           if (newWorkers.isEmpty) {
+            val timeElapsedSinceStart = timer.elapsedTime()
+            ctx.log.info(
+              TimeFilter.marker,
+              s"All events processed in ${timeElapsedSinceStart.toMillis} milliseconds"
+            )
             ctx.log.info("EngineManager stopped")
             Behaviors.stopped
           } else {
-            running(ctx, newWorkers, ds, isStopping)
+            running(ctx, newWorkers, strategy, timer, isStopping)
           }
         } else {
           // For now, just ignore changes in the topology since the management could be complicated.
@@ -122,7 +130,7 @@ object EngineManager {
             "List of services registered with the receptionist changed: {}",
             newWorkers
           )
-          running(ctx, workers, ds)
+          running(ctx, workers, strategy, timer, isStopping)
         }
 
       case Stop =>
@@ -131,10 +139,10 @@ object EngineManager {
         workers.foreach { worker =>
           worker ! Worker.Stop
         }
-        running(ctx, workers, ds, isStopping = true)
+        running(ctx, workers, strategy, timer, isStopping = true)
 
       case MatchGroupFound(matchGrouping) =>
-        ds.distribute(matchGrouping)
+        strategy.distribute(matchGrouping)
         Behaviors.same
 
       case MatchValidated(m, from) =>
