@@ -1,10 +1,11 @@
 import dcer.StartUp
 import dcer.data
-import dcer.data.Port
+import dcer.data.{Port, QueryPath}
 
 object SampleMultiJvmNode1 {
   def main(args: Array[String]): Unit = {
-    StartUp.startup(data.Engine, Port.SeedPort)
+    val query = QueryPath("./src/main/resources/query_0").get
+    StartUp.startup(data.Engine, Port.SeedPort, Some(query))
   }
 }
 

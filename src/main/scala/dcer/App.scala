@@ -6,7 +6,7 @@ import com.monovore.decline._
 import com.typesafe.config.ConfigFactory
 import dcer.StartUp.startup
 import dcer.actors.Root
-import dcer.data.{Port, Role}
+import dcer.data.{Port, QueryPath, Role}
 
 // TODO
 // - [ ] Benchmark execution time
@@ -48,7 +48,18 @@ object App
               }
               .orNone
 
-          (roleOpt, portOpt).mapN { (role, portOpt) =>
+          val queryPathOpt =
+            Opts
+              .option[String](
+                "query",
+                help = s"See './src/main/resources' for examples"
+              )
+              .mapValidated { path =>
+                QueryPath(path).toValidNel(s"Invalid query path: $path")
+              }
+              .orNone
+
+          (roleOpt, portOpt, queryPathOpt).mapN { (role, portOpt, queryPath) =>
             val port = portOpt match {
               case None =>
                 role match {
@@ -57,7 +68,7 @@ object App
                 }
               case Some(port) => port
             }
-            startup(role, port)
+            startup(role, port, queryPath)
           }
         }
 
@@ -66,13 +77,28 @@ object App
     )
 
 object StartUp {
-  def startup(role: Role, port: Port): Unit = {
-    val config = ConfigFactory
-      .parseString(s"""
-        akka.remote.artery.canonical.port=${port.port}
-        akka.cluster.roles = [${role.toString}]
-        """)
-      .withFallback(ConfigFactory.load())
+  def startup(
+      role: Role,
+      port: Port,
+      queryPath: Option[QueryPath] = None
+  ): Unit = {
+    val config =
+      (queryPath match {
+        case Some(queryPath) =>
+          ConfigFactory
+            .parseString(s"""
+                 akka.remote.artery.canonical.port=${port.port}
+                 akka.cluster.roles = [${role.toString}]
+                 dcer.query-path = ${queryPath.value}
+                 """)
+        case None =>
+          ConfigFactory
+            .parseString(s"""
+                 akka.remote.artery.canonical.port=${port.port}
+                 akka.cluster.roles = [${role.toString}]
+                 """)
+
+      }).withFallback(ConfigFactory.load())
 
     val _ = ActorSystem(Root(), "ClusterSystem", config)
   }

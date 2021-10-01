@@ -3,6 +3,7 @@ package dcer.actors
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import dcer.actors.EngineManager.MatchGroupFound
+import dcer.data.QueryPath
 import edu.puc.core.engine.BaseEngine
 import edu.puc.core.engine.executors.ExecutorManager
 import edu.puc.core.engine.streams.StreamManager
@@ -11,11 +12,6 @@ import edu.puc.core.util.StringUtils
 
 import scala.util.Try
 
-/* Notes
-Files with logic from DistributedCER:
-- MatchesOperator.java
-- SubmatchEnumerator.java
- */
 object Engine {
 
   sealed trait Command
@@ -23,7 +19,7 @@ object Engine {
   final case class NextEvent(event: Option[Event]) extends Command
 
   def apply(
-      queryPath: String,
+      queryPath: QueryPath,
       engineManager: ActorRef[EngineManager.Event]
   ): Behavior[Engine.Command] = {
     Behaviors.setup { ctx =>
@@ -71,13 +67,13 @@ object Engine {
     }
   }
 
-  private def buildEngine(queryPath: String): Either[Throwable, BaseEngine] =
+  private def buildEngine(queryPath: QueryPath): Either[Throwable, BaseEngine] =
     for {
       queryFile <- Try(
-        StringUtils.getReader(queryPath + "/query_test.data")
+        StringUtils.getReader(queryPath.value + "/query_test.data")
       ).toEither
       streamFile <- Try(
-        StringUtils.getReader(queryPath + "/stream_test.data")
+        StringUtils.getReader(queryPath.value + "/stream_test.data")
       ).toEither
       executorManager <- Try(ExecutorManager.fromCOREFile(queryFile)).toEither
       streamManager <- Try(StreamManager.fromCOREFile(streamFile)).toEither

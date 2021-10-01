@@ -3,7 +3,7 @@ package dcer.actors
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.cluster.typed.Cluster
-import dcer.data.{ActorAddress, Address, Configuration}
+import dcer.data.{ActorAddress, Address, Configuration, QueryPath}
 import dcer.{actors, data}
 
 import scala.concurrent.duration.DurationInt
@@ -35,7 +35,7 @@ object Root {
         // Recall it is possible to create a cluster singleton actor.
         case roles if roles.contains(data.Engine.toString) =>
           val queryPath =
-            config.getString(Configuration.QueryPathKey)
+            config.getValueOrThrow(Configuration.QueryPathKey)(QueryPath.apply)
 
           val warmUpTime =
             config.getInt(Configuration.WarmUpTimeKey).seconds

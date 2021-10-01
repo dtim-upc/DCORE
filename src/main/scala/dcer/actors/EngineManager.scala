@@ -4,7 +4,7 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import dcer.data
-import dcer.data.{ActorAddress, Configuration, Match, Timer}
+import dcer.data.{ActorAddress, Configuration, Match, QueryPath, Timer}
 import dcer.distribution.{Predicate, Strategy}
 import dcer.logging.{MatchFilter, TimeFilter}
 import dcer.serialization.CborSerializable
@@ -25,7 +25,7 @@ object EngineManager {
   final case object Stop extends Event
 
   def apply(
-      queryPath: String,
+      queryPath: QueryPath,
       warmUpTime: FiniteDuration = 5.seconds
   ): Behavior[Event] =
     Behaviors.setup { ctx =>
@@ -47,7 +47,7 @@ object EngineManager {
 
   private def warming(
       ctx: ActorContext[Event],
-      queryPath: String,
+      queryPath: QueryPath,
       workers: Set[ActorRef[Worker.Command]]
   ): Behavior[Event] =
     Behaviors.receiveMessage {
@@ -71,7 +71,7 @@ object EngineManager {
     }
 
   private def startEngine(
-      queryPath: String,
+      queryPath: QueryPath,
       workers: Set[ActorRef[Worker.Command]],
       timer: Timer
   ): Behavior[Event] =
