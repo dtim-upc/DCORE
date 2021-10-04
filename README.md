@@ -44,7 +44,7 @@ The following command will run 1 Engine and 'n' Workers, each own on its own JVM
 This is more realistic than the previous command, although, it is not running on  different machines.
 
 ```sh
-sbt "multi-jvm:run Sample"
+sbt "core/multi-jvm:run Sample"
 ```
 
 ### Production

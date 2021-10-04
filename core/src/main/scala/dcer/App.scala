@@ -10,13 +10,12 @@ import dcer.data.{Port, QueryPath, Role}
 
 // TODO
 // - [ ] Benchmark execution time
-//     But we need a way to input different streams.
-//     The easiest way is to add an input filepath. And prepare a couple of inputs of increasing size.
+//     - [ ] Prepare a query generator for the benchmarks
 // - [ ] Test outputs are the one expected for each strategy
-//       You will need to implement a method to signal finalization e.g. startup returns an actor that can be query
+//       startup should accept a callback.
+//       ScalaTestAsync receives this callback and completes the future.
 // - [ ] Sequential strategy: only 1 worker
 // - [ ] Read paper about double hashing and implement it
-// - [ ] Serialization of MatchGrouping
 
 object App
     extends CommandApp(
@@ -52,7 +51,7 @@ object App
             Opts
               .option[String](
                 "query",
-                help = s"See './src/main/resources' for examples"
+                help = s"See './core/src/main/resources' for examples"
               )
               .mapValidated { path =>
                 QueryPath(path).toValidNel(s"Invalid query path: $path")

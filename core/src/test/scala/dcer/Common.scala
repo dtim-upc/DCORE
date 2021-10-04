@@ -19,7 +19,7 @@ object Common {
       case Some(engine) =>
         engine
       case None =>
-        val queryPath: String = "./src/main/resources/query_0"
+        val queryPath: String = "./core/src/main/resources/query_0"
         val queryFile = StringUtils.getReader(queryPath + "/query_test.data")
         val streamFile = StringUtils.getReader(queryPath + "/stream_test.data")
         val executorManager = ExecutorManager.fromCOREFile(queryFile)
