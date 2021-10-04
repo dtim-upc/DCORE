@@ -22,15 +22,6 @@ In the future, we could properly integrate both projects. For example, SBT can d
 
 ## Usage
 
-Change the configuration at `src/main/resources/application.conf`:
-
-- Number of workers per node (~ OS threads)
-- Warm up time (seconds)
-- Distribution strategy
-- Second order predicate complexity
-- Query path
-- ...
-
 ### Demo
 
 The following command will run 1 Engine and 'n' Workers in a single JVM.
@@ -60,11 +51,23 @@ sbt "run --role worker"
 sbt "run --role worker"
 ```
 
+#### Configuration
+Change the configuration at `core/src/main/resources/application.conf`:
+
+- Number of workers per node (~ OS threads)
+- Warm up time (seconds)
+- Distribution strategy
+- Second order predicate complexity
+- Query path
+- ...
+
 ## Running the tests
 
 ``` sh
 $ sbt test
 ```
+
+Should run all subproject tests.
 
 ## Contributing
 

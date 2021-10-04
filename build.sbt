@@ -29,6 +29,10 @@ lazy val commonSettings = Seq(
 
 lazy val root = (project in file("."))
   .aggregate(core, benchmark)
+  .enablePlugins(
+    // https://www.scala-sbt.org/sbt-native-packager/archetypes/java_app/index.html
+    JavaAppPackaging
+  )
   .settings(
     name := "dcer",
     Compile / run := (core / Compile / run).evaluated,
@@ -37,21 +41,15 @@ lazy val root = (project in file("."))
   )
 
 lazy val core = (project in file("core"))
-  .enablePlugins(
-    // https://www.scala-sbt.org/sbt-native-packager/archetypes/java_app/index.html
-    JavaAppPackaging
-  )
-  .enablePlugins(MultiJvmPlugin)
-  .settings(multiJvmSettings: _*)
   .settings(
     commonSettings,
     run / javaOptions ++= Seq(initHeapSizeOpt, maxHeapSizeOpt),
-    MultiJvm / javaOptions ++= Seq(initHeapSizeOpt, maxHeapSizeOpt),
     run / fork := false,
     Global / cancelable := false,
     Test / parallelExecution := false,
+    // `sbt show unmanagedJars`
     // CORE is imported through its jar
-    unmanagedBase := baseDirectory.value / "lib", // `sbt show unmanagedJars` to get a list of unmanaged jars
+    unmanagedBase := baseDirectory.value / "lib",
     libraryDependencies ++=
       Seq(
         // Distributed and concurrent programming
@@ -63,26 +61,31 @@ lazy val core = (project in file("core"))
         // CLI parsing
         "com.monovore" %% "decline" % DeclineVersion
       ) ++ Seq(
-        "com.typesafe.akka" %% "akka-multi-node-testkit" % AkkaVersion,
         "com.typesafe.akka" %% "akka-actor-testkit-typed" % AkkaVersion,
         "org.scalatest" %% "scalatest" % ScalaTestVersion,
         "org.scalatest" %% "scalatest-funspec" % FunSpecVersion
       ).map(_ % Test)
   )
-  // https://doc.akka.io/docs/akka/current/multi-jvm-testing.html?language=scala#multi-jvm-testing
-  .configs(MultiJvm)
 
 lazy val benchmark = (project in file("benchmark"))
   .dependsOn(core)
+  .enablePlugins(MultiJvmPlugin)
+  .settings(multiJvmSettings: _*)
   .settings(
     commonSettings,
     run / fork := false,
+    MultiJvm / javaOptions ++= Seq(initHeapSizeOpt, maxHeapSizeOpt),
     Global / cancelable := false,
     Test / parallelExecution := false,
     libraryDependencies ++= Seq(
-      "com.monovore" %% "decline" % DeclineVersion
+      "com.monovore" %% "decline" % DeclineVersion,
+      "com.github.pathikrit" %% "better-files" % "3.9.1"
     ) ++ Seq(
       "org.scalatest" %% "scalatest" % ScalaTestVersion,
       "org.scalatest" %% "scalatest-funspec" % FunSpecVersion
-    ).map(_ % Test)
+    ).map(_ % Test),
+    // TODO remove
+    Compile / scalacOptions ~= filterConsoleScalacOptions
   )
+  // https://doc.akka.io/docs/akka/current/multi-jvm-testing.html?language=scala#multi-jvm-testing
+  .configs(MultiJvm)
