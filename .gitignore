@@ -14,3 +14,4 @@ target/
 # Do not commit benchmarks since they have absolute routes.
 benchmark/*
 !benchmark/src
+benchmark/src/multi-jvm/scala/*
