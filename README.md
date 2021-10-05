@@ -31,13 +31,6 @@ All the communications will be inside the JVM i.e. this is not a realistic demo.
 sbt "run --demo"
 ```
 
-The following command will run 1 Engine and 'n' Workers, each own on its own JVM.
-This is more realistic than the previous command, although, it is not running on  different machines.
-
-```sh
-sbt "core/multi-jvm:run Sample"
-```
-
 ### Production
 
 ``` sh
@@ -52,6 +45,7 @@ sbt "run --role worker"
 ```
 
 #### Configuration
+
 Change the configuration at `core/src/main/resources/application.conf`:
 
 - Number of workers per node (~ OS threads)
@@ -68,6 +62,31 @@ $ sbt test
 ```
 
 Should run all subproject tests.
+
+## Running the benchmarks
+
+Benchmarks are located at `benchmark` directory.  This folder contains the code to generate the benchmarks.
+Benchmarks are not commited to `git` since they are procedurally generated and paths may be different in different machines.
+
+In order to generate the benchmarks call:
+
+```sh
+sbt "benchmark/runMain generator.App"
+```
+
+> If you have already generated the benchmarks once, you need to delete their corresponding folders
+> to regenerate them.
+
+Once the benchmarks are created, you can run them:
+
+```sh
+# Replace X by linear, quadratic or cubic
+# Replace Y by the benchmark number
+# Replace Z by the query number
+sbt "benchmark/multi-jvm:run X.BenchmarkYQueryZ"
+```
+
+> In the future, we will have a script to run all those tests automatically
 
 ## Contributing
 

@@ -7,3 +7,4 @@
   - ScalaTestAsync receives this callback and completes the future.
 - [ ] Sequential strategy: only 1 worker
 - [ ] Read paper about double hashing and implement it
+- [ ] Maximal match by configuration
