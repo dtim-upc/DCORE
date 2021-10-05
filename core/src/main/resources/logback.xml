@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- More at https://doc.akka.io/docs/akka/2.6/typed/logging.html#logging -->
+<configuration>
+    <appender name="STDOUT" target="System.out" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>[%level] [%X{akkaAddress}] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ASYNC STDOUT" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>8192</queueSize>
+        <neverBlock>true</neverBlock>
+        <appender-ref ref="STDOUT" />
+    </appender>
+
+    <!-- At every launch, a new file is created for errors and matches -->
+    <timestamp key="bySecond" datePattern="yyyyMMdd'T'HHmmss"/>
+
+    <appender name="ERROR FILE" class="ch.qos.logback.core.FileAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <!-- set immediateFlush to false for much higher logging throughput -->
+        <immediateFlush>true</immediateFlush>
+        <file>target/error-${bySecond}.log</file>
+        <encoder>
+            <pattern>[%level] [%X{akkaAddress}] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- This should only log messages marked with the MatchesFilter.marker -->
+    <appender name="MATCHES FILE" class="ch.qos.logback.core.FileAppender">
+        <filter class="dcer.logging.MatchFilter" />
+        <file>core/target/matches-${bySecond}.log</file>
+        <!-- set immediateFlush to false for much higher logging throughput -->
+        <immediateFlush>true</immediateFlush>
+        <encoder>
+            <pattern>%msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- This should only log messages marked with the TimeFilter.marker -->
+    <appender name="TIME FILE" class="ch.qos.logback.core.FileAppender">
+        <filter class="dcer.logging.TimeFilter" />
+        <file>core/target/time-${bySecond}.log</file>
+        <!-- set immediateFlush to false for much higher logging throughput -->
+        <immediateFlush>true</immediateFlush>
+        <encoder>
+            <pattern>%msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ERROR, WARN, INFO but not DEBUG nor TRACE -->
+    <root level="INFO">
+        <appender-ref ref="ASYNC STDOUT"/>
+        <appender-ref ref="ERROR FILE"/>
+        <appender-ref ref="MATCHES FILE"/>
+        <appender-ref ref="TIME FILE"/>
+    </root>
+</configuration>
