@@ -12,8 +12,7 @@ class CallbackSpec extends AsyncFlatSpec with Matchers {
   behavior of "Callbacks using futures and promises"
 
   it should "eventually complete" in {
-    // NOTE: the global execution context is blocking
-    // We suspect it is not setting properly the number of  threads.
+    // NOTE: the global execution context defined in AsyncFlatSpec is blocking so we need to override it
     implicit val executionContext: ExecutionContext =
       ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(8))
 

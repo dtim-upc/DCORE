@@ -3,6 +3,7 @@ package dcer.actors
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
+import dcer.actors.EngineManager.MatchGroupingId
 import dcer.data.{ActorAddress, Match, Timer}
 import dcer.distribution.Predicate
 import dcer.logging.TimeFilter
@@ -17,6 +18,7 @@ object Worker {
 
   sealed trait Command
   final case class Process(
+      id: MatchGroupingId,
       m: Match,
       sop: Predicate,
       replyTo: ActorRef[EngineManager.MatchValidated]
@@ -47,8 +49,8 @@ object Worker {
       ctx: ActorContext[Command]
   ): Behavior[Command] =
     Behaviors.receiveMessage[Command] {
-      case Process(m, sop, replyTo) =>
-        processMatch(ctx, m, sop, replyTo, Timer())
+      case Process(id, m, sop, replyTo) =>
+        processMatch(ctx, id, m, sop, replyTo, Timer())
 
       case Stop =>
         ctx.log.info(s"Worker stopped")
@@ -64,6 +66,7 @@ object Worker {
     */
   private def processMatch(
       ctx: ActorContext[Command],
+      matchGroupingId: MatchGroupingId,
       m: Match,
       sop: Predicate,
       replyTo: ActorRef[EngineManager.MatchValidated],
@@ -95,6 +98,7 @@ object Worker {
               s"Match (#events=${m.events.length}, complexity=$sop) processed in ${timer.elapsedTime().toMillis} milliseconds"
             )
             replyTo ! EngineManager.MatchValidated(
+              matchGroupingId,
               m,
               ActorAddress.parse(ctx.self.path.name).get
             )

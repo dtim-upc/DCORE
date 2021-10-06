@@ -6,7 +6,7 @@ import com.monovore.decline._
 import com.typesafe.config.ConfigFactory
 import dcer.StartUp.startup
 import dcer.actors.Root
-import dcer.data.{Port, QueryPath, Role}
+import dcer.data.{Callback, Port, QueryPath, Role}
 
 object App
     extends CommandApp(
@@ -70,7 +70,8 @@ object StartUp {
   def startup(
       role: Role,
       port: Port,
-      queryPath: Option[QueryPath] = None
+      queryPath: Option[QueryPath] = None,
+      callback: Option[Callback] = None
   ): Unit = {
     val config =
       (queryPath match {
@@ -90,6 +91,6 @@ object StartUp {
 
       }).withFallback(ConfigFactory.load())
 
-    val _ = ActorSystem(Root(), "ClusterSystem", config)
+    val _ = ActorSystem(Root(callback), "ClusterSystem", config)
   }
 }

@@ -3,7 +3,7 @@ package dcer.actors
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.cluster.typed.Cluster
-import dcer.data.{ActorAddress, Address, Configuration, QueryPath}
+import dcer.data.{ActorAddress, Address, Configuration, QueryPath, Callback}
 import dcer.{actors, data}
 
 import scala.concurrent.duration.DurationInt
@@ -12,7 +12,9 @@ object Root {
   sealed trait Command
   final case class ActorTerminated(name: String) extends Command
 
-  def apply(): Behavior[Root.ActorTerminated] =
+  def apply(
+      callback: Option[Callback]
+  ): Behavior[Root.ActorTerminated] =
     Behaviors.setup { ctx =>
       val cluster = Cluster(ctx.system)
       val config = Configuration(ctx)
@@ -45,6 +47,7 @@ object Root {
           val actor = ctx.spawn(
             actors.EngineManager(
               queryPath,
+              callback,
               warmUpTime
             ),
             actorAddress.toString

@@ -2,9 +2,11 @@ package dcer.distribution
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
+import dcer.actors.EngineManager.MatchGroupingId
 import dcer.actors.{EngineManager, Worker}
 import dcer.data.Match
 import edu.puc.core.execution.structures.output.MatchGrouping
+
 import scala.collection.JavaConverters._
 
 // TODO (optionally)
@@ -15,7 +17,7 @@ sealed trait Strategy {
   val ctx: ActorContext[EngineManager.Event]
   val workers: Set[ActorRef[Worker.Command]]
   val predicate: Predicate
-  def distribute(matchGroup: MatchGrouping): Unit
+  def distribute(id: MatchGroupingId, matchGroup: MatchGrouping): Unit
 }
 
 object Strategy {
@@ -25,7 +27,10 @@ object Strategy {
       workers: Set[ActorRef[Worker.Command]],
       predicate: Predicate
   ) extends Strategy {
-    override def distribute(matchGroup: MatchGrouping): Unit = {
+    override def distribute(
+        id: MatchGroupingId,
+        matchGroup: MatchGrouping
+    ): Unit = {
       throw new RuntimeException("Not implemented")
     }
   }
@@ -37,14 +42,17 @@ object Strategy {
   ) extends Strategy {
     var lastIndex: Int = 0
 
-    override def distribute(matchGroup: MatchGrouping): Unit = {
+    override def distribute(
+        id: MatchGroupingId,
+        matchGroup: MatchGrouping
+    ): Unit = {
       ctx.log.info(s"Distributing ${matchGroup.size()} matches")
       val nWorkers = workers.size
       val workersMap = workers.zipWithIndex.map(_.swap).toMap // from 0 to n-1
       matchGroup.iterator().asScala.foreach { coreMatch =>
         val worker = workersMap(lastIndex)
         ctx.log.debug(s"Sending match to worker: ${worker.path}")
-        worker ! Worker.Process(Match(coreMatch), predicate, ctx.self)
+        worker ! Worker.Process(id, Match(coreMatch), predicate, ctx.self)
         lastIndex = (lastIndex + 1) % nWorkers
       }
     }

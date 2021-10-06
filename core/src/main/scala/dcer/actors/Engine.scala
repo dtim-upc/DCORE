@@ -2,7 +2,7 @@ package dcer.actors
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
-import dcer.actors.EngineManager.MatchGroupFound
+import dcer.actors.EngineManager.MatchGroupingFound
 import dcer.data.QueryPath
 import edu.puc.core.engine.BaseEngine
 import edu.puc.core.engine.executors.ExecutorManager
@@ -28,14 +28,15 @@ object Engine {
         case Right(engine) => engine
       }
 
-      running(ctx, engineManager, baseEngine)
+      running(ctx, engineManager, baseEngine, groupingCount = 0L)
     }
   }
 
   private def running(
       ctx: ActorContext[Engine.Command],
       engineManager: ActorRef[EngineManager.Event],
-      baseEngine: BaseEngine
+      baseEngine: BaseEngine,
+      groupingCount: Long
   ): Behavior[Engine.Command] = {
     Behaviors.receiveMessage {
       case Start =>
@@ -48,16 +49,21 @@ object Engine {
           case Some(event) =>
             val result = Option(baseEngine.new_sendEvent(event))
             ctx.log.info("Event send: " + event.toString)
-            result match {
-              case None => ()
-              case Some(matchGroup) =>
-                ctx.log.info(
-                  s"MatchGrouping (size = ${matchGroup.size()}) found"
-                )
-                engineManager ! MatchGroupFound(matchGroup)
-            }
+            val newGroupingCount =
+              result match {
+                case None => groupingCount
+                case Some(matchGrouping) =>
+                  ctx.log.info(
+                    s"MatchGrouping (size = ${matchGrouping.size()}) found"
+                  )
+                  engineManager ! MatchGroupingFound(
+                    groupingCount,
+                    matchGrouping
+                  )
+                  groupingCount + 1
+              }
             ctx.self ! NextEvent(Option(baseEngine.nextEvent()))
-            Behaviors.same
+            running(ctx, engineManager, baseEngine, newGroupingCount)
           case None =>
             ctx.log.info("No more events on the source stream")
             ctx.log.info("Engine stopped")
