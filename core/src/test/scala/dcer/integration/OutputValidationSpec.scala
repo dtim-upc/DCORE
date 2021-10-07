@@ -3,6 +3,7 @@ package dcer.integration
 import dcer.actors.EngineManager.MatchGroupingId
 import dcer.data._
 import dcer.{MatchTest, StartUp}
+import org.scalatest.Assertion
 import org.scalatest.funspec.AsyncFunSpec
 import org.scalatest.matchers.should._
 
@@ -11,44 +12,48 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{ExecutionContext, Future, Promise, blocking}
 
-class OutputValidationSpec
-    extends AsyncFunSpec
-    with Matchers
-    with CallbackProvider
-    with Expectations {
-
+class OutputValidationSpec extends AsyncFunSpec {
   describe("Output Validation") {
     describe("Round Robin") {
       describe("Query 1") {
         it("should find all matches") {
-          implicit val executionContext: ExecutionContext =
-            ExecutionContext.fromExecutorService(
-              Executors.newFixedThreadPool(8)
-            )
-
-          val (callback, promise) =
-            getPromiseAndCallback(timeout = 10.seconds)(executionContext)
-
-          StartUp.startup(
-            Engine,
-            Port.SeedPort,
-            Some(QueryPath("./core/src/test/resources/query_1").get),
-            Some(callback)
-          )
-          StartUp.startup(Worker, Port.RandomPort, None, None)
-          StartUp.startup(Worker, Port.RandomPort, None, None)
-          StartUp.startup(Worker, Port.RandomPort, None, None)
-
-          promise.future.map { result =>
-            expectedResult.foreach { case (id, expectedMatches) =>
-              val expectedMatchesTest = expectedMatches.map(MatchTest(_))
-              val matchesTest = result(id).map(MatchTest(_))
-              matchesTest should contain theSameElementsAs expectedMatchesTest
-            }
-            succeed
-          }
+          Test1.runTest(timeout = 10.seconds)
         }
       }
+    }
+  }
+}
+
+object Test1 extends Test with Query1
+
+trait Test extends CallbackProvider with Matchers {
+  this: Query =>
+  def runTest(timeout: Duration = 10.seconds): Future[Assertion] = {
+    implicit val executionContext: ExecutionContext =
+      ExecutionContext.fromExecutorService(
+        Executors.newFixedThreadPool(8)
+      )
+
+    val (callback, promise) =
+      getPromiseAndCallback(timeout)(executionContext)
+
+    StartUp.startup(
+      Engine,
+      Port.SeedPort,
+      Some(query),
+      Some(callback)
+    )
+    StartUp.startup(Worker, Port.RandomPort, None, None)
+    StartUp.startup(Worker, Port.RandomPort, None, None)
+    StartUp.startup(Worker, Port.RandomPort, None, None)
+
+    promise.future.map { result =>
+      expectedResult.foreach { case (id, expectedMatches) =>
+        val expectedMatchesTest = expectedMatches.map(MatchTest(_))
+        val matchesTest = result(id).map(MatchTest(_))
+        matchesTest should contain theSameElementsAs expectedMatchesTest
+      }
+      succeed
     }
   }
 }
@@ -98,7 +103,16 @@ sealed trait CallbackProvider extends Types {
   }
 }
 
-sealed trait Expectations extends Types {
+//////////////////////////////////////
+/////////// Queries //////////////////
+//////////////////////////////////////
+
+sealed trait Query extends Types {
+  def query: QueryPath
+  def expectedResult: MyMap
+}
+
+sealed trait Query1 extends Query {
 
   def eventT(temp: Double): Event =
     Event(
@@ -120,7 +134,10 @@ sealed trait Expectations extends Types {
       )
     )
 
-  val expectedResult: MyMap = Map(
+  override val query: QueryPath =
+    QueryPath("./core/src/test/resources/query_1").get
+
+  override val expectedResult: MyMap = Map(
     0L -> List(
       Match(
         events = List(
