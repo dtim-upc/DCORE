@@ -64,17 +64,15 @@ object Generator {
     val streamDir = (queryDir / "stream").createDirectory()
     val streamFile = (streamDir / "stream").createFile()
 
-    val queryTestFile =
-      (queryDir / "query_test.data")
-        .createFile()
-        .writeText(s"""|FILE:${descriptionFile}
+    (queryDir / "query_test.data")
+      .createFile()
+      .writeText(s"""|FILE:${descriptionFile}
                        |FILE:${queryFile}
                        |""".stripMargin)
 
-    val streamTestFile =
-      (queryDir / "stream_test.data")
-        .createFile()
-        .writeText(s"S:FILE:${streamFile}")
+    (queryDir / "stream_test.data")
+      .createFile()
+      .writeText(s"S:FILE:${streamFile}")
 
     descriptionFile
       .writeText("""DECLARE EVENT T(temp double, city string)

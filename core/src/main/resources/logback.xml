@@ -31,7 +31,7 @@
     <!-- This should only log messages marked with the MatchesFilter.marker -->
     <appender name="MATCHES FILE" class="ch.qos.logback.core.FileAppender">
         <filter class="dcer.logging.MatchFilter" />
-        <file>core/target/matches-${bySecond}.log</file>
+        <file>target/matches-${bySecond}.log</file>
         <!-- set immediateFlush to false for much higher logging throughput -->
         <immediateFlush>true</immediateFlush>
         <encoder>
@@ -42,7 +42,7 @@
     <!-- This should only log messages marked with the TimeFilter.marker -->
     <appender name="TIME FILE" class="ch.qos.logback.core.FileAppender">
         <filter class="dcer.logging.TimeFilter" />
-        <file>core/target/time-${bySecond}.log</file>
+        <file>target/time-${bySecond}.log</file>
         <!-- set immediateFlush to false for much higher logging throughput -->
         <immediateFlush>true</immediateFlush>
         <encoder>

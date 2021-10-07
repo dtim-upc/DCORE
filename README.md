@@ -8,7 +8,7 @@ This project is build using `jdk11` or `openjdk11`, [sbt](https://www.scala-sbt.
 
 In order to compile, build and run this project you need to install `sbt` in your system (`sbt` will automatically download the right `scala` version of your project).
 
-``` sh
+```sh
 sbt compile
 ```
 
@@ -27,13 +27,19 @@ In the future, we could properly integrate both projects. For example, SBT can d
 The following command will run 1 Engine and 'n' Workers in a single JVM.
 All the communications will be inside the JVM i.e. this is not a realistic demo.
 
-``` sh
+```sh
 sbt "run --demo"
+```
+
+or
+
+```sh
+$ bloop run core -- --demo
 ```
 
 ### Production
 
-``` sh
+```sh
 # Machine 1
 sbt "run --role engine"
 
@@ -57,9 +63,21 @@ Change the configuration at `core/src/main/resources/application.conf`:
 
 ## Running the tests
 
-``` sh
+```sh
 $ sbt test
 ```
+
+or
+
+```sh
+$ bloop test core-test
+# To run a specific test
+$ bloop test core-test -o '*OutputValidation*' 
+```
+
+> You may see some tests failing. This is expected and must be fixed in the future.
+> The problem is that different tests create different Engine but they use the same query files.
+> CORE uses a static field to hold a reference to all streams, which clashes between tests execution.
 
 Should run all subproject tests.
 

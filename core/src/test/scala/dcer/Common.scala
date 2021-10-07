@@ -1,10 +1,10 @@
 package dcer
 
-import edu.puc.core.engine.{BaseEngine, Engine}
 import edu.puc.core.engine.executors.ExecutorManager
 import edu.puc.core.engine.streams.StreamManager
-import edu.puc.core.util.StringUtils
+import edu.puc.core.engine.{BaseEngine, Engine}
 import edu.puc.core.runtime.events.{Event => CoreEvent}
+import edu.puc.core.util.StringUtils
 
 import scala.util.Random
 
@@ -19,7 +19,9 @@ object Common {
       case Some(engine) =>
         engine
       case None =>
-        val queryPath: String = "./core/src/main/resources/query_0"
+        // NOTE: Paths.get(".").toAbsolutePath from core/main returns "./core/"
+        // but from core/test returns "."
+        val queryPath: String = "./core/src/test/resources/query_1"
         val queryFile = StringUtils.getReader(queryPath + "/query_test.data")
         val streamFile = StringUtils.getReader(queryPath + "/stream_test.data")
         val executorManager = ExecutorManager.fromCOREFile(queryFile)

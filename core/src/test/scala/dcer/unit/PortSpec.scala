@@ -1,5 +1,6 @@
-package dcer.data
+package dcer.unit
 
+import dcer.data.Port
 import org.scalatest.funspec.AnyFunSpec
 
 class PortSpec extends AnyFunSpec {

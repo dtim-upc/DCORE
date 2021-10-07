@@ -8,6 +8,8 @@ import dcer.StartUp.startup
 import dcer.actors.Root
 import dcer.data.{Callback, Port, QueryPath, Role}
 
+import java.nio.file.Path
+
 object App
     extends CommandApp(
       name = "dcer",
@@ -40,9 +42,9 @@ object App
 
           val queryPathOpt =
             Opts
-              .option[String](
+              .option[Path](
                 "query",
-                help = s"See './core/src/main/resources' for examples"
+                help = s"Examples at './core/src/main/resources/'"
               )
               .mapValidated { path =>
                 QueryPath(path).toValidNel(s"Invalid query path: $path")

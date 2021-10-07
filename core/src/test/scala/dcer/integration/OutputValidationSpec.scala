@@ -26,7 +26,8 @@ class OutputValidationSpec
               Executors.newFixedThreadPool(8)
             )
 
-          val (callback, promise) = getPromiseAndCallback()(executionContext)
+          val (callback, promise) =
+            getPromiseAndCallback(timeout = 10.seconds)(executionContext)
 
           StartUp.startup(
             Engine,
@@ -58,7 +59,7 @@ sealed trait Types {
 
 sealed trait CallbackProvider extends Types {
   def getPromiseAndCallback(
-      timeout: Duration = 10.seconds
+      timeout: Duration = 30.seconds
   )(implicit executionContext: ExecutionContext): (Callback, Promise[MyMap]) = {
     val result: AtomicReference[MyMap] =
       new AtomicReference[MyMap](Map.empty)

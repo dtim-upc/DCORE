@@ -1,10 +1,11 @@
-package dcer.serialization
+package dcer.unit
 
 import akka.actor._
 import akka.serialization._
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException
 import dcer.Common
 import dcer.data.{Event, Match}
+import dcer.serialization.CborSerializable
 import edu.puc.core.execution.structures.output.{Match => JMatch}
 import org.scalatest.Assertion
 import org.scalatest.funspec.AnyFunSpec
