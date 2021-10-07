@@ -1,12 +1,16 @@
 package dcer.data
 
-import java.nio.file.{Files, Paths}
+import java.nio.file.{Files, Path, Paths}
 
-sealed abstract case class QueryPath(value: String)
+sealed abstract case class QueryPath(value: Path)
 
 object QueryPath {
   def apply(filePath: String): Option[QueryPath] = {
-    if (Files.exists(Paths.get(filePath))) {
+    apply(Paths.get(filePath))
+  }
+
+  def apply(filePath: Path): Option[QueryPath] = {
+    if (Files.exists(filePath)) {
       Some(new QueryPath(filePath) {})
     } else {
       None

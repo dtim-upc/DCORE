@@ -4,7 +4,14 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import dcer.data
-import dcer.data.{ActorAddress, Configuration, Match, QueryPath, Timer}
+import dcer.data.{
+  ActorAddress,
+  Callback,
+  Configuration,
+  Match,
+  QueryPath,
+  Timer
+}
 import dcer.distribution.{Predicate, Strategy}
 import dcer.logging.{MatchFilter, TimeFilter}
 import dcer.serialization.CborSerializable
@@ -18,14 +25,22 @@ object EngineManager {
       updatedWorkers: Set[ActorRef[Worker.Command]]
   ) extends Event
   final case object WarmUpDone extends Event
-  final case class MatchGroupFound(matchGroup: MatchGrouping) extends Event
-  final case class MatchValidated(m: Match, from: ActorAddress)
-      extends Event
+  type MatchGroupingId = Long
+  final case class MatchGroupingFound(
+      id: MatchGroupingId,
+      matchGroup: MatchGrouping
+  ) extends Event
+  final case class MatchValidated(
+      id: MatchGroupingId,
+      m: Match,
+      from: ActorAddress
+  ) extends Event
       with CborSerializable
   final case object Stop extends Event
 
   def apply(
       queryPath: QueryPath,
+      callback: Option[Callback],
       warmUpTime: FiniteDuration = 5.seconds
   ): Behavior[Event] =
     Behaviors.setup { ctx =>
@@ -41,13 +56,14 @@ object EngineManager {
           subscriptionAdapter
         )
 
-        warming(ctx, queryPath, Set.empty)
+        warming(ctx, queryPath, callback, Set.empty)
       }
     }
 
   private def warming(
       ctx: ActorContext[Event],
       queryPath: QueryPath,
+      callback: Option[Callback],
       workers: Set[ActorRef[Worker.Command]]
   ): Behavior[Event] =
     Behaviors.receiveMessage {
@@ -56,12 +72,12 @@ object EngineManager {
           "List of services registered with the receptionist changed: {}",
           newWorkers
         )
-        warming(ctx, queryPath, newWorkers)
+        warming(ctx, queryPath, callback, newWorkers)
 
       case WarmUpDone =>
         ctx.log.info("Warm up finished.")
         ctx.log.info(s"Number of workers: ${workers.size}")
-        startEngine(queryPath, workers, Timer()).narrow
+        startEngine(queryPath, callback, workers, Timer()).narrow
 
       case e: Event =>
         ctx.log.error(
@@ -72,6 +88,7 @@ object EngineManager {
 
   private def startEngine(
       queryPath: QueryPath,
+      callback: Option[Callback],
       workers: Set[ActorRef[Worker.Command]],
       timer: Timer
   ): Behavior[Event] =
@@ -91,11 +108,12 @@ object EngineManager {
           Strategy.parse(_, ctx, workers, predicate)
         )
 
-      running(ctx, workers, strategy, timer)
+      running(ctx, callback, workers, strategy, timer)
     }
 
   private def running(
       ctx: ActorContext[Event],
+      callback: Option[Callback],
       workers: Set[ActorRef[Worker.Command]],
       strategy: Strategy,
       timer: Timer,
@@ -113,9 +131,12 @@ object EngineManager {
               s"All events processed in ${timeElapsedSinceStart.toMillis} milliseconds"
             )
             ctx.log.info("EngineManager stopped")
+            callback.foreach { case Callback(_, exit) =>
+              exit()
+            }
             Behaviors.stopped
           } else {
-            running(ctx, newWorkers, strategy, timer, isStopping)
+            running(ctx, callback, newWorkers, strategy, timer, isStopping)
           }
         } else {
           // For now, just ignore changes in the topology since the management could be complicated.
@@ -123,7 +144,7 @@ object EngineManager {
             "List of services registered with the receptionist changed: {}",
             newWorkers
           )
-          running(ctx, workers, strategy, timer, isStopping)
+          running(ctx, callback, workers, strategy, timer, isStopping)
         }
 
       case Stop =>
@@ -132,17 +153,20 @@ object EngineManager {
         workers.foreach { worker =>
           worker ! Worker.Stop
         }
-        running(ctx, workers, strategy, timer, isStopping = true)
+        running(ctx, callback, workers, strategy, timer, isStopping = true)
 
-      case MatchGroupFound(matchGrouping) =>
-        strategy.distribute(matchGrouping)
+      case MatchGroupingFound(id, matchGrouping) =>
+        strategy.distribute(id, matchGrouping)
         Behaviors.same
 
-      case MatchValidated(m, from) =>
+      case MatchValidated(id, m, from) =>
         ctx.log.info(
           MatchFilter.marker,
           s"Match found at ${from.actorName}(${from.id.get})[${from.address}]:\n${data.Match.pretty(m)}"
         )
+        callback.foreach { case Callback(matchFound, _) =>
+          matchFound(id, m)
+        }
         Behaviors.same
 
       case e: Event =>

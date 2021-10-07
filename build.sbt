@@ -44,9 +44,10 @@ lazy val core = (project in file("core"))
   .settings(
     commonSettings,
     run / javaOptions ++= Seq(initHeapSizeOpt, maxHeapSizeOpt),
-    run / fork := false,
+    // https://www.scala-sbt.org/1.x/docs/Forking.html
+    run / fork := true,
     Global / cancelable := false,
-    Test / parallelExecution := false,
+    Test / parallelExecution := true,
     // `sbt show unmanagedJars`
     // CORE is imported through its jar
     unmanagedBase := baseDirectory.value / "lib",
