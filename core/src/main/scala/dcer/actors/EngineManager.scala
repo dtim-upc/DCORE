@@ -131,6 +131,9 @@ object EngineManager {
               s"All events processed in ${timeElapsedSinceStart.toMillis} milliseconds"
             )
             ctx.log.info("EngineManager stopped")
+            callback.foreach { case Callback(_, exit) =>
+              exit()
+            }
             Behaviors.stopped
           } else {
             running(ctx, callback, newWorkers, strategy, timer, isStopping)
@@ -161,7 +164,9 @@ object EngineManager {
           MatchFilter.marker,
           s"Match found at ${from.actorName}(${from.id.get})[${from.address}]:\n${data.Match.pretty(m)}"
         )
-        callback.foreach(f => f(id, m))
+        callback.foreach { case Callback(matchFound, _) =>
+          matchFound(id, m)
+        }
         Behaviors.same
 
       case e: Event =>
