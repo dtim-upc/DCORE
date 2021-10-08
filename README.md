@@ -22,6 +22,34 @@ In the future, we could properly integrate both projects. For example, SBT can d
 
 ## Usage
 
+The follow section will guide you on how to use the main _CLI_ executable of `dcer`.
+
+All available options:
+
+```sh
+$ sbt "run --help"
+
+Usage:
+    dcer --demo
+    dcer --role <string> [--port <string>] [--query <path>] [--strategy <string>]
+    
+A distributed complex event processing engine.
+
+Options and flags:
+    --help
+        Display this help text.
+    --demo
+        Run the demo
+    --role <string>
+        Available roles: List(Engine, Worker)
+    --port <string>
+        Available ports: [1024, 49152]
+    --query <path>
+        Examples at './core/src/main/resources/'
+    --strategy <string>
+        Available strategies: List(Sequential, RoundRobin)
+```
+
 ### Demo
 
 The following command will run 1 Engine and 'n' Workers in a single JVM.
