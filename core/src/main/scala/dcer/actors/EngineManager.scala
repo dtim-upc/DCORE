@@ -4,15 +4,8 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import dcer.data
-import dcer.data.{
-  ActorAddress,
-  Callback,
-  Configuration,
-  Match,
-  QueryPath,
-  Timer
-}
-import dcer.distribution.{Predicate, Strategy}
+import dcer.data._
+import dcer.distribution.Distributor
 import dcer.logging.{MatchFilter, TimeFilter}
 import dcer.serialization.CborSerializable
 import edu.puc.core.execution.structures.output.MatchGrouping
@@ -98,24 +91,17 @@ object EngineManager {
 
       val config = Configuration(ctx)
 
-      val predicate: Predicate =
-        config.getValueOrThrow(Configuration.SecondOrderPredicateKey)(
-          Predicate.parse
-        )
+      val distributor: Distributor =
+        Distributor.fromConfig(config)(ctx, workers)
 
-      val strategy: Strategy =
-        config.getValueOrThrow(Configuration.DistributionStrategyKey)(
-          Strategy.parse(_, ctx, workers, predicate)
-        )
-
-      running(ctx, callback, workers, strategy, timer)
+      running(ctx, callback, workers, distributor, timer)
     }
 
   private def running(
       ctx: ActorContext[Event],
       callback: Option[Callback],
       workers: Set[ActorRef[Worker.Command]],
-      strategy: Strategy,
+      distributor: Distributor,
       timer: Timer,
       isStopping: Boolean = false
   ): Behavior[Event] = {
@@ -136,7 +122,7 @@ object EngineManager {
             }
             Behaviors.stopped
           } else {
-            running(ctx, callback, newWorkers, strategy, timer, isStopping)
+            running(ctx, callback, newWorkers, distributor, timer, isStopping)
           }
         } else {
           // For now, just ignore changes in the topology since the management could be complicated.
@@ -144,7 +130,7 @@ object EngineManager {
             "List of services registered with the receptionist changed: {}",
             newWorkers
           )
-          running(ctx, callback, workers, strategy, timer, isStopping)
+          running(ctx, callback, workers, distributor, timer, isStopping)
         }
 
       case Stop =>
@@ -153,10 +139,10 @@ object EngineManager {
         workers.foreach { worker =>
           worker ! Worker.Stop
         }
-        running(ctx, callback, workers, strategy, timer, isStopping = true)
+        running(ctx, callback, workers, distributor, timer, isStopping = true)
 
       case MatchGroupingFound(id, matchGrouping) =>
-        strategy.distribute(id, matchGrouping)
+        distributor.distribute(id, matchGrouping)
         Behaviors.same
 
       case MatchValidated(id, m, from) =>
