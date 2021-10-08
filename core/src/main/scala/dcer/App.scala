@@ -90,16 +90,31 @@ object StartUp {
       callback: Option[Callback] = None,
       strategy: Option[DistributionStrategy] = None
   ): Unit = {
-    def optional[V](key: String, value: Option[V]): String =
-      value.map(v => s"$key = $v").getOrElse("")
+    def optional[V](
+        key: String,
+        value: Option[V],
+        show: V => String
+    ): String =
+      value.map(v => s"$key = ${show(v)}").getOrElse("")
+
+    val queryOption = optional(
+      key = "dcer.query-path",
+      value = queryPath,
+      show = (_: QueryPath).value.toString
+    )
+    val strategyOption = optional(
+      key = "dcer.distribution-strategy",
+      value = strategy,
+      show = (_: DistributionStrategy).toString
+    )
 
     val config =
       ConfigFactory
         .parseString(
           s"""akka.remote.artery.canonical.port=${port.port}
              |akka.cluster.roles = [${role.toString}]
-             |${optional(key = "dcer.query-path", value = queryPath)}
-             |${optional(key = "dcer.distribution-strategy", value = strategy)}
+             |$queryOption
+             |$strategyOption
              |""".stripMargin
         )
         .withFallback(ConfigFactory.load())

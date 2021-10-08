@@ -12,12 +12,23 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{ExecutionContext, Future, Promise, blocking}
 
-class OutputValidationSpec extends AsyncFunSpec {
-  describe("Output Validation") {
-    describe("Round Robin") {
-      describe("Query 1") {
-        it("should find all matches") {
-          Test1.runTest(timeout = 10.seconds)
+/** This spec validates that the same query returns the same result no matter
+  * what strategy is used. This guarantees that '''all distribution strategies
+  * are well implemented'''.
+  *
+  * FIXME logging output is silenced by the appender and it should be outputted
+  * on an error but this doesn't happen.
+  */
+class DistributionSpec extends AsyncFunSpec {
+  describe("Distribution") {
+    List(Test1).foreach { test =>
+      describe(test.getClass.getName) {
+        DistributionStrategy.all.foreach { strategy =>
+          describe(strategy.toString) {
+            it("should return the expected output") {
+              test.runTest(strategy, timeout = 30.seconds)
+            }
+          }
         }
       }
     }
@@ -28,7 +39,10 @@ object Test1 extends Test with Query1
 
 trait Test extends CallbackProvider with Matchers {
   this: Query =>
-  def runTest(timeout: Duration = 10.seconds): Future[Assertion] = {
+  def runTest(
+      strategy: DistributionStrategy,
+      timeout: Duration
+  ): Future[Assertion] = {
     implicit val executionContext: ExecutionContext =
       ExecutionContext.fromExecutorService(
         Executors.newFixedThreadPool(8)
@@ -41,11 +55,12 @@ trait Test extends CallbackProvider with Matchers {
       Engine,
       Port.SeedPort,
       Some(query),
-      Some(callback)
+      Some(callback),
+      Some(strategy)
     )
-    StartUp.startup(Worker, Port.RandomPort, None, None)
-    StartUp.startup(Worker, Port.RandomPort, None, None)
-    StartUp.startup(Worker, Port.RandomPort, None, None)
+    StartUp.startup(Worker, Port.RandomPort)
+    StartUp.startup(Worker, Port.RandomPort)
+    StartUp.startup(Worker, Port.RandomPort)
 
     promise.future.map { result =>
       expectedResult.foreach { case (id, expectedMatches) =>
