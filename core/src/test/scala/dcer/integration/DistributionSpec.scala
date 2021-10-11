@@ -16,7 +16,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise, blocking}
   * what strategy is used. This guarantees that '''all distribution strategies
   * are well implemented'''.
   *
-  * FIXME logging output is silenced by the appender and it should be outputted
+  * FIXME Logging output is silenced by the appender and it should be outputted
   * on an error but this doesn't happen.
   */
 class DistributionSpec extends AsyncFunSpec {
@@ -26,7 +26,7 @@ class DistributionSpec extends AsyncFunSpec {
         DistributionStrategy.all.foreach { strategy =>
           describe(strategy.toString) {
             it("should return the expected output") {
-              test.runTest(strategy, timeout = 30.seconds)
+              test.runTest(strategy, timeout = 20.seconds)
             }
           }
         }

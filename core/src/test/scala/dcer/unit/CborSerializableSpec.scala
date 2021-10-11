@@ -59,7 +59,7 @@ class CborSerializableSpec extends AnyFunSpec {
   describe("Serialization") {
     // CORE depends on many static classes and variables.
     // For example, without an engine, Event does not work.
-    val (_, producer) = Common.getGlobalEngine()
+    val (_, producer) = Common.getNewEngine()
 
     it("should round-trip serialize an Event") {
       val event = Event(producer.getEventAtRandom())

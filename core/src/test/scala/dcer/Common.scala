@@ -9,32 +9,22 @@ import edu.puc.core.util.StringUtils
 import scala.util.Random
 
 object Common {
-  // You can indeed have multiple engines but the class BaseEngine
-  // uses a static variable for the streams description which throws
-  // if you declare multiple engines with the same stream name.
-  var globalEngine: Option[Engine] = None
-
-  def getGlobalEngine(): (Engine, EventProducer) = {
-    val engine = globalEngine match {
-      case Some(engine) =>
-        engine
-      case None =>
-        // NOTE: Paths.get(".").toAbsolutePath from core/main returns "./core/"
-        // but from core/test returns "."
-        val queryPath: String = "./core/src/test/resources/query_1"
-        val queryFile = StringUtils.getReader(queryPath + "/query_test.data")
-        val streamFile = StringUtils.getReader(queryPath + "/stream_test.data")
-        val executorManager = ExecutorManager.fromCOREFile(queryFile)
-        val streamManager = StreamManager.fromCOREFile(streamFile)
-        val engine = BaseEngine.newEngine(executorManager, streamManager)
-        engine.start()
-        globalEngine = Some(engine)
-        engine
-    }
-    (engine, new EventProducer)
+  def getNewEngine(): (Engine, EventProducer) = {
+    BaseEngine.clear()
+    // NOTE: Paths.get(".").toAbsolutePath from core/main returns "./core/"
+    // but from core/test returns "."
+    val queryPath: String = "./core/src/test/resources/query_1"
+    val queryFile = StringUtils.getReader(queryPath + "/query_test.data")
+    val streamFile = StringUtils.getReader(queryPath + "/stream_test.data")
+    val executorManager = ExecutorManager.fromCOREFile(queryFile)
+    val streamManager = StreamManager.fromCOREFile(streamFile)
+    val engine =
+      BaseEngine.newEngine(executorManager, streamManager, false, true, true)
+    engine.start()
+    (engine, new EventProducer {})
   }
 
-  class EventProducer {
+  sealed trait EventProducer {
     def getEventAtRandom(): CoreEvent = {
       val rng = new Random()
       rng.nextBoolean() match {

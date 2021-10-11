@@ -7,7 +7,7 @@ import org.scalatest.funspec.AnyFunSpec
 
 class EventSpec extends AnyFunSpec {
   describe("Event") {
-    val (_, _) = Common.getGlobalEngine()
+    val (_, _) = Common.getNewEngine()
 
     describe("getValue") {
       it(
