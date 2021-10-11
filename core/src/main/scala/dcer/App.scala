@@ -7,6 +7,7 @@ import com.typesafe.config.ConfigFactory
 import dcer.StartUp.startup
 import dcer.actors.Root
 import dcer.data.{Callback, DistributionStrategy, Port, QueryPath, Role}
+import dcer.distribution.Predicate
 
 import java.nio.file.Path
 
@@ -88,7 +89,8 @@ object StartUp {
       port: Port,
       queryPath: Option[QueryPath] = None,
       callback: Option[Callback] = None,
-      strategy: Option[DistributionStrategy] = None
+      strategy: Option[DistributionStrategy] = None,
+      predicate: Option[Predicate] = None
   ): Unit = {
     def optional[V](
         key: String,
@@ -108,6 +110,12 @@ object StartUp {
       show = (_: DistributionStrategy).toString
     )
 
+    val predicateOption = optional(
+      key = "dcer.second-order-predicate",
+      value = predicate,
+      show = (_: Predicate).toString
+    )
+
     val config =
       ConfigFactory
         .parseString(
@@ -115,6 +123,7 @@ object StartUp {
              |akka.cluster.roles = [${role.toString}]
              |$queryOption
              |$strategyOption
+             |$predicateOption
              |""".stripMargin
         )
         .withFallback(ConfigFactory.load())
