@@ -3,6 +3,7 @@ package generator
 import better.files.Dsl._
 import better.files._
 import com.monovore.decline._
+import dcer.data.DistributionStrategy
 import dcer.distribution.Predicate
 
 // TODO
@@ -25,10 +26,10 @@ object App
 object Generator {
   val projectRoot: File = pwd / "benchmark"
   // Each query has increasing complexity (plus one event in the kleene plus).
-  val nQueries: Int = 10
+  val nQueries: Int = 3
 
   def generate(benchmark: Int): Unit = {
-    val benchmarkDir = projectRoot / s"benchmark_${benchmark}"
+    val benchmarkDir = projectRoot / s"benchmark${benchmark}"
     val codeDir = projectRoot / "src" / "multi-jvm" / "scala"
 
     if (benchmarkDir.exists) {
@@ -40,22 +41,20 @@ object Generator {
     }
 
     val generateQueryN = generateQuery(rootDir = benchmarkDir)(_)
-    val generateCodeN = generateCode(rootDir = codeDir)(_, _, _, _)
+    val generateCodeN = generateCode(rootDir = codeDir)(_, _, _, _, _)
 
     (1 to nQueries) foreach { query =>
       val queryDir = generateQueryN(query)
       Predicate.all foreach { predicate =>
-        if (predicate == Predicate.Linear()) {
-          generateCodeN(benchmark, query, predicate, queryDir)
-        } else {
-          println(s"Predicate $predicate not implemented yet")
+        DistributionStrategy.all.foreach { strategy =>
+          generateCodeN(benchmark, query, queryDir, strategy, predicate)
         }
       }
     }
   }
 
   private def generateQuery(rootDir: File)(query: Int): File = {
-    val queryDir = (rootDir / s"query_$query").createDirectory()
+    val queryDir = (rootDir / s"query$query").createDirectory()
 
     val querySubDir = (queryDir / "query").createDirectory()
     val queryFile = (querySubDir / "queries").createFile()
@@ -107,20 +106,20 @@ object Generator {
   private def generateCode(rootDir: File)(
       benchmark: Int,
       query: Int,
-      predicate: Predicate,
-      queryDir: File
+      queryDir: File,
+      strategy: DistributionStrategy,
+      predicate: Predicate
   ): Unit = {
-    val packageName = predicate match {
-      case Predicate.Linear()    => "linear"
-      case Predicate.Quadratic() => "quadratic"
-      case Predicate.Cubic()     => "cubic"
-    }
+    val predicatePath = predicate.toString.toLowerCase()
+    val queryPath = s"query${query}"
 
-    val packageDir = (rootDir / packageName).createDirectoryIfNotExists()
+    val packageDir =
+      (rootDir / queryPath / predicatePath).createDirectoryIfNotExists()
 
     def className(jvm: Int): String =
-      s"Benchmark${benchmark}Query${query}MultiJvmNode${jvm}"
+      s"${strategy}MultiJvmNode${jvm}"
 
+    val packageName = s"${queryPath}.${predicatePath}"
     val packageDec =
       s"""package ${packageName}
         |""".stripMargin
@@ -128,14 +127,16 @@ object Generator {
     val importsDec =
       """import dcer.StartUp
         |import dcer.data
-        |import dcer.data.{Port, QueryPath}
+        |import dcer.data._
+        |import dcer.data.DistributionStrategy._
+        |import dcer.distribution.Predicate._
         |""".stripMargin
 
     val engineActorDec =
       s"""object ${className(jvm = 1)} {
          |  def main(args: Array[String]): Unit = {
          |    val query = QueryPath("${queryDir}").get
-         |    StartUp.startup(data.Engine, Port.SeedPort, Some(query))
+         |    StartUp.startup(data.Engine, Port.SeedPort, Some(query), strategy = Some(${strategy}), predicate = Some(${predicate}()))
          |  }
          |}
          |""".stripMargin
@@ -149,7 +150,7 @@ object Generator {
          |""".stripMargin
 
     val sourceFile =
-      (packageDir / s"Benchmark${benchmark}Query${query}.scala")
+      (packageDir / s"${strategy}.scala")
         .createFileIfNotExists()
 
     sourceFile << packageDec

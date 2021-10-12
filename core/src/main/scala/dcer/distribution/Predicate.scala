@@ -27,9 +27,15 @@ object Predicate {
   // of the box for case objects (see https://doc.akka.io/docs/akka/current/serialization-jackson.html#adt-with-trait-and-case-object)
   //
   // This is why we decided to use case classes with no parameters.
-  case class Linear() extends Predicate
-  case class Quadratic() extends Predicate
-  case class Cubic() extends Predicate
+  case class Linear() extends Predicate {
+    override def toString: String = "Linear"
+  }
+  case class Quadratic() extends Predicate {
+    override def toString: String = "Quadratic"
+  }
+  case class Cubic() extends Predicate {
+    override def toString: String = "Cubic"
+  }
 
   // Don't forget to update this
   val all: List[Predicate] =

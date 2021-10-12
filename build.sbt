@@ -47,7 +47,8 @@ lazy val core = (project in file("core"))
     // https://www.scala-sbt.org/1.x/docs/Forking.html
     run / fork := true,
     Global / cancelable := false,
-    Test / parallelExecution := true,
+    // Test must be run sequentially because there can only be one instance of CORE
+    Test / parallelExecution := false,
     // `sbt show unmanagedJars`
     // CORE is imported through its jar
     unmanagedBase := baseDirectory.value / "lib",

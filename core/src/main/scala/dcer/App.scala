@@ -6,7 +6,8 @@ import com.monovore.decline._
 import com.typesafe.config.ConfigFactory
 import dcer.StartUp.startup
 import dcer.actors.Root
-import dcer.data.{Callback, Port, QueryPath, Role}
+import dcer.data.{Callback, DistributionStrategy, Port, QueryPath, Role}
+import dcer.distribution.Predicate
 
 import java.nio.file.Path
 
@@ -51,16 +52,30 @@ object App
               }
               .orNone
 
-          (roleOpt, portOpt, queryPathOpt).mapN { (role, portOpt, queryPath) =>
-            val port = portOpt match {
-              case None =>
-                role match {
-                  case data.Engine => Port.SeedPort
-                  case data.Worker => Port.RandomPort
-                }
-              case Some(port) => port
-            }
-            startup(role, port, queryPath)
+          val strategyOpt =
+            Opts
+              .option[String](
+                "strategy",
+                help = s"Available strategies: ${DistributionStrategy.all}"
+              )
+              .mapValidated { str =>
+                DistributionStrategy
+                  .parse(str)
+                  .toValidNel(s"Invalid strategy: $str")
+              }
+              .orNone
+
+          (roleOpt, portOpt, queryPathOpt, strategyOpt).mapN {
+            (role, portOpt, queryPath, strategy) =>
+              val port = portOpt match {
+                case None =>
+                  role match {
+                    case data.Engine => Port.SeedPort
+                    case data.Worker => Port.RandomPort
+                  }
+                case Some(port) => port
+              }
+              startup(role, port, queryPath, callback = None, strategy)
           }
         }
 
@@ -73,25 +88,45 @@ object StartUp {
       role: Role,
       port: Port,
       queryPath: Option[QueryPath] = None,
-      callback: Option[Callback] = None
+      callback: Option[Callback] = None,
+      strategy: Option[DistributionStrategy] = None,
+      predicate: Option[Predicate] = None
   ): Unit = {
-    val config =
-      (queryPath match {
-        case Some(queryPath) =>
-          ConfigFactory
-            .parseString(s"""
-                 akka.remote.artery.canonical.port=${port.port}
-                 akka.cluster.roles = [${role.toString}]
-                 dcer.query-path = ${queryPath.value}
-                 """)
-        case None =>
-          ConfigFactory
-            .parseString(s"""
-                 akka.remote.artery.canonical.port=${port.port}
-                 akka.cluster.roles = [${role.toString}]
-                 """)
+    def optional[V](
+        key: String,
+        value: Option[V],
+        show: V => String
+    ): String =
+      value.map(v => s"$key = ${show(v)}").getOrElse("")
 
-      }).withFallback(ConfigFactory.load())
+    val queryOption = optional(
+      key = "dcer.query-path",
+      value = queryPath,
+      show = (_: QueryPath).value.toString
+    )
+    val strategyOption = optional(
+      key = "dcer.distribution-strategy",
+      value = strategy,
+      show = (_: DistributionStrategy).toString
+    )
+
+    val predicateOption = optional(
+      key = "dcer.second-order-predicate",
+      value = predicate,
+      show = (_: Predicate).toString
+    )
+
+    val config =
+      ConfigFactory
+        .parseString(
+          s"""akka.remote.artery.canonical.port=${port.port}
+             |akka.cluster.roles = [${role.toString}]
+             |$queryOption
+             |$strategyOption
+             |$predicateOption
+             |""".stripMargin
+        )
+        .withFallback(ConfigFactory.load())
 
     val _ = ActorSystem(Root(callback), "ClusterSystem", config)
   }
