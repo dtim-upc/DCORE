@@ -111,28 +111,28 @@ Should run all subproject tests.
 
 ## Running the benchmarks
 
-Benchmarks are located at `benchmark` directory.  This folder contains the code to generate the benchmarks.
-Benchmarks are not commited to `git` since they are procedurally generated and paths may be different in different machines.
+> Benchmarks are located at `benchmark` directory.  This folder contains the code to generate the benchmarks.
+> Benchmarks are not committed to `git` since they are procedurally generated and paths may be different in different machines.
 
-In order to generate the benchmarks call:
-
-```sh
-sbt "benchmark/runMain generator.App"
-```
-
-> If you have already generated the benchmarks once, you need to delete their corresponding folders
-> to regenerate them.
-
-Once the benchmarks are created, you can run them:
+In order to run the benchmarks you need to install [sbt](https://www.scala-sbt.org/index.html) and [stack](https://docs.haskellstack.org/en/stable/README/) (follow the instructions from the link).
+Stack will automatically install all dependencies to run
 
 ```sh
-# Replace X by linear, quadratic or cubic
-# Replace Y by the benchmark number
-# Replace Z by the query number
-sbt "benchmark/multi-jvm:run X.BenchmarkYQueryZ"
+# Generate benchmarks
+make benchmarks
+
+# Run *all* benchmarks. This will take a while.
+./run-benchmarks.hs
 ```
 
-> In the future, we will have a script to run all those tests automatically
+Benchmarks can be run atomically by hand: 
+
+```sh
+# Replace X by the query: query1, query2 ...
+# Replace Y by complexity: linear, quadratic or cubic.
+# Replace Z by strategy: Sequential, RoundRobin, DoubleHashing, MaximalMatches
+sbt "benchmark/multi-jvm:run X.Y.Z"
+```
 
 ## Contributing
 
@@ -144,7 +144,7 @@ So, we focus on being able to compile, test and run the project on `sbt`.
 The project is **formatted** using [scalafmt](https://scalameta.org/scalafmt/docs/installation.html).
 You can format all sources by calling: `sbt scalafmt`
 
-Before commiting:
+Before committing:
 - Check the code compiles: `sbt compile`
 - Check the tests pass: `sbt test`
 - Check the sources are formatted: `sbt scalafmtCheck`
