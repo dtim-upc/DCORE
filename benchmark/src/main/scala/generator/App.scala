@@ -26,10 +26,10 @@ object App
 object Generator {
   val projectRoot: File = pwd / "benchmark"
   // Each query has increasing complexity (plus one event in the kleene plus).
-  val nQueries: Int = 5
+  val nQueries: Int = 3
 
   def generate(benchmark: Int): Unit = {
-    val benchmarkDir = projectRoot / s"benchmark_${benchmark}"
+    val benchmarkDir = projectRoot / s"benchmark${benchmark}"
     val codeDir = projectRoot / "src" / "multi-jvm" / "scala"
 
     if (benchmarkDir.exists) {
@@ -54,7 +54,7 @@ object Generator {
   }
 
   private def generateQuery(rootDir: File)(query: Int): File = {
-    val queryDir = (rootDir / s"query_$query").createDirectory()
+    val queryDir = (rootDir / s"query$query").createDirectory()
 
     val querySubDir = (queryDir / "query").createDirectory()
     val queryFile = (querySubDir / "queries").createFile()
