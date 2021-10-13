@@ -9,10 +9,6 @@ import edu.puc.core.execution.structures.output.MatchGrouping
 
 import scala.collection.JavaConverters._
 
-// TODO (optionally)
-// Add workers dynamically
-// This would affect the distribution strategies e.g. rebalance of work.
-
 sealed trait Distributor {
   val ctx: ActorContext[EngineManager.Event]
   val workers: Set[ActorRef[Worker.Command]]
@@ -40,6 +36,8 @@ object Distributor {
         Sequential(ctx, workers, predicate)
       case DistributionStrategy.RoundRobin =>
         RoundRobin(ctx, workers, predicate)
+      case DistributionStrategy.PowerOfTwoChoices =>
+        PowerOfTwoChoices(ctx, workers, predicate)
     }
 
   def fromConfig(config: Configuration.Parser)(
@@ -100,6 +98,19 @@ object Distributor {
         worker ! Worker.Process(id, Match(coreMatch), predicate, ctx.self)
         lastIndex = (lastIndex + 1) % nWorkers
       }
+    }
+  }
+
+  private case class PowerOfTwoChoices(
+      ctx: ActorContext[EngineManager.Event],
+      workers: Set[ActorRef[Worker.Command]],
+      predicate: Predicate
+  ) extends Distributor {
+    override def distributeInner(
+        id: MatchGroupingId,
+        matchGrouping: MatchGrouping
+    ): Unit = {
+      // TODO
     }
   }
 }
