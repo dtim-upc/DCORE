@@ -93,7 +93,7 @@ object Generator {
     {
       streamFile << "T(temp=-2, city=barcelona)"
       val r = scala.util.Random
-      (1 to query).foreach { _ =>
+      (1 to query + 2).foreach { _ =>
         val hum = r.nextInt(60) // 0 to 59
         streamFile << s"H(hum=$hum, city=barcelona)"
       }

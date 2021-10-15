@@ -11,7 +11,7 @@ import scala.collection.JavaConverters._
 
 sealed trait Distributor {
   val ctx: ActorContext[EngineManager.Event]
-  val workers: Set[ActorRef[Worker.Command]]
+  val workers: Array[ActorRef[Worker.Command]]
   val predicate: Predicate
   def distributeInner(
       id: MatchGroupingId,
@@ -28,7 +28,7 @@ object Distributor {
   def apply(
       distributionStrategy: DistributionStrategy,
       ctx: ActorContext[EngineManager.Event],
-      workers: Set[ActorRef[Worker.Command]],
+      workers: Array[ActorRef[Worker.Command]],
       predicate: Predicate
   ): Distributor =
     distributionStrategy match {
@@ -42,7 +42,7 @@ object Distributor {
 
   def fromConfig(config: Configuration.Parser)(
       ctx: ActorContext[EngineManager.Event],
-      workers: Set[ActorRef[Worker.Command]]
+      workers: Array[ActorRef[Worker.Command]]
   ): Distributor = {
     val predicate: Predicate =
       config.getValueOrThrow(Configuration.SecondOrderPredicateKey)(
@@ -59,7 +59,7 @@ object Distributor {
 
   private case class Sequential(
       ctx: ActorContext[EngineManager.Event],
-      workers: Set[ActorRef[Worker.Command]],
+      workers: Array[ActorRef[Worker.Command]],
       predicate: Predicate
   ) extends Distributor {
 
@@ -80,7 +80,7 @@ object Distributor {
 
   private case class RoundRobin(
       ctx: ActorContext[EngineManager.Event],
-      workers: Set[ActorRef[Worker.Command]],
+      workers: Array[ActorRef[Worker.Command]],
       predicate: Predicate
   ) extends Distributor {
 
@@ -90,10 +90,9 @@ object Distributor {
         id: MatchGroupingId,
         matchGrouping: MatchGrouping
     ): Unit = {
-      val nWorkers = workers.size
-      val workersMap = workers.zipWithIndex.map(_.swap).toMap // from 0 to n-1
+      val nWorkers = workers.length
       matchGrouping.iterator().asScala.foreach { coreMatch =>
-        val worker = workersMap(lastIndex)
+        val worker = workers(lastIndex)
         ctx.log.debug(s"Sending match to worker: ${worker.path}")
         worker ! Worker.Process(id, Match(coreMatch), predicate, ctx.self)
         lastIndex = (lastIndex + 1) % nWorkers
@@ -103,14 +102,28 @@ object Distributor {
 
   private case class PowerOfTwoChoices(
       ctx: ActorContext[EngineManager.Event],
-      workers: Set[ActorRef[Worker.Command]],
+      workers: Array[ActorRef[Worker.Command]],
       predicate: Predicate
   ) extends Distributor {
+    val rng: scala.util.Random = scala.util.Random
+    val load: Array[Long] = Array.fill(workers.length)(0)
+
     override def distributeInner(
         id: MatchGroupingId,
         matchGrouping: MatchGrouping
     ): Unit = {
-      // TODO
+      matchGrouping.iterator().asScala.foreach { coreMatch =>
+        val index1 = rng.nextInt(workers.length)
+        val index2 = rng.nextInt(workers.length)
+        val index = if (load(index1) <= load(index2)) index1 else index2
+
+        val worker = workers(index)
+        ctx.log.debug(s"Sending match to worker: ${worker.path}")
+        val m = Match(coreMatch)
+        worker ! Worker.Process(id, m, predicate, ctx.self)
+
+        load(index) += Match.weight(m)
+      }
     }
   }
 }
