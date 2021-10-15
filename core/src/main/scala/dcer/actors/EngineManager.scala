@@ -92,7 +92,7 @@ object EngineManager {
       val config = Configuration(ctx)
 
       val distributor: Distributor =
-        Distributor.fromConfig(config)(ctx, workers)
+        Distributor.fromConfig(config)(ctx, workers.toArray)
 
       running(ctx, callback, workers, distributor, timer)
     }

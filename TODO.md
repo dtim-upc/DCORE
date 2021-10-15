@@ -1,4 +1,4 @@
 # TODO
 
-- [ ] Read paper about double hashing and implement it
-- [ ] Maximal match by configuration
+- [ ] Strategy: RoundRobinWeighted
+- [ ] Strategy: Maximal Matches Strategy
