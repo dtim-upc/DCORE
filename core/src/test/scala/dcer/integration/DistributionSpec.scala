@@ -20,6 +20,8 @@ import scala.concurrent.{ExecutionContext, Future, Promise, blocking}
   * on an error but this doesn't happen.
   */
 class DistributionSpec extends AsyncFunSpec {
+  // This tests may fail with "Socket 25251 being used"
+  // Just rerun the tests and it will eventually succeed
   describe("Distribution") {
     List(Test1).foreach { test =>
       describe(test.getClass.getName) {
