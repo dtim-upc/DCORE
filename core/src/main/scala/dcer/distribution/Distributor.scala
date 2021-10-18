@@ -36,6 +36,8 @@ object Distributor {
         Sequential(ctx, workers, predicate)
       case DistributionStrategy.RoundRobin =>
         RoundRobin(ctx, workers, predicate)
+      case DistributionStrategy.RoundRobinWeighted =>
+        RoundRobinWeighted(ctx, workers, predicate)
       case DistributionStrategy.PowerOfTwoChoices =>
         PowerOfTwoChoices(ctx, workers, predicate)
     }
@@ -96,6 +98,35 @@ object Distributor {
         ctx.log.debug(s"Sending match to worker: ${worker.path}")
         worker ! Worker.Process(id, Match(coreMatch), predicate, ctx.self)
         lastIndex = (lastIndex + 1) % nWorkers
+      }
+    }
+  }
+
+  private case class RoundRobinWeighted(
+      ctx: ActorContext[EngineManager.Event],
+      workers: Array[ActorRef[Worker.Command]],
+      predicate: Predicate
+  ) extends Distributor {
+
+    val load: Array[(Long, Int)] = Array.fill(workers.length)(0L).zipWithIndex
+
+    private def minLoadIndex(): Int =
+      load.minBy(_._1)._2
+
+    override def distributeInner(
+        id: MatchGroupingId,
+        matchGrouping: MatchGrouping
+    ): Unit = {
+      matchGrouping.iterator().asScala.foreach { coreMatch =>
+        val index = minLoadIndex()
+
+        val worker = workers(index)
+        ctx.log.debug(s"Sending match to worker: ${worker.path}")
+        val m = Match(coreMatch)
+        worker ! Worker.Process(id, m, predicate, ctx.self)
+
+        load(index) =
+          load(index) match { case (w, i) => (w + Match.weight(m), i) }
       }
     }
   }
