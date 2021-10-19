@@ -7,6 +7,7 @@ object DistributionStrategy {
   case object RoundRobin extends DistributionStrategy
   case object RoundRobinWeighted extends DistributionStrategy
   case object PowerOfTwoChoices extends DistributionStrategy
+  case object MaximalMatches extends DistributionStrategy
 
   def parse(s: String): Option[DistributionStrategy] = {
     s.toLowerCase match {
@@ -18,6 +19,8 @@ object DistributionStrategy {
         Some(RoundRobinWeighted)
       case x if x == PowerOfTwoChoices.toString.toLowerCase =>
         Some(PowerOfTwoChoices)
+      case x if x == MaximalMatches.toString.toLowerCase =>
+        Some(MaximalMatches)
       case _ =>
         None
     }
@@ -25,5 +28,11 @@ object DistributionStrategy {
 
   // This could be done by reflection
   def all: List[DistributionStrategy] =
-    List(Sequential, RoundRobin, RoundRobinWeighted, PowerOfTwoChoices)
+    List(
+      Sequential,
+      RoundRobin,
+      RoundRobinWeighted,
+      PowerOfTwoChoices,
+      MaximalMatches
+    )
 }
