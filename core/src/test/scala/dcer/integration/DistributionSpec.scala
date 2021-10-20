@@ -157,31 +157,31 @@ sealed trait Query1 extends Query {
   override val expectedResult: MyMap = Map(
     0L -> List(
       Match(
-        events = List(
+        events = Array(
           eventT(-2),
           eventH(30),
           eventH(65)
         ),
-        nodeList = List(
+        nodeList = Array(
         )
       ),
       Match(
-        events = List(
+        events = Array(
           eventT(-2),
           eventH(20),
           eventH(65)
         ),
-        nodeList = List(
+        nodeList = Array(
         )
       ),
       Match(
-        events = List(
+        events = Array(
           eventT(-2),
           eventH(30),
           eventH(20),
           eventH(65)
         ),
-        nodeList = List(
+        nodeList = Array(
         )
       )
     )

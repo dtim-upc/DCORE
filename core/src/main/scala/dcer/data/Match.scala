@@ -5,23 +5,15 @@ import edu.puc.core.execution.structures.output.{Match => CoreMatch}
 
 import scala.collection.JavaConverters._ // .asScala
 
-/*
-The java Match is just an iterator over MatchNode.
-
-We tried to simplify the class since DistributedCer is only using
-the nodeList of the match.
- */
-
-//case class MatchNode(event: Event, index: Long, node: Int)
-//    extends CborSerializable
-
-case class Match(events: List[Event], nodeList: List[Int])
+case class Match(events: Array[Event], nodeList: Array[Int])
     extends CborSerializable
 
 object Match {
+  type MaximalMatch = Match
+
   def apply(m: CoreMatch): Match = {
-    val events: List[Event] = m.iterator().asScala.toList.map(Event(_))
-    val nodeList: List[Int] = m.getNodeList.asScala.toList.map(_.toInt)
+    val events: Array[Event] = m.iterator().asScala.toArray.map(Event(_))
+    val nodeList: Array[Int] = m.getNodeList.asScala.toArray.map(_.toInt)
     Match(events, nodeList)
   }
 

@@ -18,7 +18,6 @@ final class StringOps(private val str: String) extends AnyVal {
 }
 
 trait ListListSyntax {
-  // TODO @specialized(Int, Double, Long) A
   implicit final def toListListOps[A](
       xss: List[List[A]]
   ): ListListOps[A] =
@@ -28,13 +27,20 @@ trait ListListSyntax {
 final class ListListOps[A](
     private val xss: List[List[A]]
 ) extends AnyVal {
+  // The complexity of a cartesian product is
+  // $\theta(n_1n_2 \ldots n_i \ldots n_m)$ where $n_i$ is the size of the ith element.
   def cartesianProduct: List[List[A]] = {
+    // Complexity: O(n*p)
+    //   where n*m := size of a
+    //         p := size of b
+    // We ignored flatMap and (++)
     @inline def partialCartesian(
         a: List[List[A]],
         b: List[A]
     ): List[List[A]] = {
       a.flatMap(xs => {
         b.map(y => {
+          // FIXME make it constant
           xs ++ List(y)
         })
       })
@@ -44,6 +50,9 @@ final class ListListOps[A](
       case Some(head) => {
         val tail = xss.tail
         val init = head.map(n => List(n))
+        // This complexity is hard to get right
+        // since each step increases the size of list a (partialCartesian)
+        // by n*(m*o + o) starting from m = 1
         tail.foldLeft(init)((arr, list) => {
           partialCartesian(arr, list)
         })

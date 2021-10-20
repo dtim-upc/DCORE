@@ -4,8 +4,9 @@ import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
 import dcer.actors.EngineManager.MatchGroupingId
+import dcer.data.Match.MaximalMatch
 import dcer.data.{ActorAddress, Match, Timer}
-import dcer.distribution.Predicate
+import dcer.distribution.{Blueprint, Predicate}
 import dcer.logging.TimeFilter
 import dcer.serialization.CborSerializable
 
@@ -17,9 +18,17 @@ object Worker {
   val workerServiceKey: ServiceKey[Command] = ServiceKey[Command]("Worker")
 
   sealed trait Command
-  final case class Process(
+  final case class ProcessMatch(
       id: MatchGroupingId,
       m: Match,
+      sop: Predicate,
+      replyTo: ActorRef[EngineManager.MatchValidated]
+  ) extends Command
+      with CborSerializable
+  final case class ProcessMaximalMatch(
+      id: MatchGroupingId,
+      m: MaximalMatch,
+      blueprint: Blueprint,
       sop: Predicate,
       replyTo: ActorRef[EngineManager.MatchValidated]
   ) extends Command
@@ -49,8 +58,14 @@ object Worker {
       ctx: ActorContext[Command]
   ): Behavior[Command] =
     Behaviors.receiveMessage[Command] {
-      case Process(id, m, sop, replyTo) =>
+      case ProcessMatch(id, m, sop, replyTo) =>
         processMatch(ctx, id, m, sop, replyTo, Timer())
+
+      case ProcessMaximalMatch(id, maximalMatch, blueprint, sop, replyTo) =>
+        blueprint.enumerate(maximalMatch).foreach { m =>
+          ctx.self ! ProcessMatch(id, m, sop, replyTo)
+        }
+        Behaviors.same
 
       case Stop =>
         ctx.log.info(s"Worker stopped")
@@ -61,9 +76,7 @@ object Worker {
         Behaviors.same
     }
 
-  /** This method is a mock which will be eventually replaced by real
-    * second-order predicates.
-    */
+  // For now, we simulate the execution-time cost of running the predicates.
   private def processMatch(
       ctx: ActorContext[Command],
       matchGroupingId: MatchGroupingId,

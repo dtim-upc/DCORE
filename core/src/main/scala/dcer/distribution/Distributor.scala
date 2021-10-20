@@ -2,12 +2,16 @@ package dcer.distribution
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
+import dcer.Binomial
 import dcer.actors.EngineManager.MatchGroupingId
 import dcer.actors.{EngineManager, Worker}
+import dcer.data.Match.MaximalMatch
 import dcer.data.{Configuration, DistributionStrategy, Match}
+import dcer.distribution.Blueprint.EventTypeSeqSize
 import edu.puc.core.execution.structures.output.MatchGrouping
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable.ListBuffer
 
 sealed trait Distributor {
   val ctx: ActorContext[EngineManager.Event]
@@ -40,8 +44,8 @@ object Distributor {
         RoundRobinWeighted(ctx, workers, predicate)
       case DistributionStrategy.PowerOfTwoChoices =>
         PowerOfTwoChoices(ctx, workers, predicate)
-      case DistributionStrategy.MaximalMatches =>
-        MaximalMatches(ctx, workers, predicate)
+      case DistributionStrategy.MaximalMatchesEnumeration =>
+        MaximalMatchesEnumeration(ctx, workers, predicate)
     }
 
   def fromConfig(config: Configuration.Parser)(
@@ -77,7 +81,8 @@ object Distributor {
     ): Unit = {
       matchGrouping.iterator().asScala.foreach { coreMatch =>
         ctx.log.debug(s"Sending match to worker: ${theWorker.path}")
-        theWorker ! Worker.Process(id, Match(coreMatch), predicate, ctx.self)
+        theWorker ! Worker
+          .ProcessMatch(id, Match(coreMatch), predicate, ctx.self)
       }
     }
   }
@@ -98,7 +103,7 @@ object Distributor {
       matchGrouping.iterator().asScala.foreach { coreMatch =>
         val worker = workers(lastIndex)
         ctx.log.debug(s"Sending match to worker: ${worker.path}")
-        worker ! Worker.Process(id, Match(coreMatch), predicate, ctx.self)
+        worker ! Worker.ProcessMatch(id, Match(coreMatch), predicate, ctx.self)
         lastIndex = (lastIndex + 1) % nWorkers
       }
     }
@@ -125,7 +130,7 @@ object Distributor {
         val worker = workers(index)
         ctx.log.debug(s"Sending match to worker: ${worker.path}")
         val m = Match(coreMatch)
-        worker ! Worker.Process(id, m, predicate, ctx.self)
+        worker ! Worker.ProcessMatch(id, m, predicate, ctx.self)
 
         load(index) =
           load(index) match { case (w, i) => (w + Match.weight(m), i) }
@@ -153,38 +158,74 @@ object Distributor {
         val worker = workers(index)
         ctx.log.debug(s"Sending match to worker: ${worker.path}")
         val m = Match(coreMatch)
-        worker ! Worker.Process(id, m, predicate, ctx.self)
+        worker ! Worker.ProcessMatch(id, m, predicate, ctx.self)
 
         load(index) += Match.weight(m)
       }
     }
   }
 
-  /*
-
-For all maximal matches:
-    1. Group by event type: {{A1}, {B1 B2}, {C1 C2 C3}, {D1}}
-    2. Subsets sizes: {{1}, {1,2}, {1,2,3}, {1}}
-    3. Cartesian product of subsets sizes to generate all configurations:
-    {A=1,B=1,C=1,D=1} <-> maximal match
-    {A=1,B=1,C=2,D=1} <-> maximal match
-    ...
-Distribute all configurations using a load-balancing algorithm.
-
-Given a configuration and a maximal match, we can compute the number of matches contained in that maximal match with that given configuration by:
-  1. for each event type, compute the binomial coefficient C(|event type|, configuration(event type)).
-  2. compute the product of (1)
-
-The old algorithm used for bin packing : https://github.com/dtim-upc/DistributedCER/blob/master/Flink-Core/src/main/java/edu/upc/dcer/flink/core/partitioners/SubmatchesFromMaximalMatch.java
-   */
-  private case class MaximalMatches(
+  private case class MaximalMatchesEnumeration(
       ctx: ActorContext[EngineManager.Event],
       workers: Array[ActorRef[Worker.Command]],
       predicate: Predicate
   ) extends Distributor {
+
+    type Cost = Long
+
     override def distributeInner(
         id: MatchGroupingId,
         matchGrouping: MatchGrouping
-    ): Unit = {}
+    ): Unit = {
+
+      // (1) Blueprints
+      val buffer: ListBuffer[(MaximalMatch, Blueprint, EventTypeSeqSize)] =
+        ListBuffer()
+
+      matchGrouping.forEach { coreMaximalMatch =>
+        val maximalMatch = Match(coreMaximalMatch)
+        val (blueprints, eventTypeSize) =
+          Blueprint.fromMaximalMatch(maximalMatch)
+        buffer ++= blueprints.map((maximalMatch, _, eventTypeSize))
+      }
+
+      // (2) Blueprints' cost for load balancing
+      val blueprints: Array[(MaximalMatch, Blueprint, Cost)] =
+        buffer.toArray.map { case (maximalMatch, blueprint, eventTypeSeqSize) =>
+          val cost = blueprint.value
+            .zip(eventTypeSeqSize)
+            .map { case (k, n) =>
+              Binomial.binomialUnsafe(k, n)
+            }
+            .product
+          (maximalMatch, blueprint, cost)
+        }
+
+      // (3) Load-balancing problem
+      //
+      // We start with a naive implementation based on a greedy algorithm.
+      val k = workers.length
+      val n = blueprints.length
+      val load: Array[Long] = Array.fill(k)(0)
+      val sortedBlueprints = blueprints.sortBy(_._3)(Ordering.Long.reverse)
+
+      def assign(blueprint_index: Int, worker_index: Int): Unit = {
+        val worker = workers(worker_index)
+        ctx.log.debug(s"Sending match to worker: ${worker.path}")
+        val (mm, bp, cost) = sortedBlueprints(blueprint_index)
+        worker ! Worker.ProcessMaximalMatch(id, mm, bp, predicate, ctx.self)
+        load(worker_index) += cost
+      }
+
+      // The first k can be assigned without checking the load
+      (0 until k).foreach(blueprint_index =>
+        assign(blueprint_index, blueprint_index)
+      )
+
+      (k until n).foreach { blueprint_index =>
+        val worker_min_load = load.zipWithIndex.minBy(_._1)._2
+        assign(blueprint_index, worker_min_load)
+      }
+    }
   }
 }
