@@ -1,11 +1,13 @@
 # TODO
 
 - [ ] Strategy: Maximal Matches Strategy
-  - [ ] Replace 'SELECT *' by 'SELECT MAX *' in the query.
   - [x] Distribute maximal matches with configuration.
   - [x] Worker: given a maximal match and a configuration compute all matches.
   - [x] Check when binomial overflows
-  - [ ] Test Blueprint.fromMaximalMatch
+  - [ ] BlueprintSpec (more comments there)
+  - [ ] Replace 'SELECT *' by 'SELECT MAX *' in the query.
+  - [ ] Run DistributionSpec and fix any error
+  - [ ] Test benchmark 
 
 ## Good to have
 
