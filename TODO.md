@@ -8,6 +8,8 @@
   - [ ] Replace 'SELECT *' by 'SELECT MAX *' in the query.
   - [ ] Run DistributionSpec and fix any error
   - [ ] Test benchmark 
+- [ ] Statistics: coefficient of variation
+- [ ] Benchmark everything
 
 ## Good to have
 
