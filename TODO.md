@@ -4,8 +4,8 @@
   - [x] Distribute maximal matches with configuration.
   - [x] Worker: given a maximal match and a configuration compute all matches.
   - [x] Check when binomial overflows
-  - [ ] BlueprintSpec (more comments there)
-  - [ ] Replace 'SELECT *' by 'SELECT MAX *' in the query.
+  - [x] BlueprintSpec (more comments there)
+  - [x] Replace 'SELECT *' by 'SELECT MAX *' in the query.
   - [ ] Run DistributionSpec and fix any error
   - [ ] Test benchmark 
 - [ ] Evaluate Refactor: Match, group events by kleene plus (Maybe not worth?)
