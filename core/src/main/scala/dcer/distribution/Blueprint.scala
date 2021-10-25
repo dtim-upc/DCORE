@@ -32,22 +32,29 @@ case class Blueprint(value: Array[Int]) extends AnyVal {
         case (event, eventType) :: tl if eventType == previousEventType =>
           go(tl, previousEventType, kleene + event, acc)
 
-        case events =>
-          val f = (k: Int) =>
+        case events => { // eventType1 /= previousEventType
+          val newAcc = {
+            val k = this.value(previousEventType)
             kleene.subsets(k).toList.flatMap { subset =>
               acc.map { events =>
                 events ++ subset
               }
             }
+          }
+
           events match {
-            case (event, eventType) :: tl =>
-              val k = this.value(eventType - 1)
-              go(tl, eventType, Set(event), f(k))
+            case (event, newEventType) :: tl =>
+              go(
+                tl,
+                newEventType,
+                Set(event),
+                newAcc
+              )
 
             case Nil => // Fin
-              val k = this.value(previousEventType - 1)
-              f(k)
+              newAcc
           }
+        }
       }
     }
 

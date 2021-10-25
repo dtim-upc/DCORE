@@ -5,11 +5,10 @@ import dcer.data.{Event, IntValue, Match}
 import dcer.distribution.Blueprint
 import dcer.distribution.Blueprint.EventTypeSeqSize
 import org.scalactic.Equality
-import org.scalatest.Assertion
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
-class BlueprintSpec extends AnyFunSpec with AllTest {
+class BlueprintSpec extends AnyFunSpec with Matchers with AllTest {
   describe("Blueprint") {
     describe("fromMaximalMatch") {
       fromMaximalMatchTests.foreach {
@@ -20,8 +19,9 @@ class BlueprintSpec extends AnyFunSpec with AllTest {
             ) =>
           it(testName) {
             val (blueprints, sizes) = Blueprint.fromMaximalMatch(maximalMatch)
-            blueprints ~ expectedBlueprints
-            sizes ~ expectedSize
+            blueprints should have length expectedBlueprints.length.toLong
+            blueprints should contain theSameElementsAs expectedBlueprints
+            sizes shouldEqual expectedSize
           }
       }
     }
@@ -30,7 +30,8 @@ class BlueprintSpec extends AnyFunSpec with AllTest {
         case Expectation(testName, (blueprint, maximalMatch), expected) =>
           it(testName) {
             val result = blueprint.enumerate(maximalMatch)
-            // TODO compare List of Matches
+            result should have length expected.length.toLong
+            result should contain theSameElementsAs expected
           }
       }
     }
@@ -133,9 +134,68 @@ trait EnumerateTest { self: TestHelper =>
     )
   }
 
+  private val test2 = {
+    val testName = "AAA (A = 1)"
+    val maximalMatch = getMatch(Array(A1, A2, A3))
+    val blueprint = Blueprint(Array(2))
+    val expectedResult = List(
+      Match(Array(A1, A2), Array.empty),
+      Match(Array(A1, A3), Array.empty),
+      Match(Array(A2, A3), Array.empty)
+    )
+
+    Expectation(
+      testName,
+      input = (blueprint, maximalMatch),
+      expected = expectedResult
+    )
+  }
+
+  private val test3 = {
+    val testName = "ABBCCCD (A = 1, B = 2, C = 2, D = 1)"
+    val maximalMatch = getMatch(Array(A1, B1, B2, C1, C2, C3, D1))
+    val blueprint = Blueprint(Array(1, 2, 2, 1))
+    val expectedResult = List(
+      Match(Array(A1, B1, B2, C1, C2, D1), Array.empty),
+      Match(Array(A1, B1, B2, C1, C3, D1), Array.empty),
+      Match(Array(A1, B1, B2, C2, C3, D1), Array.empty)
+    )
+
+    Expectation(
+      testName,
+      input = (blueprint, maximalMatch),
+      expected = expectedResult
+    )
+  }
+
+  private val test4 = {
+    val testName = "ABBBCCCDDDE (A = 1, B = 1, C = 2, D = 3, E = 1)"
+    val maximalMatch = getMatch(
+      Array(A1, B1, B2, B3, C1, C2, C3, D1, D2, D3, E1)
+    )
+    val blueprint = Blueprint(Array(1, 1, 2, 3, 1))
+    val expectedResult = List(
+      Match(Array(A1, B1, C1, C2, D1, D2, D3, E1), Array.empty),
+      Match(Array(A1, B1, C1, C3, D1, D2, D3, E1), Array.empty),
+      Match(Array(A1, B1, C2, C3, D1, D2, D3, E1), Array.empty),
+      Match(Array(A1, B2, C1, C2, D1, D2, D3, E1), Array.empty),
+      Match(Array(A1, B2, C1, C3, D1, D2, D3, E1), Array.empty),
+      Match(Array(A1, B2, C2, C3, D1, D2, D3, E1), Array.empty),
+      Match(Array(A1, B3, C1, C2, D1, D2, D3, E1), Array.empty),
+      Match(Array(A1, B3, C1, C3, D1, D2, D3, E1), Array.empty),
+      Match(Array(A1, B3, C2, C3, D1, D2, D3, E1), Array.empty)
+    )
+
+    Expectation(
+      testName,
+      input = (blueprint, maximalMatch),
+      expected = expectedResult
+    )
+  }
+
   // Hey listen, don't forget to add the test here!
   val enumerateTests: List[EnumerateExpectation] =
-    List(test1)
+    List(test1, test2, test3, test4)
 }
 
 trait EventBuilder {
@@ -199,34 +259,27 @@ trait TestHelper extends EventBuilder with Matchers {
   //   assert(Array(1,2) == Array(1,2)) // false
   //
   // Equality[Array[Int]] compares the two arrays structurally,
-  // taking into consideration the equality of the array's contents:
-  implicit class ArrayOps[T](v: Array[T]) {
-    def ~(other: Array[T]): Assertion = {
-      v should equal(other)
-    }
-  }
+  // taking into consideration the equality of the array's contents.
 
   implicit val blueprintEquality: Equality[Blueprint] =
     new Equality[Blueprint] {
-      override def areEqual(a: Blueprint, b: Any): Boolean = true
+      override def areEqual(a: Blueprint, b: Any): Boolean =
+        b match {
+          case b: Blueprint =>
+            implicitly[Equality[Array[Int]]].areEqual(a.value, b.value)
+          case _ => false
+        }
     }
 
-  implicit class ListBlueprint(v: List[Blueprint]) {
-    def ~(other: List[Blueprint]): Assertion = {
-      // We need to unwrap the Blueprint so `contain` can use the Equality[Array[Int]]
-//      val v1 = v.map(_.value)
-//      val v2 = other.map(_.value)
-//      v1 should contain theSameElementsAs v2
-      v should contain theSameElementsAs other
+  implicit val matchEquality: Equality[Match] =
+    new Equality[Match] {
+      override def areEqual(a: Match, b: Any): Boolean = {
+        b match {
+          case b: Match =>
+            implicitly[Equality[Array[Event]]].areEqual(a.events, b.events) &&
+              implicitly[Equality[Array[Int]]].areEqual(a.nodeList, b.nodeList)
+          case _ => false
+        }
+      }
     }
-  }
-
-//  implicit class ListMatch(v: List[Match]) {
-//    def ~(other: List[Match]): Assertion = {
-//      // We need to unwrap the Blueprint so `contain` can use the Equality[Array[Int]]
-//      val v1 = v.map(_.value)
-//      val v2 = other.map(_.value)
-//      v1 should contain theSameElementsAs v2
-//    }
-//  }
 }

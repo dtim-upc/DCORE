@@ -5,6 +5,7 @@ import edu.puc.core.execution.structures.output.{Match => CoreMatch}
 
 import scala.collection.JavaConverters._ // .asScala
 
+// nodeList starts at index 0
 case class Match(events: Array[Event], nodeList: Array[Int])
     extends CborSerializable
 

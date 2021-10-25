@@ -8,6 +8,7 @@
   - [ ] Replace 'SELECT *' by 'SELECT MAX *' in the query.
   - [ ] Run DistributionSpec and fix any error
   - [ ] Test benchmark 
+- [ ] Evaluate Refactor: Match, group events by kleene plus (Maybe not worth?)
 - [ ] Statistics: coefficient of variation
 - [ ] Benchmark everything
 
