@@ -15,6 +15,10 @@ import scala.annotation.tailrec
   *     closure of that event type in the query.
   */
 case class Blueprint(value: Array[Int]) extends AnyVal {
+  def pretty: String = {
+    s"Blueprint(${this.value.mkString(",")})"
+  }
+
   // Given a maximal match, enumerates all matches in the maximal match
   // where the blueprint holds i.e. the sequences of each event type
   // are of the same size as the ones from the blueprint.
@@ -69,7 +73,6 @@ case class Blueprint(value: Array[Int]) extends AnyVal {
 }
 
 object Blueprint {
-
   type EventTypeSeqSize = Array[Int]
 
   /*

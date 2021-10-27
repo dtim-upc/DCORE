@@ -203,7 +203,7 @@ object Distributor {
 
       // (3) Load-balancing problem
       //
-      // We start with a naive implementation based on a greedy algorithm.
+      // Our first implementation is based on a naive greedy algorithm.
       val k = workers.length
       val n = blueprints.length
       val load: Array[Long] = Array.fill(k)(0)
@@ -211,14 +211,16 @@ object Distributor {
 
       def assign(blueprint_index: Int, worker_index: Int): Unit = {
         val worker = workers(worker_index)
-        ctx.log.debug(s"Sending match to worker: ${worker.path}")
         val (mm, bp, cost) = sortedBlueprints(blueprint_index)
+        ctx.log.debug(
+          s"Sending ${bp.pretty} to worker: ${worker.path}"
+        )
         worker ! Worker.ProcessMaximalMatch(id, mm, bp, predicate, ctx.self)
         load(worker_index) += cost
       }
 
       // The first k can be assigned without checking the load
-      (0 until k).foreach(blueprint_index =>
+      (0 until Math.min(n, k)).foreach(blueprint_index =>
         assign(blueprint_index, blueprint_index)
       )
 

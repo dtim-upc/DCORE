@@ -61,8 +61,15 @@ object Worker {
       case ProcessMatch(id, m, sop, replyTo) =>
         processMatch(ctx, id, m, sop, replyTo, Timer())
 
+      // TODO
+      // Doesn't work since Stop goes first on the queue
       case ProcessMaximalMatch(id, maximalMatch, blueprint, sop, replyTo) =>
-        blueprint.enumerate(maximalMatch).foreach { m =>
+        val matches = blueprint.enumerate(maximalMatch)
+        ctx.log.info(
+          s"Maximal Match ${maximalMatch.events.toList
+            .map(_.name)} and ${blueprint.pretty} contained ${matches.length} matches"
+        )
+        matches.foreach { m =>
           ctx.self ! ProcessMatch(id, m, sop, replyTo)
         }
         Behaviors.same

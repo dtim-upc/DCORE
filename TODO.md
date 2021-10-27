@@ -6,6 +6,7 @@
   - [x] Check when binomial overflows
   - [x] BlueprintSpec (more comments there)
   - [x] Replace 'SELECT *' by 'SELECT MAX *' in the query.
+  - [ ] Worker MaximalMatch fails because Stop happens afterwards before processing the matches.
   - [ ] Run DistributionSpec and fix any error
   - [ ] Test benchmark 
 - [ ] Evaluate Refactor: Match, group events by kleene plus (Maybe not worth?)
