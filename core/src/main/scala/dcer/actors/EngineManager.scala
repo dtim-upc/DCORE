@@ -166,6 +166,7 @@ object EngineManager {
         workers.foreach {
           case (worker, load) if load == 0 =>
             worker ! Worker.Stop
+          case _ => () // otherwise it throws
         }
         // Then, we set the state to stopping.
         // We need to wait for each worker to finish its share before stopping.

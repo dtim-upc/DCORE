@@ -11,7 +11,7 @@ import dcer.logging.TimeFilter
 import dcer.serialization.CborSerializable
 
 import scala.collection.immutable.Queue
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 object Worker {
 
@@ -33,8 +33,12 @@ object Worker {
       replyTo: ActorRef[EngineManager.MatchValidated]
   ) extends Command
       with CborSerializable
+  // NB: stop will stop the worker immediately i.e. it is responsible of the user to
+  // stop the worker after all jobs have been finished (see EngineManager).
   final case object Stop extends Command with CborSerializable
-  final case object Tick extends Command with CborSerializable
+  final case object MatchProcessingFinished
+      extends Command
+      with CborSerializable
 
   def apply(): Behavior[Command] = {
     Behaviors.setup { ctx =>
@@ -61,8 +65,6 @@ object Worker {
       case ProcessMatch(id, m, sop, replyTo) =>
         processMatch(ctx, id, m, sop, replyTo, Timer())
 
-      // TODO
-      // Doesn't work since Stop goes first on the queue
       case ProcessMaximalMatch(id, maximalMatch, blueprint, sop, replyTo) =>
         val matches = blueprint.enumerate(maximalMatch)
         ctx.log.info(
@@ -105,35 +107,31 @@ object Worker {
     // If the scheduler is not clever enough, it may queue more than one actor per thread and
     // if the thread is blocked, all actors will be blocked although the rest could be
     // doing actual work.
-    def go(
-        n: Int,
+    def waitMatchProcessing(
         queue: Queue[Command]
     ): Behavior[Command] = {
       Behaviors.receiveMessage[Command] {
-        case Tick =>
-          val rem = n - 1
-          if (rem <= 0) {
-            ctx.log.info(
-              TimeFilter.marker,
-              s"Match (#events=${m.events.length}, complexity=$sop) processed in ${timer.elapsedTime().toMillis} milliseconds"
-            )
-            replyTo ! EngineManager.MatchValidated(
-              matchGroupingId,
-              m,
-              ActorAddress.parse(ctx.self.path.name).get,
-              ctx.self
-            )
-            queue.foreach { msg => ctx.self ! msg }
-            running(ctx)
-          } else {
-            val _ = ctx.scheduleOnce(eventProcessingDuration, ctx.self, Tick)
-            go(rem, queue)
-          }
+        case MatchProcessingFinished =>
+          ctx.log.info(
+            TimeFilter.marker,
+            s"Match (#events=${m.events.length}, complexity=$sop) processed in ${timer.elapsedTime().toMillis} milliseconds"
+          )
+          replyTo ! EngineManager.MatchValidated(
+            matchGroupingId,
+            m,
+            ActorAddress.parse(ctx.self.path.name).get,
+            ctx.self
+          )
+          queue.foreach { msg => ctx.self ! msg }
+          running(ctx)
 
+        // We accumulate (in order) the rest of messages for later
         case e: Command =>
-          go(n, queue.enqueue(e))
+          waitMatchProcessing(queue.enqueue(e))
       }
     }
+
+    // Mock computational time depending on the complexity
     val n =
       sop match {
         case Predicate.Linear() =>
@@ -144,7 +142,8 @@ object Worker {
           scala.math.pow(m.events.length.toDouble, 3)
       }
 
-    ctx.self ! Tick
-    go(n.toInt, Queue.empty)
+    val duration: FiniteDuration = eventProcessingDuration * n.toLong
+    ctx.scheduleOnce(duration, ctx.self, MatchProcessingFinished)
+    waitMatchProcessing(Queue.empty)
   }
 }
