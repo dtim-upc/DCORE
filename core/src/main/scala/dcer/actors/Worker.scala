@@ -120,7 +120,8 @@ object Worker {
             replyTo ! EngineManager.MatchValidated(
               matchGroupingId,
               m,
-              ActorAddress.parse(ctx.self.path.name).get
+              ActorAddress.parse(ctx.self.path.name).get,
+              ctx.self
             )
             queue.foreach { msg => ctx.self ! msg }
             running(ctx)

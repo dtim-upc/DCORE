@@ -72,7 +72,7 @@ object Engine {
             ctx.log.info("No more events on the source stream")
             ctx.log.info("Engine stopped")
             BaseEngine.clear() // Remove static variables
-            engineManager ! EngineManager.Stop
+            engineManager ! EngineManager.EngineStopped
             Behaviors.stopped
         }
     }

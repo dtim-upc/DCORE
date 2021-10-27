@@ -7,11 +7,14 @@
   - [x] BlueprintSpec (more comments there)
   - [x] Replace 'SELECT *' by 'SELECT MAX *' in the query.
   - [ ] Worker MaximalMatch fails because Stop happens afterwards before processing the matches.
+    - [x] Refactor EngineManager
+    - [ ] Refactor Worker: Stop means stop
   - [ ] Run DistributionSpec and fix any error
   - [ ] Test benchmark 
-- [ ] Evaluate Refactor: Match, group events by kleene plus (Maybe not worth?)
 - [ ] Statistics: coefficient of variation
 - [ ] Benchmark everything
+
+- [ ] The load in MaximalMatchEnumeration is by number of matches in the maximal match and blueprint. We can do a better balance if we count the sum of sizes of each match in the maximal match.
 
 ## Good to have
 
