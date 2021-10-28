@@ -13,7 +13,7 @@ case class MatchTest(events: List[EventTest]) extends AnyVal
 
 object MatchTest {
   def apply(m: Match): MatchTest = {
-    MatchTest(m.events.map(EventTest(_)))
+    MatchTest(m.events.toList.map(EventTest(_)))
   }
 }
 

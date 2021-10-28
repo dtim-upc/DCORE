@@ -61,7 +61,9 @@ lazy val core = (project in file("core"))
         // Logging
         "ch.qos.logback" % "logback-classic" % LogbackVersion,
         // CLI parsing
-        "com.monovore" %% "decline" % DeclineVersion
+        "com.monovore" %% "decline" % DeclineVersion,
+        // Others
+        "com.github.pathikrit" %% "better-files" % "3.9.1"
       ) ++ Seq(
         "com.typesafe.akka" %% "akka-actor-testkit-typed" % AkkaVersion,
         "org.scalatest" %% "scalatest" % ScalaTestVersion,

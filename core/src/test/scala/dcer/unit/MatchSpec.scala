@@ -10,9 +10,9 @@ class MatchSpec extends AnyFunSpec {
   val eventC: Event = Event(name = "C", streamName)
   val eventD: Event = Event(name = "D", streamName)
   val eventE: Event = Event(name = "E", streamName)
-  val allEvents = List(eventA, eventB, eventC, eventD, eventE)
+  val allEvents = Array(eventA, eventB, eventC, eventD, eventE)
 
-  def getMatch(events: List[Event]): Match = {
+  def getMatch(events: Array[Event]): Match = {
     val nodeList = events.map(allEvents.indexOf(_))
     Match(events, nodeList)
   }
@@ -20,21 +20,21 @@ class MatchSpec extends AnyFunSpec {
   describe("Match") {
     describe("weight") {
       it("should return the weight of a match (1)") {
-        val m = getMatch(events = List(eventA, eventB, eventC))
+        val m = getMatch(events = Array(eventA, eventB, eventC))
         assert(Match.weight(m) == 3L)
       }
       it("should return the weight of a match (2)") {
-        val m = getMatch(events = List(eventA, eventB, eventB, eventB, eventC))
+        val m = getMatch(events = Array(eventA, eventB, eventB, eventB, eventC))
         assert(Match.weight(m) == 9L)
       }
       it("should return the weight of a match (3)") {
         val m = getMatch(events =
-          List(eventA, eventB, eventB, eventC, eventD, eventD, eventE)
+          Array(eventA, eventB, eventB, eventC, eventD, eventD, eventE)
         )
         assert(Match.weight(m) == 9L)
       }
       it("should return the weight of a match (4)") {
-        val m = getMatch(events = List(eventA, eventB, eventB, eventB, eventB))
+        val m = getMatch(events = Array(eventA, eventB, eventB, eventB, eventB))
         assert(Match.weight(m) == 16L)
       }
     }

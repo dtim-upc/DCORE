@@ -1,15 +1,18 @@
 package dcer.actors
 
-import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
+import akka.actor.typed.{ActorRef, Behavior}
+import better.files._
 import dcer.actors.EngineManager.MatchGroupingFound
-import dcer.data.QueryPath
+import dcer.data.{Configuration, DistributionStrategy, QueryPath}
 import edu.puc.core.engine.BaseEngine
 import edu.puc.core.engine.executors.ExecutorManager
 import edu.puc.core.engine.streams.StreamManager
 import edu.puc.core.runtime.events.Event
 import edu.puc.core.util.StringUtils
 
+import java.io.BufferedReader
+import java.util.regex.Pattern
 import scala.util.Try
 
 object Engine {
@@ -23,7 +26,8 @@ object Engine {
       engineManager: ActorRef[EngineManager.Event]
   ): Behavior[Engine.Command] = {
     Behaviors.setup { ctx =>
-      val baseEngine = buildEngine(queryPath) match {
+      val configParser = Configuration(ctx)
+      val baseEngine = buildEngine(configParser, queryPath) match {
         case Left(err)     => throw err
         case Right(engine) => engine
       }
@@ -68,17 +72,21 @@ object Engine {
             ctx.log.info("No more events on the source stream")
             ctx.log.info("Engine stopped")
             BaseEngine.clear() // Remove static variables
-            engineManager ! EngineManager.Stop
+            engineManager ! EngineManager.EngineStopped
             Behaviors.stopped
         }
     }
   }
 
-  private def buildEngine(queryPath: QueryPath): Either[Throwable, BaseEngine] =
+  private def buildEngine(
+      configParser: Configuration.Parser,
+      queryPath: QueryPath
+  ): Either[Throwable, BaseEngine] =
     for {
-      queryFile <- Try(
-        StringUtils.getReader(queryPath.value + "/query_test.data")
-      ).toEither
+      queryFile <- getQueryFile(
+        configParser,
+        File(queryPath.value + "/query_test.data")
+      )
       streamFile <- Try(
         StringUtils.getReader(queryPath.value + "/stream_test.data")
       ).toEither
@@ -94,4 +102,79 @@ object Engine {
         )
       ).toEither
     } yield engine
+
+  /*
+   Some strats require the query to be changed.
+   For example, MaximalMatchesEnumeration expects the query to return maximal matches.
+   */
+  def getQueryFile(
+      configParser: Configuration.Parser,
+      queryDataFile: File
+  ): Either[Throwable, BufferedReader] = {
+    val Same = Right(queryDataFile.newBufferedReader)
+
+    for {
+      strategy <- Try(
+        configParser.getValueOrThrow(Configuration.DistributionStrategyKey)(
+          DistributionStrategy.parse
+        )
+      ).toEither
+      queryBuffer <- strategy match {
+        case DistributionStrategy.Sequential =>
+          Same
+        case DistributionStrategy.RoundRobin =>
+          Same
+        case DistributionStrategy.RoundRobinWeighted =>
+          Same
+        case DistributionStrategy.PowerOfTwoChoices =>
+          Same
+        case DistributionStrategy.MaximalMatchesEnumeration =>
+          newMaximalMatchQueryFile(queryDataFile)
+      }
+    } yield queryBuffer
+  }
+
+  /*
+   This method replaces the "query_test.data" with one where the file
+   storing the query has been replaced by a temporal file that contains
+   the same query but replacing "SELECT *" by "SELECT MAX *".
+
+   This method fails if:
+   - The file does not follow the "query_test.data" format.
+   - The query is not in FILE format.
+   */
+  def newMaximalMatchQueryFile(
+      original: File
+  ): Either[Throwable, BufferedReader] =
+    original.lineIterator.toList match {
+      case first :: second :: Nil =>
+        val method = second.split(":")(0)
+        val queryPath = second.split(":")(1)
+        val query = File(queryPath).contentAsString
+        if (query.contains("SELECT *")) {
+          val newQuery =
+            Pattern.quote("SELECT *").r.replaceFirstIn(query, "SELECT MAX *")
+          val tmpQueryFile = File
+            .newTemporaryFile()
+            .deleteOnExit()
+            .appendText(newQuery)
+          Right(
+            File
+              .newTemporaryFile()
+              .deleteOnExit()
+              .appendLines(first, s"$method:$tmpQueryFile")
+              .newBufferedReader
+          )
+        } else {
+          Left(new RuntimeException("Query does not contain \"SELECT *\""))
+        }
+
+      case _ =>
+        Left(
+          new RuntimeException(
+            s"${original.name} does not follow the query description file format:\n\n${original.contentAsString}"
+          )
+        )
+    }
+
 }

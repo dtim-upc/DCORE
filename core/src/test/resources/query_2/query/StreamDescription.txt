@@ -1,0 +1,4 @@
+DECLARE EVENT A(id double)
+DECLARE EVENT B(id double)
+DECLARE EVENT C(id double)
+DECLARE STREAM S(A, B, C)
