@@ -1,7 +1,10 @@
 # TODO
 - [ ] Statistics: coefficient of variation
+  - Add Statistics to EngineManager
+  - Print statistics at the end of the execution
 - [ ] Benchmark and store outputs
-
+  - Add new benchmark for maximal matches
+  - Benchmark maximal matches
 
 ## Optional
 
