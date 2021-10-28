@@ -132,7 +132,7 @@ object Distributor {
     // The second element the index in the array.
     // This allows to efficiently implement
     val load: Array[Long] = Array.fill(workers.length)(0L)
-    val oneToN: immutable.Seq[Int] = 1 to load.length
+    val oneToN: immutable.Seq[Int] = 1 until load.length
 
     private def minLoadIndex(): Int = {
       // Pre-condition: Length >= 1

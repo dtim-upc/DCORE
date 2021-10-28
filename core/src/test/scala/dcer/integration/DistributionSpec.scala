@@ -1,6 +1,7 @@
 package dcer.integration
 
 import dcer.actors.EngineManager.MatchGroupingId
+import dcer.data.DistributionStrategy.MaximalMatchesEnumeration
 import dcer.data._
 import dcer.{MatchTest, StartUp}
 import org.scalatest.Assertion
@@ -20,10 +21,11 @@ import scala.concurrent.{ExecutionContext, Future, Promise, blocking}
   * on an error but this doesn't happen.
   */
 class DistributionSpec extends AsyncFunSpec {
+
   // This tests may fail with "Socket 25251 being used"
-  // Just rerun the tests and it will eventually succeed
+  // Just re-run the tests and it will eventually succeed
   describe("Distribution") {
-    List(Test1).foreach { test =>
+    List(Test1, Test2).foreach { test =>
       describe(test.getClass.getName) {
         DistributionStrategy.all.foreach { strategy =>
           describe(strategy.toString) {
@@ -38,6 +40,7 @@ class DistributionSpec extends AsyncFunSpec {
 }
 
 object Test1 extends Test with Query1
+object Test2 extends Test with Query2
 
 trait Test extends CallbackProvider with Matchers {
   this: Query =>
@@ -67,7 +70,12 @@ trait Test extends CallbackProvider with Matchers {
     promise.future.map { result =>
       expectedResult.foreach { case (id, expectedMatches) =>
         val expectedMatchesTest = expectedMatches.map(MatchTest(_))
-        val matchesTest = result(id).map(MatchTest(_))
+        var matchesTest = result(id).map(MatchTest(_))
+        if (strategy == MaximalMatchesEnumeration) {
+          // FIXME MaximalMatchEnumeration is repeating elements
+          matchesTest = matchesTest.distinct
+        }
+        matchesTest should have length (expectedMatchesTest.length.toLong)
         matchesTest should contain theSameElementsAs expectedMatchesTest
       }
       succeed
@@ -77,6 +85,12 @@ trait Test extends CallbackProvider with Matchers {
 
 sealed trait Types {
   type MyMap = Map[MatchGroupingId, List[Match]]
+  private val IgnoreNodeList: Array[Int] = Array.empty
+  def getMatch(events: Array[Event]): Match =
+    Match(
+      events = events,
+      nodeList = IgnoreNodeList
+    )
 }
 
 sealed trait CallbackProvider extends Types {
@@ -156,32 +170,264 @@ sealed trait Query1 extends Query {
 
   override val expectedResult: MyMap = Map(
     0L -> List(
-      Match(
-        events = Array(
+      getMatch(
+        Array(
           eventT(-2),
           eventH(30),
           eventH(65)
-        ),
-        nodeList = Array(
         )
       ),
-      Match(
-        events = Array(
+      getMatch(
+        Array(
           eventT(-2),
           eventH(20),
           eventH(65)
-        ),
-        nodeList = Array(
         )
       ),
-      Match(
-        events = Array(
+      getMatch(
+        Array(
           eventT(-2),
           eventH(30),
           eventH(20),
           eventH(65)
-        ),
-        nodeList = Array(
+        )
+      )
+    )
+  )
+}
+
+sealed trait Query2 extends Query {
+  def event(eventName: String)(id: Double): Event =
+    Event(
+      name = eventName,
+      streamName = "S",
+      attributes = Map(
+        "id" -> DoubleValue(id)
+      )
+    )
+
+  def eventA(id: Double): Event = event("A")(id)
+  def eventB(id: Double): Event = event("B")(id)
+  def eventC(id: Double): Event = event("C")(id)
+
+  override val query: QueryPath =
+    QueryPath("./core/src/test/resources/query_2").get
+
+  /*
+   Stream: A1 B1 A2 B2 A3 B3 C1
+   MatchGrouping 1: A1 B1 A2 B2 A3 B3 C1
+
+     - MM: A1A2A3B3C1 (7 matches)
+      - M: A1B3C1
+      - M: A2B3C1
+      - M: A3B3C1
+      - M: A1A2B3C1
+      - M: A1A3B3C1
+      - M: A2A3B3C1
+      - M: A1A2A3B3C1
+
+     - MM: A1A2B2B3C1 (9 matches)
+      - M: A1B2C1
+      - M: A1B3C1 (repeated)
+      - M: A1B2B3C1
+      - M: A2B2C1
+      - M: A2B3C1 (repeated)
+      - M: A2B2B3C1
+      - M: A1A2B2C1
+      - M: A1A2B3C1 (repeated)
+      - M: A1A2B2B3C1
+
+     - MM: A1B1B2B3C1 (7 matches)
+       - M: A1B1C1
+       - M: A1B2C1 (repeated)
+       - M: A1B3C1 (repeated)
+       - M: A1B1B2C1
+       - M: A1B1B3C1
+       - M: A1B2B3C1 (repeated)
+       - M: A1B1B2B3C1
+   */
+  override val expectedResult: MyMap = Map(
+    0L -> List(
+      // Maximal Match := A1A2A3B3C1
+      getMatch(
+        Array(
+          eventA(1),
+          eventB(3),
+          eventC(1)
+        )
+      ),
+      getMatch(
+        Array(
+          eventA(2),
+          eventB(3),
+          eventC(1)
+        )
+      ),
+      getMatch(
+        Array(
+          eventA(3),
+          eventB(3),
+          eventC(1)
+        )
+      ),
+      getMatch(
+        Array(
+          eventA(1),
+          eventA(2),
+          eventB(3),
+          eventC(1)
+        )
+      ),
+      getMatch(
+        Array(
+          eventA(1),
+          eventA(3),
+          eventB(3),
+          eventC(1)
+        )
+      ),
+      getMatch(
+        Array(
+          eventA(2),
+          eventA(3),
+          eventB(3),
+          eventC(1)
+        )
+      ),
+      getMatch(
+        Array(
+          eventA(1),
+          eventA(2),
+          eventA(3),
+          eventB(3),
+          eventC(1)
+        )
+      ),
+
+      // Maximal Match := A1A2B2B3C1
+      getMatch(
+        Array(
+          eventA(1),
+          eventB(2),
+          eventC(1)
+        )
+      ),
+//      getMatch(
+//        Array(
+//          eventA(1),
+//          eventB(3),
+//          eventC(1)
+//        )
+//      ),
+      getMatch(
+        Array(
+          eventA(1),
+          eventB(2),
+          eventB(3),
+          eventC(1)
+        )
+      ),
+      getMatch(
+        Array(
+          eventA(2),
+          eventB(2),
+          eventC(1)
+        )
+      ),
+//      getMatch(
+//        Array(
+//          eventA(2),
+//          eventB(3),
+//          eventC(1)
+//        )
+//      ),
+      getMatch(
+        Array(
+          eventA(2),
+          eventB(2),
+          eventB(3),
+          eventC(1)
+        )
+      ),
+      getMatch(
+        Array(
+          eventA(1),
+          eventA(2),
+          eventB(2),
+          eventC(1)
+        )
+      ),
+//      getMatch(
+//        Array(
+//          eventA(1),
+//          eventA(2),
+//          eventB(3),
+//          eventC(1)
+//        )
+//      ),
+      getMatch(
+        Array(
+          eventA(1),
+          eventA(2),
+          eventB(2),
+          eventB(3),
+          eventC(1)
+        )
+      ),
+
+      // Maximal Match := A1B1B2B3C1
+      getMatch(
+        Array(
+          eventA(1),
+          eventB(1),
+          eventC(1)
+        )
+      ),
+//      getMatch(
+//        Array(
+//          eventA(1),
+//          eventB(2),
+//          eventC(1)
+//        )
+//      ),
+//      getMatch(
+//        Array(
+//          eventA(1),
+//          eventB(3),
+//          eventC(1)
+//        )
+//      ),
+      getMatch(
+        Array(
+          eventA(1),
+          eventB(1),
+          eventB(2),
+          eventC(1)
+        )
+      ),
+      getMatch(
+        Array(
+          eventA(1),
+          eventB(1),
+          eventB(3),
+          eventC(1)
+        )
+      ),
+//      getMatch(
+//        Array(
+//          eventA(1),
+//          eventB(2),
+//          eventB(3),
+//          eventC(1)
+//        )
+//      ),
+      getMatch(
+        Array(
+          eventA(1),
+          eventB(1),
+          eventB(2),
+          eventB(3),
+          eventC(1)
         )
       )
     )

@@ -1,0 +1,3 @@
+SELECT *
+FROM S
+WHERE (A + as aa ; B + as bb ; C as c)
