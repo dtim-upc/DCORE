@@ -13,7 +13,8 @@
         <appender-ref ref="STDOUT" />
     </appender>
 
-    <!-- At every launch, a new file is created for errors and matches -->
+    <!-- The timestamp is created once at the very beginning of the execution -->
+    <!-- See ERROR FILE for an example -->
     <timestamp key="bySecond" datePattern="yyyyMMdd'T'HHmmss"/>
 
     <appender name="ERROR FILE" class="ch.qos.logback.core.FileAppender">
@@ -22,6 +23,7 @@
         </filter>
         <!-- set immediateFlush to false for much higher logging throughput -->
         <immediateFlush>true</immediateFlush>
+        <!-- At every launch, a new file is created for errors with the timestamp -->
         <file>target/error-${bySecond}.log</file>
         <encoder>
             <pattern>[%level] [%X{akkaAddress}] - %msg%n</pattern>
@@ -31,7 +33,7 @@
     <!-- This should only log messages marked with the MatchesFilter.marker -->
     <appender name="MATCHES FILE" class="ch.qos.logback.core.FileAppender">
         <filter class="dcer.logging.MatchFilter" />
-        <file>target/matches-${bySecond}.log</file>
+        <file>target/matches.log</file>
         <!-- set immediateFlush to false for much higher logging throughput -->
         <immediateFlush>true</immediateFlush>
         <encoder>
@@ -42,7 +44,18 @@
     <!-- This should only log messages marked with the TimeFilter.marker -->
     <appender name="TIME FILE" class="ch.qos.logback.core.FileAppender">
         <filter class="dcer.logging.TimeFilter" />
-        <file>target/time-${bySecond}.log</file>
+        <file>target/time.log</file>
+        <!-- set immediateFlush to false for much higher logging throughput -->
+        <immediateFlush>true</immediateFlush>
+        <encoder>
+            <pattern>%msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- This should only log messages marked with the StatsFilter.marker -->
+    <appender name="STATS FILE" class="ch.qos.logback.core.FileAppender">
+        <filter class="dcer.logging.StatsFilter" />
+        <file>target/stats.log</file>
         <!-- set immediateFlush to false for much higher logging throughput -->
         <immediateFlush>true</immediateFlush>
         <encoder>
@@ -56,5 +69,6 @@
         <appender-ref ref="ERROR FILE"/>
         <appender-ref ref="MATCHES FILE"/>
         <appender-ref ref="TIME FILE"/>
+        <appender-ref ref="STATS FILE"/>
     </root>
 </configuration>

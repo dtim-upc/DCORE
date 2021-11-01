@@ -1,12 +1,22 @@
-# TODO
-- [ ] Statistics: coefficient of variation
-- [ ] Benchmark and store outputs
+# List of task
 
+- [ ] Benchmarks
+  - [ ] Add new benchmark for maximal matches
+  - [ ] Change `run-benchmarks.hs` to move outputs (matches, time and stats) to a folder named by the test.
+  - [ ] Benchmark each strategy and nMaxMatches and store the output in a CSV.
+
+- [ ] MaximalMatchEnumeration repeated outputs
+  - [ ] Prepare some complex examples and try to find a relationship between the repeated elements.
+  - [ ] Write an email to Stijn with the examples and ask him if he knows this problem.
+  - [ ] The idea would be to fine a mathematical definition of the problem (see set theory). Then, we can apply a theorem to avoid duplication or assume it is not tractable.
+
+- [ ] Load balancing: matches vs length (the problem right now is that enumeration does not take length into account)
+  - [ ] Add execution time of MaximalMatch + Configuration
+  - [ ] Execute a benchmark and store in CSV: #matches, length of matches, execution time
+  - [ ] Plot this information to see if load balancing is affected by length of matches.
 
 ## Optional
 
-- [ ] MaximalMatchEnumeration repeats outputs (see DistributionSpec.Query2)
-- [ ] The load in MaximalMatchEnumeration is by number of matches in the maximal match and blueprint. We can do a better balance if we count the sum of sizes of each match in the maximal match.
 - [ ] I don't really like the implementation based on node lists. 
 `dcer.data.Match` could store a `List[List[Event]]` instead.
 This would make grouping 0 cost and traversing is actually still linear with a custom iterator.
