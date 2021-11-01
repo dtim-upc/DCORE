@@ -16,7 +16,7 @@ object App
       header = "Benchmark generator for Distributed CER.",
       main = {
         Opts {
-          (0 until 1) foreach { benchmark =>
+          List(Benchmark0).foreach { benchmark =>
             Generator.generate(benchmark)
           }
         }
@@ -24,102 +24,63 @@ object App
     )
 
 object Generator {
-  val projectRoot: File = pwd / "benchmark"
-  // Each query has increasing complexity (plus one event in the kleene plus).
-  val nQueries: Int = 3
+  val ProjectRoot: File = pwd / "benchmark"
 
-  def generate(benchmark: Int): Unit = {
-    val benchmarkDir = projectRoot / s"benchmark${benchmark}"
-    val codeDir = projectRoot / "src" / "multi-jvm" / "scala"
+  def generate(benchmark: Benchmark): Unit = {
+    val BenchmarkDir = ProjectRoot / benchmark.path
+    val ExecutableDir = ProjectRoot / "src" / "multi-jvm" / "scala"
 
-    if (benchmarkDir.exists) {
+    if (BenchmarkDir.exists) {
       throw new RuntimeException(
-        s"${benchmarkDir.path.toString} already exists! Delete before generating a new one."
+        s"${BenchmarkDir.path.toString} already exists! Delete before generating a new one."
       )
     } else {
-      benchmarkDir.createDirectory()
+      BenchmarkDir.createDirectory()
     }
 
-    val generateQueryN = generateQuery(rootDir = benchmarkDir)(_)
-    val generateCodeN = generateCode(rootDir = codeDir)(_, _, _, _, _)
+    val generateQueryN = benchmark.generateQuery(rootDir = BenchmarkDir)(_)
+    val generateCodeN = generateCode(rootDir = ExecutableDir)(_, _, _, _, _, _)
 
-    (1 to nQueries) foreach { query =>
-      val queryDir = generateQueryN(query)
+    (1 to benchmark.iterations) foreach { iteration =>
+      val queryDir = generateQueryN(iteration)
       Predicate.all foreach { predicate =>
         DistributionStrategy.all.foreach { strategy =>
-          generateCodeN(benchmark, query, queryDir, strategy, predicate)
+          benchmark.workers.foreach { nWorkers =>
+            generateCodeN(
+              benchmark,
+              iteration,
+              queryDir,
+              strategy,
+              predicate,
+              nWorkers
+            )
+          }
         }
       }
     }
   }
 
-  private def generateQuery(rootDir: File)(query: Int): File = {
-    val queryDir = (rootDir / s"query$query").createDirectory()
-
-    val querySubDir = (queryDir / "query").createDirectory()
-    val queryFile = (querySubDir / "queries").createFile()
-    val descriptionFile = (querySubDir / "StreamDescription.txt").createFile()
-
-    val streamDir = (queryDir / "stream").createDirectory()
-    val streamFile = (streamDir / "stream").createFile()
-
-    (queryDir / "query_test.data")
-      .createFile()
-      .writeText(s"""|FILE:${descriptionFile}
-                       |FILE:${queryFile}
-                       |""".stripMargin)
-
-    (queryDir / "stream_test.data")
-      .createFile()
-      .writeText(s"S:FILE:${streamFile}")
-
-    descriptionFile
-      .writeText("""DECLARE EVENT T(temp double, city string)
-                   |DECLARE EVENT H(hum double, city string)
-                   |DECLARE STREAM S(T, H)
-                   |""".stripMargin)
-
-    queryFile
-      .writeText("""SELECT *
-                   |FROM S
-                   |WHERE (T as t1 ; H + as hs ; H as h1)
-                   |FILTER
-                   |    (t1[temp < 0] AND
-                   |     hs[hum < 60] AND
-                   |     h1[hum > 60])
-                   |""".stripMargin)
-
-    // Stream file with events
-    {
-      streamFile << "T(temp=-2, city=barcelona)"
-      val r = scala.util.Random
-      (1 to query + 2).foreach { _ =>
-        val hum = r.nextInt(60) // 0 to 59
-        streamFile << s"H(hum=$hum, city=barcelona)"
-      }
-      streamFile << "H(hum=65, city=barcelona)"
-    }
-
-    queryDir
-  }
-
   private def generateCode(rootDir: File)(
-      benchmark: Int,
+      benchmark: Benchmark,
       query: Int,
       queryDir: File,
       strategy: DistributionStrategy,
-      predicate: Predicate
+      predicate: Predicate,
+      nWorkers: Int
   ): Unit = {
     val predicatePath = predicate.toString.toLowerCase()
     val queryPath = s"query${query}"
+    val nWorkersPath = s"workers${nWorkers}"
 
     val packageDir =
-      (rootDir / queryPath / predicatePath).createDirectoryIfNotExists()
+      (rootDir / benchmark.path / queryPath / nWorkersPath / predicatePath)
+        .createDirectoryIfNotExists()
 
     def className(jvm: Int): String =
       s"${strategy}MultiJvmNode${jvm}"
 
-    val packageName = s"${queryPath}.${predicatePath}"
+    val packageName =
+      s"${benchmark.path}.${queryPath}.${nWorkersPath}.${predicatePath}"
     val packageDec =
       s"""package ${packageName}
         |""".stripMargin
@@ -156,8 +117,87 @@ object Generator {
     sourceFile << packageDec
     sourceFile << importsDec
     sourceFile << engineActorDec
-    (2 to 4) foreach { worker =>
-      sourceFile << workerActorDec(worker)
+    (1 to nWorkers) foreach { worker =>
+      sourceFile << workerActorDec(n = worker + 1 /*actor 1 is the Engine*/ )
     }
+  }
+}
+
+trait Benchmark {
+  // Unique identifier
+  val id: Int
+
+  // Relative benchmark path
+  def path: String = s"benchmark${id}"
+
+  // Number of iterations this benchmark must be run.
+  // Usually, the complexity of the test scales with the iteration number.
+  val iterations: Int
+
+  // The benchmark must be executed for each #workers size.
+  val workers: List[Int] = List(4, 8, 12)
+
+  // Given the rootDir and the iteration number generates a query file.
+  def generateQuery(rootDir: File)(iteration: Int): File
+}
+
+object Benchmark0 extends Benchmark {
+  override val id: Int = 0
+  override val iterations: Int = 3
+
+  override def generateQuery(rootDir: File)(iteration: Int): File = {
+    val queryDir = (rootDir / s"query$iteration").createDirectory()
+
+    val querySubDir = (queryDir / "query").createDirectory()
+    val queryFile = (querySubDir / "queries").createFile()
+    val descriptionFile = (querySubDir / "StreamDescription.txt").createFile()
+
+    val streamDir = (queryDir / "stream").createDirectory()
+    val streamFile = (streamDir / "stream").createFile()
+
+    (queryDir / "query_test.data")
+      .createFile()
+      .writeText(s"""|FILE:${descriptionFile}
+                     |FILE:${queryFile}
+                     |""".stripMargin)
+
+    (queryDir / "stream_test.data")
+      .createFile()
+      .writeText(s"S:FILE:${streamFile}")
+
+    descriptionFile
+      .writeText("""DECLARE EVENT T(temp double, city string)
+                   |DECLARE EVENT H(hum double, city string)
+                   |DECLARE STREAM S(T, H)
+                   |""".stripMargin)
+
+    queryFile
+      .writeText("""SELECT *
+                   |FROM S
+                   |WHERE (T as t1 ; H + as hs ; H as h1)
+                   |FILTER
+                   |    (t1[temp < 0] AND
+                   |     hs[hum < 60] AND
+                   |     h1[hum > 60])
+                   |""".stripMargin)
+
+    // Stream file with events
+    {
+      streamFile << "T(temp=-2, city=barcelona)"
+      val n = iteration match {
+        case 1  => 3
+        case 2  => 5
+        case 3  => 7
+        case it => throw new RuntimeException(s"Iteration $it not implemented")
+      }
+      val r = scala.util.Random
+      (1 to n).foreach { _ =>
+        val hum = r.nextInt(60) // 0 to 59
+        streamFile << s"H(hum=$hum, city=barcelona)"
+      }
+      streamFile << "H(hum=65, city=barcelona)"
+    }
+
+    queryDir
   }
 }
