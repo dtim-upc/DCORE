@@ -4,14 +4,19 @@ import cats.kernel.Semigroup
 
 import scala.Numeric.Implicits._
 
-case class Statistics[T, V: Semigroup: Numeric](value: Map[T, V])
-    extends AnyVal {
-  def combine(other: Map[T, V]): Statistics[T, V] =
+/*
+We could make the class independent of the type classes and
+each operation to require the type classes for that operation.
+- pro: we can delegate the implicits to each operation.
+- cons: each operation needs to have the implicits in scope.
+ */
+case class Statistics[T, V: Semigroup: Numeric](value: Map[T, V]) {
+  def combine(other: Statistics[T, V]): Statistics[T, V] =
     this + other
 
-  def +(other: Map[T, V]): Statistics[T, V] = {
+  def +(other: Statistics[T, V]): Statistics[T, V] = {
     import cats.implicits._
-    Statistics(this.value |+| other)
+    Statistics(this.value |+| other.value)
   }
 
   def mean(): Double = {
@@ -33,5 +38,11 @@ case class Statistics[T, V: Semigroup: Numeric](value: Map[T, V])
     val stdDev = this.stdDev()
     val mean = this.mean()
     stdDev / mean
+  }
+}
+
+object Statistics {
+  def empty[T, V: Numeric: Semigroup]: Statistics[T, V] = {
+    Statistics(Map.empty[T, V])
   }
 }

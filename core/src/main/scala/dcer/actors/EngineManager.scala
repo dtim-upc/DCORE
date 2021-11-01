@@ -6,9 +6,10 @@ import akka.actor.typed.{ActorRef, Behavior}
 import dcer.data
 import dcer.data._
 import dcer.distribution.Distributor
-import dcer.logging.{MatchFilter, TimeFilter}
+import dcer.logging.{MatchFilter, StatsFilter, TimeFilter}
 import dcer.serialization.CborSerializable
 import edu.puc.core.execution.structures.output.MatchGrouping
+import cats.implicits._
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
@@ -117,13 +118,21 @@ object EngineManager {
         Distributor.fromConfig(config)(ctx, workers.toArray)
 
       val workersAndLoad: Workers = workers.map((_, 0L)).toMap
-      running(ctx, callback, workersAndLoad, distributor, timer)
+      running(
+        ctx,
+        callback,
+        workersAndLoad,
+        Statistics.empty,
+        distributor,
+        timer
+      )
     }
 
   private def running(
       ctx: ActorContext[Event],
       callback: Option[Callback],
       workers: Workers,
+      stats: Statistics[ActorRef[Worker.Command], Long],
       distributor: Distributor,
       timer: Timer,
       isStopping: Boolean = false
@@ -139,6 +148,10 @@ object EngineManager {
             ctx.log.info(
               TimeFilter.marker,
               s"All events processed in ${timeElapsedSinceStart.toMillis} milliseconds"
+            )
+            ctx.log.info(
+              StatsFilter.marker,
+              s"Coefficient of variation (CV): ${stats.coefficientOfVariation()}"
             )
             ctx.log.info("EngineManager stopped")
             callback.foreach { case Callback(_, exit) =>
@@ -157,7 +170,15 @@ object EngineManager {
             "List of services registered with the receptionist changed: {}",
             newWorkers
           )
-          running(ctx, callback, workers, distributor, timer, isStopping)
+          running(
+            ctx,
+            callback,
+            workers,
+            stats,
+            distributor,
+            timer,
+            isStopping
+          )
         }
 
       case EngineStopped =>
@@ -170,16 +191,25 @@ object EngineManager {
         }
         // Then, we set the state to stopping.
         // We need to wait for each worker to finish its share before stopping.
-        running(ctx, callback, workers, distributor, timer, isStopping = true)
+        running(
+          ctx,
+          callback,
+          workers,
+          stats,
+          distributor,
+          timer,
+          isStopping = true
+        )
 
       case MatchGroupingFound(id, matchGrouping) =>
-        import cats.implicits._
         val assignment = distributor.distribute(id, matchGrouping)
         val newWorkers = workers |+| assignment
+        val newStats = stats + Statistics(assignment)
         running(
           ctx,
           callback,
           newWorkers,
+          newStats,
           distributor,
           timer,
           isStopping
@@ -203,6 +233,7 @@ object EngineManager {
           ctx,
           callback,
           workers.updated(fromRef, newLoad),
+          stats,
           distributor,
           timer,
           isStopping
