@@ -16,7 +16,9 @@ object App
       header = "Benchmark generator for Distributed CER.",
       main = {
         Opts {
-          List(Benchmark0).foreach { benchmark =>
+          val allBenchmarks = List(Benchmark0, Benchmark1)
+
+          allBenchmarks.foreach { benchmark =>
             Generator.generate(benchmark)
           }
         }
@@ -123,6 +125,7 @@ object Generator {
   }
 }
 
+// Hey you! Do not forget to add the benchmark to `App`
 trait Benchmark {
   // Unique identifier
   val id: Int
@@ -196,6 +199,62 @@ object Benchmark0 extends Benchmark {
         streamFile << s"H(hum=$hum, city=barcelona)"
       }
       streamFile << "H(hum=65, city=barcelona)"
+    }
+
+    queryDir
+  }
+}
+
+object Benchmark1 extends Benchmark {
+  override val id: Int = 1
+  override val iterations: Int = 4
+
+  override def generateQuery(rootDir: File)(iteration: Int): File = {
+    val queryDir = (rootDir / s"query$iteration").createDirectory()
+
+    val querySubDir = (queryDir / "query").createDirectory()
+    val queryFile = (querySubDir / "queries").createFile()
+    val descriptionFile = (querySubDir / "StreamDescription.txt").createFile()
+
+    val streamDir = (queryDir / "stream").createDirectory()
+    val streamFile = (streamDir / "stream").createFile()
+
+    (queryDir / "query_test.data")
+      .createFile()
+      .writeText(s"""|FILE:${descriptionFile}
+                     |FILE:${queryFile}
+                     |""".stripMargin)
+
+    (queryDir / "stream_test.data")
+      .createFile()
+      .writeText(s"S:FILE:${streamFile}")
+
+    descriptionFile
+      .writeText("""DECLARE EVENT A(id int)
+                   |DECLARE EVENT B(id int)
+                   |DECLARE EVENT C(id int)
+                   |""".stripMargin)
+
+    queryFile
+      .writeText("""SELECT *
+                   |FROM S
+                   |WHERE (A + as aa ; B + as bb ; C as c1)
+                   |""".stripMargin)
+
+    // Stream file with events
+    {
+      val n = iteration match {
+        case 1  => 4
+        case 2  => 5
+        case 3  => 6
+        case 4  => 7
+        case it => throw new RuntimeException(s"Iteration $it not implemented")
+      }
+      (1 to n).foreach { i =>
+        streamFile << s"A(id=$i)"
+        streamFile << s"B(id=$i)"
+      }
+      streamFile << "C(id=1)"
     }
 
     queryDir
