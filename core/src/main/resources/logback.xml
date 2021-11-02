@@ -21,6 +21,7 @@
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>ERROR</level>
         </filter>
+        <append>false</append>
         <!-- set immediateFlush to false for much higher logging throughput -->
         <immediateFlush>true</immediateFlush>
         <!-- At every launch, a new file is created for errors with the timestamp -->
@@ -34,6 +35,7 @@
     <appender name="MATCHES FILE" class="ch.qos.logback.core.FileAppender">
         <filter class="dcer.logging.MatchFilter" />
         <file>target/matches.log</file>
+        <append>false</append>
         <!-- set immediateFlush to false for much higher logging throughput -->
         <immediateFlush>true</immediateFlush>
         <encoder>
@@ -45,6 +47,7 @@
     <appender name="TIME FILE" class="ch.qos.logback.core.FileAppender">
         <filter class="dcer.logging.TimeFilter" />
         <file>target/time.log</file>
+        <append>false</append>
         <!-- set immediateFlush to false for much higher logging throughput -->
         <immediateFlush>true</immediateFlush>
         <encoder>
@@ -56,6 +59,7 @@
     <appender name="STATS FILE" class="ch.qos.logback.core.FileAppender">
         <filter class="dcer.logging.StatsFilter" />
         <file>target/stats.log</file>
+        <append>false</append>
         <!-- set immediateFlush to false for much higher logging throughput -->
         <immediateFlush>true</immediateFlush>
         <encoder>

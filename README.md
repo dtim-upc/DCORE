@@ -119,20 +119,33 @@ Should run all subproject tests.
 In order to run the benchmarks you need to install [stack](https://docs.haskellstack.org/en/stable/README/) (follow the instructions from the link).
 Stack is a package manager for Haskell. The script `run-benchmarks.hs` is written in haskell and uses some libraries. Stack will automatically install all dependencies for you.
 
-First, create the benchmarks:
+To see all available options:
 
 ```sh
-make benchmarks
+$ ./run-benchmarks.hs --help
+Benchmarks Script
+
+Usage: run-benchmarks.hs (all | only) [-c|--clean] [-o|--output OUTPUT]
+
+Available options:
+  -h,--help                Show this help text
+  -c,--clean               Clean run
+  -o,--output OUTPUT       Output folder
+
+Available commands:
+  all                      Run all benchmarks
+  only                     Run only the given benchmark  
 ```
 
-Then, run them:
+### Running all the benchmarks
+
+To generate the benchmarks, run them and collect all the statistics (execution time, coefficient of variation, etc):
 
 ```sh
-# This will take a while ~ 30 minutes.
-./run-benchmarks.hs
+./run-benchmarks.hs all --clean --output output
 ```
 
-Benchmarks can also be run by hand: 
+Benchmarks can also be run atomically by hand: 
 
 ```sh
 # Replace X by the benchmark: benchmark0, benchmark1.
