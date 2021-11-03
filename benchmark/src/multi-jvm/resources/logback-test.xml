@@ -19,6 +19,7 @@
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>ERROR</level>
         </filter>
+        <append>true</append>
         <immediateFlush>true</immediateFlush>
         <file>benchmark/target/error-${bySecond}.log</file>
         <encoder>
@@ -29,6 +30,7 @@
     <appender name="MATCHES FILE" class="ch.qos.logback.core.FileAppender">
         <filter class="dcer.logging.MatchFilter" />
         <file>benchmark/target/matches.log</file>
+        <append>true</append>
         <immediateFlush>true</immediateFlush>
         <encoder>
             <pattern>%msg%n</pattern>
@@ -38,6 +40,7 @@
     <appender name="TIME FILE" class="ch.qos.logback.core.FileAppender">
         <filter class="dcer.logging.TimeFilter" />
         <file>benchmark/target/time.log</file>
+        <append>true</append>
         <immediateFlush>true</immediateFlush>
         <encoder>
             <pattern>%msg%n</pattern>
@@ -47,6 +50,7 @@
     <appender name="STATS FILE" class="ch.qos.logback.core.FileAppender">
         <filter class="dcer.logging.StatsFilter" />
         <file>benchmark/target/stats.log</file>
+        <append>true</append>
         <immediateFlush>true</immediateFlush>
         <encoder>
             <pattern>%msg%n</pattern>
@@ -55,6 +59,9 @@
 
     <!-- ERROR, WARN, INFO but not DEBUG nor TRACE -->
     <root level="INFO">
+        <!-- Uncomment for debugging.
+             Logging to the console is not cheap. -->
+        <!-- <appender-ref ref="ASYNC STDOUT"/> -->
         <appender-ref ref="ERROR FILE"/>
         <appender-ref ref="MATCHES FILE"/>
         <appender-ref ref="TIME FILE"/>

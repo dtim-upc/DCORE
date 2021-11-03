@@ -4,9 +4,7 @@ BENCHMARK_DIR=benchmark
 
 all:
 
-benchmarks: clean-benchmarks benchmark0
-
-benchmark0:
+benchmarks: clean-benchmarks
 	sbt "benchmark/runMain generator.App"
 
 clean-benchmarks:

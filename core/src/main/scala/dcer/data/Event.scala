@@ -6,6 +6,7 @@ import edu.puc.core.runtime.events.{Event => CoreEvent}
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
+import scala.util.Try
 
 case class Event(
     name: String,
@@ -64,7 +65,11 @@ object Event {
             case ValueType.NUMERIC =>
               DoubleValue(unsafeCast[java.lang.Double](obj))
             case ValueType.INTEGER =>
-              IntValue(unsafeCast[java.lang.Integer](obj))
+              // FIXME
+              // A value tagged as ValueType.INTEGER is parsed as a java.lang.Double
+              // Example: Event A(id int)
+              Try(IntValue(unsafeCast[java.lang.Integer](obj)))
+                .getOrElse(DoubleValue(unsafeCast[java.lang.Double](obj)))
             case ValueType.LONG =>
               LongValue(unsafeCast[java.lang.Long](obj))
             case ValueType.DOUBLE =>

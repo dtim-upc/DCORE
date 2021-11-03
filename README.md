@@ -6,7 +6,9 @@ Distributed CER based on CORE engine.
 
 This project is build using `jdk11` or `openjdk11`, [sbt](https://www.scala-sbt.org/index.html) and [scala](https://scala-lang.org/). 
 
-In order to compile, build and run this project you need to install `sbt` in your system (`sbt` will automatically download the right `scala` version of your project).
+In order to compile, build and run this project you need to install `jdk11/openjdk11` and `sbt` in your system (`sbt` will automatically download the right `scala` version of your project).
+
+Then, go to the root of this project and execute:
 
 ```sh
 sbt compile
@@ -114,25 +116,50 @@ Should run all subproject tests.
 > Benchmarks are located at `benchmark` directory.  This folder contains the code to generate the benchmarks.
 > Benchmarks are not committed to `git` since they are procedurally generated and paths may be different in different machines.
 
-In order to run the benchmarks you need to install [sbt](https://www.scala-sbt.org/index.html) and [stack](https://docs.haskellstack.org/en/stable/README/) (follow the instructions from the link).
-Stack will automatically install all dependencies to run
+In order to run the benchmarks you need to install [stack](https://docs.haskellstack.org/en/stable/README/) (follow the instructions from the link).
+Stack is a package manager for Haskell. The script `run-benchmarks.hs` is written in haskell and uses some libraries. Stack will automatically install all dependencies for you.
+
+To see all available options:
 
 ```sh
-# Generate benchmarks
-make benchmarks
+$ ./run-benchmarks.hs --help
+Benchmarks Script
 
-# Run *all* benchmarks. This will take a while.
-./run-benchmarks.hs
+Usage: run-benchmarks.hs (all | only) [-c|--clean] [-o|--output OUTPUT]
+
+Available options:
+  -h,--help                Show this help text
+  -c,--clean               Clean run
+  -o,--output OUTPUT       Output folder
+
+Available commands:
+  all                      Run all benchmarks
+  only                     Run only the given benchmark  
 ```
 
-Benchmarks can be run atomically by hand: 
+### Running all the benchmarks
+
+To generate the benchmarks, run them and collect all the statistics (execution time, coefficient of variation, etc):
 
 ```sh
-# Replace X by the query: query1, query2 ...
-# Replace Y by complexity: linear, quadratic or cubic.
-# Replace Z by strategy: Sequential, RoundRobin, DoubleHashing, MaximalMatches
-sbt "benchmark/multi-jvm:run X.Y.Z"
+./run-benchmarks.hs all --clean --output output
 ```
+
+Benchmarks can also be run atomically by hand: 
+
+```sh
+# Replace X by the benchmark: benchmark0, benchmark1.
+# Replace Y by the query: query1, query2 ...
+# Replace V by the number of workers: workers4, workers8, workers12.
+# Replace W by complexity: linear, quadratic or cubic.
+# Replace Z by strategy: Sequential, RoundRobin, RoundRobinWeighted, PowerOfTwoChoices, MaximalMatchesEnumeration.
+sbt "benchmark/multi-jvm:run X.Y.V.W.Z"
+
+# For example
+sbt "benchmark/multi-jvm:run benchmark0.query1.workers12.linear.RoundRobin" 
+```
+
+The output of the manual execution should be stored at `benchmark/target/*`
 
 ## Contributing
 
