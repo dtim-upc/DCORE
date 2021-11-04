@@ -1,14 +1,5 @@
 # List of task
 
-- [ ] Benchmarks
-  - [x] Add new benchmark for maximal matches
-  - [x] Fix bug
-  - [x] Change `run-benchmarks.hs` to 
-    - [x] on failure, output pretty by catching errors
-    - [x] /dev/null 2>&1
-    - [x] move outputs (matches, time and stats) to a folder named by the test.
-  - [ ] Benchmark each strategy and nMaxMatches and store the output in a CSV.
-
 - [ ] MaximalMatchEnumeration repeated outputs
   - [ ] Prepare some complex examples and try to find a relationship between the repeated elements.
   - [ ] Write an email to Stijn with the examples and ask him if he knows this problem.

@@ -161,6 +161,30 @@ sbt "benchmark/multi-jvm:run benchmark0.query1.workers12.linear.RoundRobin"
 
 The output of the manual execution should be stored at `benchmark/target/*`
 
+The manual execution outputs an exception that it is **expected**.
+
+```shell
+Exception in thread "Thread-1" java.lang.InterruptedException
+        at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.reportInterruptAfterWait(AbstractQueuedSynchronizer.java:2056)
+        at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.awaitNanos(AbstractQueuedSynchronizer.java:2133)
+        at java.base/java.util.concurrent.LinkedBlockingQueue.poll(LinkedBlockingQueue.java:458)
+        at sbt.internal.util.Terminal$proxyInputStream$.poll$1(Terminal.scala:675)
+        at sbt.internal.util.Terminal$proxyInputStream$.read(Terminal.scala:681)
+        at sbt.internal.util.Terminal$SimpleInputStream.read(Terminal.scala:619)
+        at sbt.internal.util.Terminal$SimpleInputStream.read$(Terminal.scala:618)
+        at sbt.internal.util.Terminal$proxyInputStream$.read(Terminal.scala:627)
+        at java.base/java.io.FilterInputStream.read(FilterInputStream.java:133)
+        at java.base/java.io.FilterInputStream.read(FilterInputStream.java:107)
+        at scala.sys.process.BasicIO$.loop$1(BasicIO.scala:238)
+        at scala.sys.process.BasicIO$.transferFullyImpl(BasicIO.scala:246)
+        at scala.sys.process.BasicIO$.transferFully(BasicIO.scala:227)
+        at scala.sys.process.BasicIO$.connectToIn(BasicIO.scala:196)
+        at scala.sys.process.BasicIO$.$anonfun$input$1(BasicIO.scala:203)
+        at scala.sys.process.BasicIO$.$anonfun$input$1$adapted(BasicIO.scala:202)
+        at scala.sys.process.ProcessBuilderImpl$Simple.$anonfun$run$2(ProcessBuilderImpl.scala:79)
+        at scala.sys.process.ProcessImpl$Spawn$$anon$1.run(ProcessImpl.scala:27)
+```
+
 ## Contributing
 
 > If you are going to hack on the project, I would recommend installing [bloop](https://scalacenter.github.io/bloop) to speedup compilation and testing.
