@@ -62,7 +62,7 @@ maximalMatchesEnumeration = "MaximalMatchesEnumeration"
 
 strategies :: [Strategy]
 -- strategies = [sequential, roundRobin, roundRobinWeighted, powerOfTwoChoices, maximalMatchesEnumeration]
-strategies = [sequential, roundRobinWeighted, maximalMatchesEnumeration]
+strategies = [sequential, roundRobin, maximalMatchesEnumeration]
 
 -----------------------------------------
 

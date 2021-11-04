@@ -118,11 +118,12 @@ object EngineManager {
         Distributor.fromConfig(config)(ctx, workers.toArray)
 
       val workersAndLoad: Workers = workers.map((_, 0L)).toMap
+
       running(
         ctx,
         callback,
         workersAndLoad,
-        Statistics.empty,
+        Statistics(workersAndLoad),
         distributor,
         timer
       )
@@ -135,15 +136,16 @@ object EngineManager {
       stats: Statistics[ActorRef[Worker.Command], Long],
       distributor: Distributor,
       timer: Timer,
-      isStopping: Boolean = false
+      isStopping: Option[Int] = None /* Number of remaining workers */
   ): Behavior[Event] = {
     Behaviors.receiveMessage {
       // When a new worker connects or disconnects, a WorkersUpdated is send with the list
       // of all workers (the old ones and the new ones).
       case WorkersUpdated(newWorkers) =>
-        if (isStopping) {
-          // Are all workers stopped?
-          if (newWorkers.isEmpty) { // Yes
+        if (isStopping.isDefined) {
+          if (newWorkers.nonEmpty) {
+            Behaviors.same
+          } else {
             val timeElapsedSinceStart = timer.elapsedTime()
             ctx.log.info(
               TimeFilter.marker,
@@ -151,15 +153,17 @@ object EngineManager {
             )
             ctx.log.info(
               StatsFilter.marker,
-              s"Coefficient of variation (CV): ${stats.coefficientOfVariation()}"
+              s"""Matches by worker: ${stats.value.values.toList}
+                |Coefficient of variation (CV): ${stats
+                .coefficientOfVariation()}
+                |""".stripMargin
             )
             ctx.log.info("EngineManager stopped")
-            callback.foreach { case Callback(_, exit) =>
-              exit()
+            callback match {
+              case Some(Callback(_, exit)) => exit()
+              case None                    => ()
             }
             Behaviors.stopped
-          } else { // No
-            Behaviors.same
           }
         } else {
           // For now, just ignore changes in the topology since the management could be complicated.
@@ -183,13 +187,6 @@ object EngineManager {
 
       case EngineStopped =>
         ctx.log.info("Stopping EngineManager...")
-        // First we stop all workers that have no work assigned.
-        workers.foreach {
-          case (worker, load) if load == 0 =>
-            worker ! Worker.Stop
-          case _ => () // otherwise it throws
-        }
-        // Then, we set the state to stopping.
         // We need to wait for each worker to finish its share before stopping.
         running(
           ctx,
@@ -198,7 +195,7 @@ object EngineManager {
           stats,
           distributor,
           timer,
-          isStopping = true
+          isStopping = Some(workers.count { case (_, load) => load > 0 })
         )
 
       case MatchGroupingFound(id, matchGrouping) =>
@@ -220,15 +217,34 @@ object EngineManager {
           MatchFilter.marker,
           s"Match found at ${from.actorName}(${from.id.get})[${from.address}]:\n${data.Match.pretty(m)}"
         )
+
         callback match {
           case Some(Callback(matchFound, _)) => matchFound(id, m)
           case None                          => ()
         }
+
         val newLoad: Long = workers(fromRef) - 1
-        if (isStopping && newLoad == 0) {
-          // It is safe to stop the worker
-          fromRef ! Worker.Stop
-        }
+
+        // In the past, we deleted workers individually once the load reached 0,
+        // but akka started to panic when JVMs disconnected from the network.
+        //
+        // Now, we wait for all workers to finish before stopping them, all at once.
+        val newIsStopping: Option[Int] =
+          isStopping map { rem =>
+            val newRem =
+              if (newLoad == 0) { rem - 1 }
+              else { rem }
+
+            if (newRem == 0) {
+              ctx.log.info("Stopping all workers...")
+              workers.foreach { case (ref, _) =>
+                ref ! Worker.Stop
+              }
+            }
+
+            newRem
+          }
+
         running(
           ctx,
           callback,
@@ -236,7 +252,7 @@ object EngineManager {
           stats,
           distributor,
           timer,
-          isStopping
+          newIsStopping
         )
 
       case e: Event =>

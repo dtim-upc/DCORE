@@ -41,8 +41,4 @@ case class Statistics[T, V: Semigroup: Numeric](value: Map[T, V]) {
   }
 }
 
-object Statistics {
-  def empty[T, V: Numeric: Semigroup]: Statistics[T, V] = {
-    Statistics(Map.empty[T, V])
-  }
-}
+object Statistics {}
