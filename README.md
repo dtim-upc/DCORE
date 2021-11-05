@@ -1,6 +1,6 @@
-# DistributedCER2
+# DCORE
 
-Distributed CER based on CORE engine.
+Distributed [COmplex event Recognition Engine](https://github.com/CORE-cer/CORE).
 
 ## Installation
 
@@ -16,11 +16,14 @@ sbt compile
 
 Compilation should work out-of-box. Feel free to open an [issue](https://github.com/dtim-upc/DistributedCER2/) if it does not.
 
-### Unmanaged dependencies
+### Unmanaged dependencies: CORE
 
-This project depends on [CORE](https://github.com/dtim-upc/CORE). 
-The current setup uses the JAR from `/lib` which has been created through the `gradle fatJar` from [CORE](https://github.com/dtim-upc/CORE).
-In the future, we could properly integrate both projects. For example, SBT can depend on a local project and Maven can publish to the local repository.
+This project depends on [CORE](https://github.com/CORE-cer/CORE). 
+The project currently depends on CORE's JAR since CORE's project uses `gradle` while we are using `sbt`.
+The current setup uses the JAR from `/lib` which has been created through the `gradle fatJar` from [CORE (fork)](https://github.com/dtim-upc/CORE).
+In the future, we could properly integrate both projects: 
+  - (a) Add CORE as a submodule and upgrade `build.sbt` to build it.
+  - (b) Publish CORE to a centralized repository e.g. Maven Central and add it to `DCORE` as a remote dependency.
 
 ## Usage
 
