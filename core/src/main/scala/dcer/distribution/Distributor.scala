@@ -2,12 +2,11 @@ package dcer.distribution
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
-import dcer.Binomial
 import dcer.actors.EngineManager.MatchGroupingId
 import dcer.actors.{EngineManager, Worker}
 import dcer.data.Match.MaximalMatch
 import dcer.data.{Configuration, DistributionStrategy, Match}
-import dcer.distribution.Blueprint.EventTypeSeqSize
+import dcer.distribution.Blueprint.NumberOfMatches
 import edu.puc.core.execution.structures.output.MatchGrouping
 
 import scala.collection.JavaConverters._
@@ -216,29 +215,17 @@ object Distributor {
     ): Map[ActorRef[Worker.Command], Long] = {
 
       // (1) Blueprints
-      val buffer: ListBuffer[(MaximalMatch, Blueprint, EventTypeSeqSize)] =
+      val buffer: ListBuffer[(MaximalMatch, Blueprint, NumberOfMatches)] =
         ListBuffer()
-
       matchGrouping.forEach { coreMaximalMatch =>
         val maximalMatch = Match(coreMaximalMatch)
-        val (blueprints, eventTypeSize) =
-          Blueprint.fromMaximalMatch(maximalMatch)
-        buffer ++= blueprints.map((maximalMatch, _, eventTypeSize))
-      }
-
-      // (2) Blueprints' cost for load balancing
-      val blueprints: Array[(MaximalMatch, Blueprint, Cost)] =
-        buffer.toArray.map { case (maximalMatch, blueprint, eventTypeSeqSize) =>
-          val cost = blueprint.value
-            .zip(eventTypeSeqSize)
-            .map { case (k, n) =>
-              Binomial.binomialUnsafe(k, n)
-            }
-            .product
-          (maximalMatch, blueprint, cost)
+        buffer ++= Blueprint.fromMaximalMatch(maximalMatch).map {
+          case (b, matches) => (maximalMatch, b, matches)
         }
+      }
+      val blueprints = buffer.toArray
 
-      // (3) Load-balancing problem
+      // (2) Load-balancing problem
       //
       // Our first implementation is based on a naive greedy algorithm.
       val k = workers.length

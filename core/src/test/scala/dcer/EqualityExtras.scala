@@ -38,4 +38,30 @@ trait EqualityExtras {
         }
       }
     }
+
+  implicit def tuple2Equality[A: Equality, B: Equality]: Equality[(A, B)] =
+    new Equality[(A, B)] {
+      override def areEqual(a: (A, B), b: Any): Boolean = {
+        b match {
+          case (b1, b2) =>
+            implicitly[Equality[A]].areEqual(a._1, b1) &&
+              implicitly[Equality[B]].areEqual(a._2, b2)
+          case _ => false
+        }
+      }
+    }
+
+  implicit def tuple3Equality[A: Equality, B: Equality, C: Equality]
+      : Equality[(A, B, C)] =
+    new Equality[(A, B, C)] {
+      override def areEqual(a: (A, B, C), b: Any): Boolean = {
+        b match {
+          case (b1, b2, b3) =>
+            implicitly[Equality[A]].areEqual(a._1, b1) &&
+              implicitly[Equality[B]].areEqual(a._2, b2) &&
+              implicitly[Equality[C]].areEqual(a._3, b3)
+          case _ => false
+        }
+      }
+    }
 }

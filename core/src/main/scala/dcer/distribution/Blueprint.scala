@@ -1,5 +1,6 @@
 package dcer.distribution
 
+import dcer.Binomial
 import dcer.data.{Event, Match}
 
 import scala.collection.mutable.ListBuffer
@@ -74,6 +75,7 @@ case class Blueprint(value: Array[Int]) extends AnyVal {
 
 object Blueprint {
   type EventTypeSeqSize = Array[Int]
+  type NumberOfMatches = Long
 
   /*
     1. Group by event type: {{A1}, {B1 B2}, {C1 C2 C3}, {D1}}
@@ -82,7 +84,7 @@ object Blueprint {
    */
   def fromMaximalMatch(
       maximalMatch: Match
-  ): (List[Blueprint], EventTypeSeqSize) = {
+  ): List[(Blueprint, NumberOfMatches)] = {
     // Step (1) and (2) in O(n)
     val subsetSizes: ListBuffer[List[Int]] = ListBuffer()
     val sizes: ListBuffer[Int] = ListBuffer()
@@ -100,11 +102,18 @@ object Blueprint {
     subsetSizes += acc.reverse
     sizes += i
 
-    (
-      // Step (3)
-      subsetSizes.toList.cartesianProduct.map(xs => Blueprint(xs.toArray)),
-      // This corresponds to the size of each event type.
-      sizes.toArray
-    )
+    val sizesList = sizes.toList
+
+    // Step (3)
+    subsetSizes.toList.cartesianProduct.map { xs =>
+      val numberOfMatches =
+        xs.zip(sizesList)
+          .map { case (k, n) =>
+            Binomial.binomialUnsafe(n, k)
+          }
+          .product
+      val blueprint = Blueprint(xs.toArray)
+      (blueprint, numberOfMatches)
+    }
   }
 }
