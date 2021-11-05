@@ -4,7 +4,7 @@ import dcer.EqualityExtras
 import dcer.data.Match.MaximalMatch
 import dcer.data.{Event, IntValue, Match}
 import dcer.distribution.Blueprint
-import dcer.distribution.Blueprint.EventTypeSeqSize
+import dcer.distribution.Blueprint.NumberOfMatches
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -19,13 +19,12 @@ class BlueprintSpec
         case Expectation(
               testName,
               maximalMatch,
-              (expectedBlueprints, expectedSize)
+              expectedBlueprints
             ) =>
           it(testName) {
-            val (blueprints, sizes) = Blueprint.fromMaximalMatch(maximalMatch)
+            val blueprints = Blueprint.fromMaximalMatch(maximalMatch)
             blueprints should have length expectedBlueprints.length.toLong
             blueprints should contain theSameElementsAs expectedBlueprints
-            sizes shouldEqual expectedSize
           }
       }
     }
@@ -46,20 +45,19 @@ trait AllTest extends TestHelper with FromMaximalMatchTest with EnumerateTest
 
 trait FromMaximalMatchTest { self: TestHelper =>
   type FromMaximalMatchExpectation =
-    Expectation[MaximalMatch, (List[Blueprint], EventTypeSeqSize)]
+    Expectation[MaximalMatch, List[(Blueprint, NumberOfMatches)]]
 
-  private val test1 = {
+  private val test1: FromMaximalMatchExpectation = {
     val stream = "ABBCCD"
     val maximalMatch = getMatch(Array(A1, B1, B2, C1, C2, D1))
-    val expectedResult = (
+    val expectedResult =
       List(
-        Blueprint(Array(1, 1, 1, 1)),
-        Blueprint(Array(1, 1, 2, 1)),
-        Blueprint(Array(1, 2, 1, 1)),
-        Blueprint(Array(1, 2, 2, 1))
-      ),
-      Array(1, 2, 2, 1)
-    )
+        Blueprint(Array(1, 1, 1, 1)) -> 4L,
+        Blueprint(Array(1, 1, 2, 1)) -> 2L,
+        Blueprint(Array(1, 2, 1, 1)) -> 2L,
+        Blueprint(Array(1, 2, 2, 1)) -> 1L
+      )
+
     Expectation(
       testName = stream,
       input = maximalMatch,
@@ -67,15 +65,14 @@ trait FromMaximalMatchTest { self: TestHelper =>
     )
   }
 
-  private val test2 = {
+  private val test2: FromMaximalMatchExpectation = {
     val stream = "A"
     val maximalMatch = getMatch(Array(A1))
-    val expectedResult = (
+    val expectedResult =
       List(
-        Blueprint(Array(1))
-      ),
-      Array(1)
-    )
+        Blueprint(Array(1)) -> 1L
+      )
+
     Expectation(
       testName = stream,
       input = maximalMatch,
@@ -83,26 +80,24 @@ trait FromMaximalMatchTest { self: TestHelper =>
     )
   }
 
-  private val test3 = {
+  private val test3: FromMaximalMatchExpectation = {
     val stream = "ABBCCCDD"
     val maximalMatch = getMatch(Array(A1, B1, B2, C1, C2, C3, D1, D2))
-    val expectedResult = (
+    val expectedResult =
       List(
-        Blueprint(Array(1, 1, 1, 1)),
-        Blueprint(Array(1, 1, 1, 2)),
-        Blueprint(Array(1, 1, 2, 1)),
-        Blueprint(Array(1, 1, 2, 2)),
-        Blueprint(Array(1, 1, 3, 1)),
-        Blueprint(Array(1, 1, 3, 2)),
-        Blueprint(Array(1, 2, 1, 1)),
-        Blueprint(Array(1, 2, 1, 2)),
-        Blueprint(Array(1, 2, 2, 1)),
-        Blueprint(Array(1, 2, 2, 2)),
-        Blueprint(Array(1, 2, 3, 1)),
-        Blueprint(Array(1, 2, 3, 2))
-      ),
-      Array(1, 2, 3, 2)
-    )
+        Blueprint(Array(1, 1, 1, 1)) -> 12L,
+        Blueprint(Array(1, 1, 1, 2)) -> 6L,
+        Blueprint(Array(1, 1, 2, 1)) -> 12L,
+        Blueprint(Array(1, 1, 2, 2)) -> 6L,
+        Blueprint(Array(1, 1, 3, 1)) -> 4L,
+        Blueprint(Array(1, 1, 3, 2)) -> 2L,
+        Blueprint(Array(1, 2, 1, 1)) -> 6L,
+        Blueprint(Array(1, 2, 1, 2)) -> 3L,
+        Blueprint(Array(1, 2, 2, 1)) -> 6L,
+        Blueprint(Array(1, 2, 2, 2)) -> 3L,
+        Blueprint(Array(1, 2, 3, 1)) -> 2L,
+        Blueprint(Array(1, 2, 3, 2)) -> 1L
+      )
     Expectation(
       testName = stream,
       input = maximalMatch,

@@ -3,8 +3,13 @@
 ## Project
 
 - [ ] MaximalMatchEnumeration repeated outputs
+  - [ ] Read Stijn explanation
 - [ ] Prepare benchmarks for UPC cluster
   - [ ] Prepare new script
+- [ ] Simulate Network traffic/problems
+  - [ ] Lookup available options
+    - https://doc.akka.io/docs/akka/current/stream/operators/Source-or-Flow/delay.html
+    - https://www.smartjava.org/content/backpressure-action-websockets-and-akka-streams/
 - [ ] Load balancing: matches vs length (the problem right now is that enumeration does not take length into account)
   - [ ] Add execution time of MaximalMatch + Configuration
   - [ ] Execute a benchmark and store in CSV: #matches, length of matches, execution time

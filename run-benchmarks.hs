@@ -185,15 +185,12 @@ saveOutput rootDir outputDir scenario = do
 
   let targetDir = rootDir </> "target"
 
-      matchesInFilePath = targetDir </> "matches.log"
       statsInFilePath = targetDir </> "stats.log"
       timeInFilePath = targetDir </> "time.log"
 
-      matchesOutFilePath = outputDir </> fromText (scenarioToFilename scenario <> "_matches.log")
       statsOutFilePath = outputDir </> fromText (scenarioToFilename scenario <> "_stats.log")
       timeOutFilePath = outputDir </> fromText (scenarioToFilename scenario <> "_time.log")
 
-  mv matchesInFilePath matchesOutFilePath
   mv statsInFilePath statsOutFilePath
   mv timeInFilePath timeOutFilePath
 
