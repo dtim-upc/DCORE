@@ -188,6 +188,59 @@ Exception in thread "Thread-1" java.lang.InterruptedException
         at scala.sys.process.ProcessImpl$Spawn$$anon$1.run(ProcessImpl.scala:27)
 ```
 
+#### Running on DTIM cluster
+
+You will need to ask for credentials at:
+- UGDSI (laboratori@cs.upc.edu)
+- DTIM
+
+My credentials are stored at `dtim_credentials.gpg` but encrypted with gpg.
+
+``` shell
+$ gpg --decrypt dtim_credentials.gpg
+```
+
+Once you have the credentials, first you need to connect to UGDSI:
+
+``` shell
+# ssh -oKexAlgorithms=+diffie-hellman-group1-sha1 aabella@login1.cs.upc.edu
+$ ssh username@hostname
+```
+
+Then, you need to connect to DTIM cluster:
+
+``` shell
+$ ssh dtim@logincluster.cs.upc.edu
+```
+
+Once on the cluster:
+
+``` shell
+# Star all (master and 3 slaves)
+./dtim-start.sh -m name@domain.com
+./dtim1-start.sh -m name@domain.com
+./dtim2-start.sh -m name@domain.com
+./dtim3-start.sh -m name@domain.com
+
+# Check which machines are up
+$ squeue | grep -i dtim 
+
+# Stop all
+./dtim-stop.sh 
+./dtim1-stop.sh
+./dtim2-stop.sh
+./dtim3-stop.sh
+```
+
+Then, you can connect individually to each machine:
+
+``` shell
+ssh dtim
+ssh dtim1
+ssh dtim2
+ssh dtim3
+```
+
 ## Contributing
 
 > If you are going to hack on the project, I would recommend installing [bloop](https://scalacenter.github.io/bloop) to speedup compilation and testing.

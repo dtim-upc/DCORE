@@ -19,3 +19,6 @@ target/
 benchmark/*
 !benchmark/src
 benchmark/src/multi-jvm/scala/*
+
+# Do not commit unencrypted credentials
+dtim_credentials
