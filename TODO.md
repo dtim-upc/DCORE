@@ -2,13 +2,18 @@
 
 ## Project
 
-- [ ] MaximalMatchEnumeration repeated outputs
-  - [x] Read Stijn explanation
-    - We cannot implement stijn's proposal for now since it has gaps.
-  - [ ] (optional) benchmark implementations
+- [ ] Maximal Matches Disjoint Enumeration
+  - [ ] Formalization
+    - [ ] Write pseudo-code
+    - [ ] Write proof of disjointness
+    - [ ] Write example
+  - [ ] Implementation
+  - [ ] Benchmarks
+
 - [ ] Prepare benchmarks for UPC cluster
   - [ ] Prepare new script
-- [ ] Load balancing: matches vs length (the problem right now is that enumeration does not take length into account)
+
+- [ ] (optional) Load balancing: matches vs length (the problem right now is that enumeration does not take length into account)
   - [ ] Add execution time of MaximalMatch + Configuration
   - [ ] Execute a benchmark and store in CSV: #matches, length of matches, execution time
   - [ ] Plot this information to see if load balancing is affected by length of matches.
