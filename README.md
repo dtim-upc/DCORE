@@ -232,13 +232,15 @@ $ squeue | grep -i dtim
 ./dtim3-stop.sh
 ```
 
+Check cluster is running `https://mastercluster.cs.upc.edu/dtim/` (connect with dtim user/pass)
+
 Then, you can connect individually to each machine:
 
 ``` shell
-ssh dtim
-ssh dtim1
-ssh dtim2
-ssh dtim3
+ssh dtim@dtim
+ssh dtim@dtim1
+ssh dtim@dtim2
+ssh dtim@dtim3
 ```
 
 ## Contributing
