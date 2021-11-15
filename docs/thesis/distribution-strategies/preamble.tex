@@ -36,18 +36,28 @@
 \usepackage{amsmath}
 \usepackage{amssymb} % \mathbb{N}
 \usepackage{bm} % $\bm{D + C}$
+\usepackage{stmaryrd} % \llbracket
 
+%%%%%
+
+\usepackage{amsthm} % \newtheorem, \proof, etc
 % \begin{theorem}\label{t:label}  ...  \end{theorem}
 % \begin{proof} ... \end{proof}
-\usepackage{amsthm} % \newtheorem, \proof, etc
+
 \theoremstyle{plain} % default
 \newtheorem{theorem}{Theorem}[section]
-\newtheorem{corollary}{Corollary}[theorem]
 \newtheorem{lemma}[theorem]{Lemma}
+\newtheorem*{corollary}{Corollary}
+
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}[section]
+\newtheorem{conjecture}{Conjecture}[section]
+\newtheorem{example}{Example}[section]
+
 \theoremstyle{remark}
 \newtheorem*{remark}{Remark}
+\newtheorem*{note}{Note}
+\newtheorem{case}{Case}
 
 % Defines a new environment to write your or claim - proof
 \newenvironment{claim}[1]{\par\noindent\underline{Claim:}\space#1}{}
@@ -152,7 +162,9 @@
 
 %%%% Code/Pseudo-code
 
-\usepackage{minted} % Code listing
+\usepackage{minted}
+\usemintedstyle{default}
+\newminted{scala}{frame=lines, framerule=2pt}
 % \mint{html}|<h2>Something <b>here</b></h2>|
 % \inputminted{octave}{BitXorMatrix.m}
 
@@ -165,7 +177,7 @@
 
 \newcommand{\code}[1]{\texttt{#1}} % \code{foo.hs} environment
 
-\usepackage[vlined,ruled]{algorithm2e} % pseudo-code
+\usepackage[linesnumbered, vlined,ruled]{algorithm2e} % pseudo-code
 
 %%%% Colors
 
@@ -188,15 +200,26 @@
 % Print glossaries \printglossaries
 
 
-%%%% Acronyms
-
-\usepackage[acronym]{glossaries} %
-
-% \acrshort{name}
-% \acrfull{name}
-% \newacronym{foo}{arcshort}{acrfull}
-
-
 %%%% Better enumerate
 
 \usepackage{enumitem} % \begin{enumerate}[label=(\alph*)]
+
+%%%% Glossaries & Acronyms
+
+\usepackage{glossaries}
+
+\glsdisablehyper % remove hyperlinks to glossaries
+\setacronymstyle{long-short} %short-long
+
+% \gls{tecs}
+% \glsentrylong{tecs} % timed Enumerable Compact Set
+% \glsentryfull{tecs} % timed Enumerable Compact Set (tECS)
+\newacronym{tecs}{tECS}{timed Enumerable Compact Set}
+\newacronym{core}{CORE}{COmplex event Recognition Engine}
+\newacronym{mmde}{MMDE}{\textsc{MaximalMatchesDisjointEnumeration}}
+\newacronym{cea}{CEA}{Complex Event Automata}
+
+%%%% New commands
+
+\newcommand{\comment}[1]{} % \comment{this will not appear in the document}
+\newcommand{\cea}{CEA $\mathcal{A} = (Q, \Delta, q_{0}, F)$}
