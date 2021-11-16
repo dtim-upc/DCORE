@@ -57,41 +57,88 @@ The algorithms presented in \textit{CORE: a COmplex event Recognition Engine} ar
   \DontPrintSemicolon
   \SetAlgoNoLine
   \SetKwProg{Procedure}{procedure}{}{}
-  \SetKwFunction{MMDE}{MaximalMatchesDisjointEnumeration}
-  \SetKwFunction{Enumerate}{Enumerate}
+  \SetKwFunction{MMDE}{\textsc{MaximalMatchesDisjointEnumeration}}
+  \SetKwFunction{Enumerate}{\textsc{Enumerate}}
 
-  \Procedure{\MMDE{$M$}}{
-    % 1. For all maximal matches:
-    %     1.1. Group by event type: {{A1}, {B1 B2}, {C1 C2 C3}, {D1}}
-    %     1.2. Subsets sizes: {{1}, {1,2}, {1,2,3}, {1}}
-    %     1.3. Cartesian product of subsets sizes to generate all configurations:
-    %     1.4. Match configurations and their corresponding maximal matches.
-    % 2. Distribute all tuples <maximal matches, configuration> using a load-balancing algorithm.
-
-    \For{$m_{i} \in M$}{
+  \Procedure{\MMDE{$M$, $W$}}{
+    \KwIn{A set of maximal matches $M := \{M_{1}, \ldots, M_{n}\}$ \newline
+      and a set of workers $W := \{w_{1},\ldots, w_{m}\}$
+    }
+    \KwResult{Enumerates all \textit{submatches} $\subseteq M$ without repetitions}
+    $C \leftarrow \emptyset$\;
+    \For{$M_{i} \in M$}{
+        $C' \leftarrow \textsc{Configurations}(M_{i}).map(\lambda c \to \langle c, M_{i} \rangle)$\;
+        $C \leftarrow C \cup C'$\;
+    }
+    $D \leftarrow C.groupBy(fst)$\tcp*[l]{\textit{fst} returns the first element of a tuple}
+    $\textsc{Distribute}(W, D)$\tcp*[l]{Distribute each tuple $\langle c, \{ M_{i}, \ldots, M_{j}\} \rangle \in D$ among workers $W$}
+    \For{$w \in W$}{
+      \tcp{\textsc{Enumerate} is executed in a remote machine}
+      $w.\textsc{Enumerate}()$
     }
   }
   \;
-  \Procedure{\Enumerate{$foo$}}{
-    $location \gets 0$\;
-    $i \gets 2$\;
-    \While{$i \leq n$ \textbf{and} $location = 0$}{
-      $j \gets 1$\;
-      \While{$j < i$ \textbf{and} $location = 0$}{
-        \uIf{$a_i = a_j$}{
-          $location \gets i$\;
-        }
-        \Else{
-          $j \gets j + 1$\;
+
+  \Procedure{\Enumerate{}}{
+    \KwData{A set of tuples $A = \{ \langle c, \{ M_{1}, \ldots, M_{n}\} \rangle \}$ where $c$ is a configuration and $M_{i}$ are maximal matches}
+    \KwOut{The set of all submatches without repetitions}
+    $S \leftarrow \emptyset$\;
+    \For(\tcp*[h]{$M = \{ M_{1}, \ldots, M_{n}\}$}){$\langle c, M\rangle \in A$}{
+      $T \leftarrow \textsc{Root}$\tcp*[l]{Root of a n-ary tree}
+      \For{$M_{i} \in M$}{
+        \For\tcp*[h]{$e$ is an event}{$e \in M_{i}$}{
+          % A <- takeWhile(\lambda e_{i} -> e_{i}.type = e.type)
+          % k <- c(B.type)
+          % B <- \binom{A}{k}
+          %
         }
       }
-      $i \gets i + 1$\;
     }
   }
   \;
-  % \Return{location}\;
 \caption{\glsentrylong{mmde}}
 \label{algo:mmde}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \DontPrintSemicolon
+  \SetAlgoNoLine
+  \SetKwProg{Procedure}{procedure}{}{}
+  \SetKwFunction{Configurations}{\textsc{Configurations}}
+
+  \Procedure{\Configurations{$M$}}{
+    \KwIn{A match $M = \{e_{1}, \ldots, e_{n}\}$ where $e_{i}$ is an event of type $t \in T$}
+    \KwOut{A set $CC$ of configurations $C := T \times \mathbb{N}$ where $C$ is the mapping from the event type $t \in T$ to the size of the iteration of the event type $t$ in the submatches of $M$}
+    $T \leftarrow types(M)$\tcp*[l]{Ordered set of types e.g. $types(A_{1}A_{2}B_{1}C_{1}) = \{A,B,C\}$}
+    $V \leftarrow newList$\;
+    $e_{0} \leftarrow pop(M)$\;
+    $A \leftarrow \{ e_{0} \}$\;
+    $A.type \leftarrow e_{0}.type$\;
+    \For{event $e$ in $M$}{
+      \eIf{$e.type = A.type$}{
+        $A \leftarrow A \cup e$\;
+        \uIf{$isLast(e)$} {
+          $V \leftarrow V + enumFromTo(1, |A|)$
+        }
+      }{
+        $V \leftarrow V + enumFromTo(1, |A|)$\;
+        $A \leftarrow \{ e \}$\;
+        $A.type \leftarrow e.type$\;
+      }
+    }
+    $WW \leftarrow V_{1} \times \cdots \times V_{n}$\;
+    $C \leftarrow \emptyset$\;
+    \For{$W \in WW$}{
+      $c \leftarrow \emptyset$\;
+      \For{$w_{i} \in W$}{
+        $c \leftarrow c \cup (t_{i}, w_{i})$ where $t_{i} \in T$\;
+      }
+      $C \leftarrow C \cup c$\;
+    }
+    \Return{C}
+  }
+\caption{\textsc{Configurations}}
+\label{algo:configurations}
 \end{algorithm}
 
 \subsection{Proof}

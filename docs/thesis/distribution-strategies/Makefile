@@ -9,7 +9,8 @@ all: report.pdf
 report.pdf: clean $(wildcard *.tex) $(wildcard *.bib)
 	- pdflatex -halt-on-error -shell-escape $(TARGET) # document with ? on references
 	- bibtex  $(TARGET) # references
-	- pdflatex -halt-on-error -shell-escape $(TARGET) # document with references
+# TODO uncomment
+# - pdflatex -halt-on-error -shell-escape $(TARGET) # document with references
 	pdflatex -halt-on-error -shell-escape $(TARGET) # sometimes references break page numbering
 
 clean:

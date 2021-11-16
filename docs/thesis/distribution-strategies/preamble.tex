@@ -178,6 +178,9 @@
 \newcommand{\code}[1]{\texttt{#1}} % \code{foo.hs} environment
 
 \usepackage[linesnumbered, vlined,ruled]{algorithm2e} % pseudo-code
+% \newcommand\commentfont[1]{\footnotesize\ttfamily\colorbox{gray}{\textcolor{white}{#1}}}
+\newcommand\commentfont[1]{\small\ttfamily\textcolor{darkgray}{#1}}
+\SetCommentSty{commentfont}
 
 %%%% Colors
 
