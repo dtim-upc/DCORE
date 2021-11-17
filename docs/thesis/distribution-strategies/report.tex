@@ -56,65 +56,100 @@ The algorithms presented in \textit{CORE: a COmplex event Recognition Engine} ar
 \begin{algorithm}[H]
   \DontPrintSemicolon
   \SetAlgoNoLine
+  \SetAlgoNoEnd
   \SetKwProg{Procedure}{procedure}{}{}
   \SetKwFunction{MMDE}{\textsc{MaximalMatchesDisjointEnumeration}}
   \SetKwFunction{Enumerate}{\textsc{Enumerate}}
 
   \Procedure{\MMDE{$M$, $W$}}{
     \KwIn{A set of maximal matches $M := \{M_{1}, \ldots, M_{n}\}$ \newline
-      and a set of workers $W := \{w_{1},\ldots, w_{m}\}$
+      and a set of workers $W := \{w_{1},\ldots, w_{m}\}$.
     }
-    \KwResult{Enumerates all \textit{submatches} $\subseteq M$ without repetitions}
+    \KwResult{Enumerates all \textit{submatches} $\subseteq M$ without repetitions.}
     $C \leftarrow \emptyset$\;
-    \For{$M_{i} \in M$}{
-        $C' \leftarrow \textsc{Configurations}(M_{i}).map(\lambda c \to \langle c, M_{i} \rangle)$\;
-        $C \leftarrow C \cup C'$\;
+    \ForEach{$M_{i} \in M$}{
+        $C \leftarrow C \cup \textsc{Configurations}(M_{i}).map(\lambda c \to ( c, M_{i} ))$\;
     }
-    $D \leftarrow C.groupBy(fst)$\tcp*[l]{\textit{fst} returns the first element of a tuple}
-    $\textsc{Distribute}(W, D)$\tcp*[l]{Distribute each tuple $\langle c, \{ M_{i}, \ldots, M_{j}\} \rangle \in D$ among workers $W$}
-    \For{$w \in W$}{
+    $D \leftarrow C.groupBy(\lambda (c, \_ ) \to c)$\;
+    $\textsc{Distribute}(W, D)$\tcp*[l]{\textit{Round-robin, Bins \& Balls, etc.}}
+    \ForEach{$w \in W$}{
       \tcp{\textsc{Enumerate} is executed in a remote machine}
       $w.\textsc{Enumerate}()$
     }
   }
   \;
+\caption{Non-repeated enumeration of a set of maximal matches.}
+\label{algo:mmde}
+\end{algorithm}
+
+% This procedure enumerates all submatches of M without repetitions.
+% It stills enumerates all submatches but only outputs non-repeated.
+% It efficiently detects repetitions by constructing an n-ary tree of complex events.
+% The complexity is still exponential w.r.t. the size of the largest iteration.
+% The exponential time enumeration must be repeated a constant factor of times.
+\begin{algorithm}[H]
+  \DontPrintSemicolon
+  \SetAlgoNoLine
+  \SetAlgoNoEnd
+  \SetKwProg{Procedure}{procedure}{}{}
+  \SetKwFunction{Enumerate}{\textsc{Enumerate}}
+  \SetKwFunction{Enumeratee}{\textsc{Enumerate'}}
 
   \Procedure{\Enumerate{}}{
-    \KwData{A set of tuples $A = \{ \langle c, \{ M_{1}, \ldots, M_{n}\} \rangle \}$ where $c$ is a configuration and $M_{i}$ are maximal matches}
-    \KwOut{The set of all submatches without repetitions}
-    $S \leftarrow \emptyset$\;
-    \For(\tcp*[h]{$M = \{ M_{1}, \ldots, M_{n}\}$}){$\langle c, M\rangle \in A$}{
-      $T \leftarrow \textsc{Root}$\tcp*[l]{Root of a n-ary tree}
-      \For{$M_{i} \in M$}{
-        \For\tcp*[h]{$e$ is an event}{$e \in M_{i}$}{
-          % A <- takeWhile(\lambda e_{i} -> e_{i}.type = e.type)
-          % k <- c(B.type)
-          % B <- \binom{A}{k}
-          %
+    \KwData{A set of tuples $A = \{ (c, \{ M_{1}, \ldots, M_{n}\}) \}$ where $c$ is a \textit{configuration} and $M_{i}$ are maximal matches.}
+    \KwOut{The set of all submatches without repetitions.}
+    \ForEach{$(c, M) \in A$}{
+      $T \leftarrow$ \textit{newRoot()}\tcp*[l]{Root of a \textit{n}-ary tree}
+      \ForEach{$M_{i} \in M$}{
+        $G \leftarrow \textsc{GroupBy}(M_{i})$\tcp*[l]{$\textsc{GroupBy}(A_{1}A_{2}B_{1}B_{2}C_{1}) = \{ \{A_{1}, A_{2}\}, \{B_{1}, B_{2}\}, \{C_{1}\} \}$}
+        }
+        $\textsc{Enumerate'}(T, G, \emptyset, \bot)$
+    }
+  }
+  \;
+  \Procedure{\Enumeratee{$n, G, S, new$}}{
+    \KwData{A node $n$, a set of grouped events $G$, a time-ordered set of events $S$, and a boolean $new$.}
+    \Switch{$G$}{
+      \uCase{$\emptyset$}{
+        \If{$new$}{
+          \Return{$S$}
+        }
+      }
+      \uCase(\tcp*[h]{$e.g. \ g = \{A_{1}, A_{2}\}, \ g.type = A$}){$g \cup G'$}{
+        $k \leftarrow c(g.type)$\tcp*[l]{$k \in \mathbb{N}$}
+        $E \leftarrow \binom{g}{k}$\tcp*[l]{The \textit{k}-combination set}
+        \ForEach{$e \in E$}{
+          \eIf{$\exists n' \in n.children \land n'.event = e$}{
+            $\textsc{Enumerate'}(n', G', S \cup e, new)$\;
+          }{
+            $p \leftarrow \text{\textit{new-node}}(e)$\;
+            $n.children.add(p)$\;
+            $\textsc{Enumerate'}(p, G', S \cup e, \top)$\;
+          }
         }
       }
     }
   }
   \;
-\caption{\glsentrylong{mmde}}
-\label{algo:mmde}
+\caption{Non-repeated enumeration of a set of maximal matches given a predicate configuration.}
+\label{algo:enumerate}
 \end{algorithm}
 
 \begin{algorithm}[H]
   \DontPrintSemicolon
+  \SetAlgoNoEnd
   \SetAlgoNoLine
   \SetKwProg{Procedure}{procedure}{}{}
   \SetKwFunction{Configurations}{\textsc{Configurations}}
 
   \Procedure{\Configurations{$M$}}{
-    \KwIn{A match $M = \{e_{1}, \ldots, e_{n}\}$ where $e_{i}$ is an event of type $t \in T$}
-    \KwOut{A set $CC$ of configurations $C := T \times \mathbb{N}$ where $C$ is the mapping from the event type $t \in T$ to the size of the iteration of the event type $t$ in the submatches of $M$}
-    $T \leftarrow types(M)$\tcp*[l]{Ordered set of types e.g. $types(A_{1}A_{2}B_{1}C_{1}) = \{A,B,C\}$}
+    \KwIn{A match $M = \{e_{1}, \ldots, e_{n}\}$ where $e_{i}$ is an event of type $t \in T$.}
+    \KwOut{A set $C$ of configurations $c := T \times \mathbb{N}$ where $c$ is the mapping from the event type $t \in T$ to the size of the iteration of the event type $t$ in the submatches of $M$.}
     $V \leftarrow newList$\;
-    $e_{0} \leftarrow pop(M)$\;
+    $e_{0} \cup M' \leftarrow pop(M)$\;
     $A \leftarrow \{ e_{0} \}$\;
     $A.type \leftarrow e_{0}.type$\;
-    \For{event $e$ in $M$}{
+    \For{event $e$ in $M'$}{
       \eIf{$e.type = A.type$}{
         $A \leftarrow A \cup e$\;
         \uIf{$isLast(e)$} {
@@ -126,18 +161,19 @@ The algorithms presented in \textit{CORE: a COmplex event Recognition Engine} ar
         $A.type \leftarrow e.type$\;
       }
     }
-    $WW \leftarrow V_{1} \times \cdots \times V_{n}$\;
+    $WW \leftarrow V_{1} \times \cdots \times V_{n}$\tcp*[l]{$V = \{V_{1}, \cdots, V_{n}\}$}
+    $T \leftarrow types(M)$\tcp*[l]{Ordered set of types e.g. $types(A_{1}A_{2}B_{1}C_{1}) = \{A,B,C\}$}
     $C \leftarrow \emptyset$\;
-    \For{$W \in WW$}{
-      $c \leftarrow \emptyset$\;
-      \For{$w_{i} \in W$}{
-        $c \leftarrow c \cup (t_{i}, w_{i})$ where $t_{i} \in T$\;
+    \ForEach(\tcp*[h]{E.g. $W = \{1, 2, 1\}$}){$W \in WW$}{
+      $c \leftarrow \emptyset$\tcp*[l]{E.g. $c = \{(A,1), (B,2), (C, 1)\}$}
+      \For{$i \leftarrow 1$ \KwTo $|W|$}{
+        $c \leftarrow c \cup (T[i], W[i])$\;
       }
       $C \leftarrow C \cup c$\;
     }
     \Return{C}
   }
-\caption{\textsc{Configurations}}
+\caption{Computes all disjoint configurations of a maximal match.}
 \label{algo:configurations}
 \end{algorithm}
 
@@ -153,12 +189,6 @@ But (2) can be analyzed further:
 2. Non-disjoint configurations produce non-disjoint submatches.
 
 From previous observations we can conclude that repeated submatches are only generated by applying the same configuration to different maximal matches.
-
-We propose the following algorithm:
-1. (1.1),(1.2),(1.3) and (1.4) as in "Maximal Matches Enumeration"
-2. Group pairs from (1) by configuration: <configuration, {maximal matches}>
-3. Distribute pairs from (2). Each configuration is assigned to a single worker.
-4. Enumerate submatches at worker. The output must be a set since enumeration may generated repeated outputs.
 
 Uniqueness of submatches is guaranteed by (3) and (4).
 (3) guarantees that the output of each worker is disjoint wrt the others.
