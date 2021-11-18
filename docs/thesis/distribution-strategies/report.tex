@@ -11,7 +11,7 @@
 
 \title{%
   \vspace{-10ex}
-  Maximal Matches Disjoint Enumeration
+  Draft: Distributed Enumeration
 }
 \author{%
   Arnau Abella \\
@@ -30,18 +30,22 @@
 
 On one hand, CORE's evaluation algorithm guarantees \textit{output-linear} delay enumeration of the output \cite{core}.
 Although each enumeration can be accomplished in linear time with respect to the size of the complex event,
-the cost of enumerating all complex events from a CEQL that contains an iteration clause is exponential \textit{w.r.t} the size of this clause \cite{grez_et_al:LIPIcs:2019:10307}.
+the cost of enumerating all complex events from a CEQL that contains an iteration is exponential \textit{w.r.t} the size of this clause \cite{grez_et_al:LIPIcs:2019:10307}.
 
 Selection strategies (\textit{STRICT}, \textit{NXT}, \textit{LAST}, \textit{MAX}) were created to restrict the size of the output set.
-In the case of CORE, this bounds the execution time of the enumeration process.
-However, all four selection strategies still suffer exponential growth complexity in the presence of iterations.
+Selection strategies have low impact in CORE's update and enumeration time complexity since the partial output set is already represented in a compact data but, they impact the number of complex events found in a stream and therefore the number of enumerations.
 
-\section{Algorithm}
+We observed, that in the presence of iterations, all previous for strategies still suffer exponential growth in the number of complex events to be enumerated.
+
+\section{Algorithms for distributed enumeration}
 \label{sec:algorithm}
 
-In order to deal with the exponential complexity of enumerating all submatches of a query that contains multiple iteration patterns, we propose the distributed enumeration algorithm \gls{mmde}.
+In order to deal with the exponential complexity of enumerating $\varphi_{1} ; \varphi_{2}$ (in particular $\varphi+$), we propose the following distributed enumeration algorithms Algorithm \ref{algo:mmde} and Algorithm \ref{algo:de}.
 
-The algorithms presented in \textit{CORE: a COmplex event Recognition Engine} are based on the well-founded complex event semantics $\llbracket \varphi \rrbracket (S) := \{ C_{V} \ | \ V \in \llceil \varphi \rrfloor (S) \}$. But, the algorithms of this section are based on the definition of match (\ref{def:match}) and maximal match (\ref{def:maximalmatch}) which are both data structures produced by CORE (the engine).
+\subsection{Maximal Matches Disjoint Enumeration}
+\label{subsec:mmde}
+
+The algorithms presented in \textit{CORE: a COmplex event Recognition Engine} are based on the well-founded complex event semantics $\llbracket \varphi \rrbracket (S) := \{ C_{V} \ | \ V \in \llceil \varphi \rrfloor (S) \}$. The algorithms of this section are based on the definition of match (\ref{def:match}) and maximal match (\ref{def:maximalmatch}) which are both data structures produced by CORE.
 
 \begin{definition}[Match]
   \label{def:match}
@@ -55,8 +59,9 @@ The algorithms presented in \textit{CORE: a COmplex event Recognition Engine} ar
 
 \begin{algorithm}[H]
   \DontPrintSemicolon
-  \SetAlgoNoLine
-  \SetAlgoNoEnd
+  \SetAlgoNoEnd % don't print end
+  \SetAlgoNoLine % no vertical lines
+  \LinesNumbered
   \SetKwProg{Procedure}{procedure}{}{}
   \SetKwFunction{MMDE}{\textsc{MaximalMatchesDisjointEnumeration}}
   \SetKwFunction{Enumerate}{\textsc{Enumerate}}
@@ -89,8 +94,9 @@ The algorithms presented in \textit{CORE: a COmplex event Recognition Engine} ar
 % The exponential time enumeration must be repeated a constant factor of times.
 \begin{algorithm}[H]
   \DontPrintSemicolon
-  \SetAlgoNoLine
-  \SetAlgoNoEnd
+  \SetAlgoNoEnd % don't print end
+  \SetAlgoNoLine % no vertical lines
+  \LinesNumbered
   \SetKwProg{Procedure}{procedure}{}{}
   \SetKwFunction{Enumerate}{\textsc{Enumerate}}
   \SetKwFunction{Enumeratee}{\textsc{Enumerate'}}
@@ -137,8 +143,9 @@ The algorithms presented in \textit{CORE: a COmplex event Recognition Engine} ar
 
 \begin{algorithm}[H]
   \DontPrintSemicolon
-  \SetAlgoNoEnd
-  \SetAlgoNoLine
+  \SetAlgoNoEnd % don't print end
+  \SetAlgoNoLine % no vertical lines
+  \LinesNumbered
   \SetKwProg{Procedure}{procedure}{}{}
   \SetKwFunction{Configurations}{\textsc{Configurations}}
 
@@ -180,21 +187,21 @@ The algorithms presented in \textit{CORE: a COmplex event Recognition Engine} ar
 \subsection{Proof}
 \label{subsec:proof}
 
-You need to make the following observations of "Maximal Matches Enumeration":
-1. The algorithm produces disjoint submatches given a maximal match.
-2. The algorithm produces non-disjoint submatches given multiple maximal matches.
+% You need to make the following observations of "Maximal Matches Enumeration":
+% 1. The algorithm produces disjoint submatches given a maximal match.
+% 2. The algorithm produces non-disjoint submatches given multiple maximal matches.
 
-But (2) can be analyzed further:
-1. Disjoint configurations produce disjoint submatches.
-2. Non-disjoint configurations produce non-disjoint submatches.
+% But (2) can be analyzed further:
+% 1. Disjoint configurations produce disjoint submatches.
+% 2. Non-disjoint configurations produce non-disjoint submatches.
 
-From previous observations we can conclude that repeated submatches are only generated by applying the same configuration to different maximal matches.
+% From previous observations we can conclude that repeated submatches are only generated by applying the same configuration to different maximal matches.
 
-Uniqueness of submatches is guaranteed by (3) and (4).
-(3) guarantees that the output of each worker is disjoint wrt the others.
-(4) guarantees that the output of a worker is disjoint.
+% Uniqueness of submatches is guaranteed by (3) and (4).
+% (3) guarantees that the output of each worker is disjoint wrt the others.
+% (4) guarantees that the output of a worker is disjoint.
 
-The complexity of the algorithm remains the same if we accomplish linear time enumeration in each worker (this is the tricky part).
+% The complexity of the algorithm remains the same if we accomplish linear time enumeration in each worker (this is the tricky part).
 
 \begin{lemma}[TODO]
   \label{lemma:todo}
@@ -210,6 +217,84 @@ The complexity of the algorithm remains the same if we accomplish linear time en
   \label{example:todo}
   TODO
 \end{example}
+
+\subsection{Distributed tECS enumeration}
+\label{subsec:label}
+
+\begin{algorithm}[H]
+  \DontPrintSemicolon
+  \SetAlgoNoEnd % don't print end
+  \SetAlgoNoLine % no vertical lines
+  \LinesNumbered
+  \SetKwProg{Procedure}{procedure}{}{}
+  \SetKwFunction{Distribute}{\textsc{Distribute}}
+  \SetKwFunction{Enumerate}{\textsc{Enumerate}}
+
+  \Procedure{\Distribute{$\mathcal{E}, n, \epsilon, j, P, W$}}{
+     \nl $b <- bitstring(|P|)$\;
+     \nl $B <- permutations(b)$\;
+     $\mathcal{G} \leftarrow \emptyset$\;
+     \ForEach{$b \in B$}{
+       $G = \emptyset$\tcp*[l]{$f: N_{U} \rightarrow \{ \bot , \top \}$}
+       \For{$i \leftarrow 1$ \KwTo $|p|$}{
+           $G \leftarrow G \cup (P_{i}, b_{i})$\;\label{algo:de:7}
+       }
+       $\mathcal{G} \leftarrow \mathcal{G} \cup G$\;
+     }
+     $S \leftarrow \emptyset$\tcp*[l]{Assignments}\label{algo:de:9}
+     \For{$i \leftarrow 1$ \KwTo $|\mathcal{G}|$}{
+       \nllabel{2}$i' \leftarrow i \mod |W|$\;
+       $S \leftarrow S \cup (S_{i'} \cup \{ \mathcal{G}_{i} \} )$\;
+     }\label{algo:de:12}
+     \For{$i \leftarrow 1$ \KwTo $|W|$}{
+        $W_{i}.\textsc{Enumerate}(\mathcal{E}, n, \epsilon, j, S_{i})$\;
+     }
+  }
+\caption{Distributed enumeration of $\llbracket n \rrbracket^{\epsilon}_{\mathcal{E}}(j)$}
+\label{algo:de}
+\end{algorithm}
+
+\setlength{\interspacetitleruled}{-.4pt}%
+\begin{algorithm}[H]
+  \DontPrintSemicolon
+  \SetAlgoNoEnd % don't print end
+  \SetAlgoNoLine % no vertical lines
+  \LinesNotNumbered
+  \SetKwProg{Procedure}{procedure}{}{}
+  \SetKwFunction{Enumerate}{\textsc{Enumerate}}
+  \nl \Procedure{\Enumerate{$\mathcal{E}, n, \epsilon, j, \mathcal{G}$}}{
+    $\cdots$\;
+    \setcounter{AlgoLine}{13}
+    \nl \ElseIf{$n' \in N_{U}$}{
+      \nl$choice \leftarrow (\bot, \bot)$\tcp*[l]{(left, right)}
+      \nl\ForEach{$G \in \mathcal{G}$}{\label{algo:enumerate:16}
+        \nl\If{$G_{1}(u)$}{
+          \nl$choice.right = \top$\;
+        }
+        \nl\Else{
+          \nl$choice.left = \top$\;
+        }
+        \nl$G \leftarrow G \setminus \{ G_{i} \}$\;\label{algo:enumerate:21}
+      }
+      \nl\If{$choice.right \land max(right(n')) \geq \tau$}{\label{algo:enumerate:22}
+        \nl$push(st, (right(n'), P))$\;
+      }
+      \nl\ElseIf{$choice.left$}{\label{algo:enumerate:24}
+        \nl$n' \leftarrow left(n')$\;
+      }
+    }
+    $\cdots$\;
+  }
+\label{algo:enumerate}
+\end{algorithm}
+
+We present Algorithm \ref{algo:de} which distributes the workload of \textsc{Enumerate} (Algorithm 1) from \cite{core} among $N$ workers. In order to incrementally distribute the enumeration of $\mathcal{E}$, we need to manipulate an additional ordered set $P$ of union nodes during the evaluation of \textsc{Evaluation}. This set will store all unions nodes present in $\mathcal{E}$ during the evaluation of the \gls{cea}. The algorithm consist of two distinct procedures: \textsc{Distribute} and \textsc{Enumerate}. \textsc{Distribute} replaces \textsc{Enumerate} in the original algorithm and \textsc{Enumerate} is executed remotely on each worker.
+
+In detail, Algorithm \ref{algo:de} receives as an input a gls{tecs} $\mathcal{E}$, a node $n$, a time-window bound $\epsilon$, a position $j$, an ordered set of union nodes $P$ and, a set of workers $W$. First, creates a bitstring (e.g. $111111$) of size $|p|$ where each position corresponds to a union node in $\mathcal{E}$ and computes the $2^{n}$ permutations of this bitstring i.e. all possible paths that traverses the \gls{dag} $G_{\mathcal{E}}$ encoded by $\mathcal{E}$. Then, for each possible path, line \ref{algo:de:7} computes the mapping between the union node $P_{i}$ and the choice $b_{i}$ ($\top \equiv \text{ right}$ and $\bot \equiv \text{ left}$). Then, lines \ref{algo:de:9}-\ref{algo:de:12} distribute the paths among all workers. We chose the simples load-balancing algorithm, the round-robin but these lines can be replaced by any load-balancing algorithm. Finally, we call \textsc{Enumerate} on each worker using a \gls{rmi}.
+
+On the other side of the cluster, each worker will be waiting for the remote call \textsc{Enumerate}. \textsc{Enumerate} is a modification of the algorithm \textsc{Enumerate} (Algorithm 2) from \cite{core}. The procedure receives a set $\mathcal{G}$ of binary relations $G$ that are the choices to be made on each union node. Notice, the traversing of the \gls{dag} can be done in a single traversal if we combine all the path choices at each union node (lines \ref{algo:enumerate:16}-\ref{algo:enumerate:21}). Then lines \ref{algo:enumerate:22} and \ref{algo:enumerate:24} have been modified to accommodate this choice.
+
+(we need to prove this, it should be easy) Algorithm \ref{algo:de} still enumerates the set ${\llbracket n \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ in output-liner delay and without repetitions.
 
 %%%%%%%%%%%%%% BIBLIOGRAPHY %%%%%%%%%%%%%%%%%%%%%%
 
