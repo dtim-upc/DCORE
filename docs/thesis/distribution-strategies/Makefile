@@ -1,25 +1,34 @@
-.PHONY : all report.pdf clean cleanpdf cleandist
+DOC=report
+BIBFILE=bibliography
+PDF=${DOC}.pdf
+BIB=${BIBFILE}.bib
 
-TARGET=report
+LATEX = pdflatex -halt-on-error -shell-escape
+BIBTEX = bibtex
 
-all: report.pdf
+.PHONY : all pdf clean cleanpdf cleandist
 
-# latexmk -pdf -latexoption="-shell-escape" report.tex
+# ----------------------------------------------------------
 
-report.pdf: clean $(wildcard *.tex) $(wildcard *.bib)
-	- pdflatex -halt-on-error -shell-escape $(TARGET) # document with ? on references
-	- bibtex  $(TARGET) # references
-# TODO uncomment
-# - pdflatex -halt-on-error -shell-escape $(TARGET) # document with references
-	pdflatex -halt-on-error -shell-escape $(TARGET) # sometimes references break page numbering
+all: pdf
+
+pdf: ${PDF}
+
+${PDF}: clean $(wildcard *.tex) $(wildcard *.bib)
+	${LATEX}  ${DOC} # document with ? on references
+	${BIBTEX} ${DOC}
+	${LATEX}  ${DOC} # document with references
+	${LATEX}  ${DOC} # sometimes references break page numbering
+
+# ----------------------------------------------------------
+
+cleandist: clean cleanpdf
 
 clean:
 	rm -f *.eps
-	rm -f *.aux *.log *.out *.bbl *.blg *~ *.bak $(TARGET).ps
+	rm -f *.aux *.log *.out *.bbl *.blg *~ *.bak *.ps
 	rm -f *.brf *.lof *.lot *.toc *.glo *.ist *.fdb_latexmk *.fls
-	rm -rf _minted-$(TARGET) .auctex-auto
+	rm -rf _minted-* .auctex-auto
 
 cleanpdf:
-	rm -f $(TARGET).pdf
-
-cleandist: clean cleanpdf
+	rm -f ${PDF}
