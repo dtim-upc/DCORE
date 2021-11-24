@@ -270,3 +270,33 @@ In detail, Algorithm \ref{algo:de} receives as an input a gls{tecs} $\mathcal{E}
 On the other side of the cluster, each worker will be waiting for the remote call \textsc{Enumerate}. \textsc{Enumerate} is a modification of the algorithm \textsc{Enumerate} (Algorithm 2) from \cite{core}. The procedure receives a set $\mathcal{G}$ of binary relations $G$ that are the choices to be made on each union node. Notice, the traversing of the \gls{dag} can be done in a single traversal if we combine all the path choices at each union node (lines \ref{algo:enumerate:16}-\ref{algo:enumerate:21}). Then lines \ref{algo:enumerate:22} and \ref{algo:enumerate:24} have been modified to accommodate this choice.
 
 (we need to prove this, it should be easy) Algorithm \ref{algo:de} still enumerates the set ${\llbracket n \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ in output-liner delay and without repetitions.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{\textwidth}
+    \centering
+    \inputtikz{streamAB+}
+  \end{subfigure}
+  \\
+  \begin{subfigure}[b]{\textwidth}
+    \begin{minted}[xleftmargin=40pt, linenos=false]{text}
+      SELECT *
+      FROM S
+      WHERE A as a; B + as bb
+    \end{minted}
+  \end{subfigure}
+  \\
+  \begin{subfigure}[b]{\textwidth}
+    \centering
+    \inputtikz{ceaAB+}
+  \end{subfigure}
+  \caption{A CEA representing $Q_{1}$ from Figure 1 and some of its runs on an example stream.}
+  \label{fig:label}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \makeTECS{AB+}{4}
+  \caption{Illustration of Algorithm 1 on the CEA $\mathcal{A}$ and stream $S$ of Figure ???.}
+  \label{fig:label}
+\end{figure}

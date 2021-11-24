@@ -44,8 +44,6 @@
 \usepackage{bm} % $\bm{D + C}$
 \usepackage{stmaryrd} % \llbracket
 
-%%%%%
-
 \usepackage{amsthm} % \newtheorem, \proof, etc
 % \begin{theorem}\label{t:label}  ...  \end{theorem}
 % \begin{proof} ... \end{proof}
@@ -92,50 +90,6 @@
   \input{tikz/#1.tikz}
 }
 
-%%%% Flag derivation
-
-% https://osl.ugr.es/CTAN/macros/latex/contrib/flagderiv/flagderiv.pdf
-\usepackage{flagderiv}
-
-% \begin{flagderiv}
-%   \introduce{in-x}{x: \mathbb{N}}{Introduction of $x$}
-%     \assume{as-x}{x > 5}{Assumption}
-%       \step{big-x}{x > 1}{Arithmetic on \ref{in-x} and \ref{as-x}}
-%     \conclude{conc}{x > 5 \implies x > 1}{$\implies$-intro on \ref{as-x} and \ref{big-x}}
-%   \conclude{}{\forall x \in \mathbb{N} : x > 5 \implies x > 1}{$\forall$-intro on \ref{in-x} and \ref{conc}}
-% \end{flagderiv}
-
-%%%% Semantic: inference, tdiagram, shorthands
-
-% https://osl.ugr.es/CTAN/macros/latex/contrib/semantic/semantic.pdf
-\usepackage{semantic} % depends on amsmath
-
-% \mathlig{-><-}{\rightarrow\leftarrow}
-% $-><-$ \mathligsoff $-><-$ \mathligson $-><-$
-
-% The following ligatures are provided:
-% |-   |=
-% <->  <=>
-% ->   -->
-% =>   ==>
-% <-   <--
-% <=   <==
-% ->*  ->+   ==>* ...
-
-% \inference[$->*_{1}$]{
-%   \inference[$->*_{2}$]{
-%     \inference[$->*_{3}$]{
-%       \rho |- E => TRUE
-%     }{\rho \vdash E do s}
-%   }{\rho \vdash E do s}
-%   &
-%   \inference[$->*_{2}$]{
-%     \rho |- E => TRUE
-%   }{\rho \vdash E do s}
-% }{\rho \vdash E do s}
-
-% denotational semantics are also supported (see docs)
-
 %%%% Tables
 \usepackage{booktabs} % better default table
 
@@ -160,6 +114,9 @@
 
 %%%% Code/Pseudo-code
 
+\newcommand{\code}[1]{\texttt{#1}} % \code{foo.hs} environment
+
+
 \usepackage{minted}
 \usemintedstyle{default}
 \newminted{scala}{frame=lines, framerule=2pt}
@@ -173,7 +130,6 @@
   %\label{lst:example} % You can reference it by \ref{lst:example}
 %\end{listing}
 
-\newcommand{\code}[1]{\texttt{#1}} % \code{foo.hs} environment
 
 \usepackage[vlined,ruled]{algorithm2e} % pseudo-code
 % \newcommand\commentfont[1]{\footnotesize\ttfamily\colorbox{gray}{\textcolor{white}{#1}}}
@@ -200,7 +156,6 @@
 % Referencing a glossary \gls{latex}
 % Print glossaries \printglossaries
 
-
 %%%% Better enumerate
 
 \usepackage{enumitem} % \begin{enumerate}[label=(\alph*)]
@@ -221,6 +176,23 @@
 \newacronym{cea}{CEA}{Complex Event Automata}
 \newacronym{rmi}{RMI}{Remote Method Invocation}
 \newacronym{dag}{DAG}{Directed Acyclic Graph}
+
+%%%%%% Subfigure
+
+\usepackage{subcaption} % \subfigure
+\usepackage{pgffor} % \foreach
+\usepackage{fp}
+
+\def\makeTECS#1#2{%
+  \foreach \index in {0, ..., #2} {%
+    \FPset\x{#2}
+    \FPeval\y{1.0/(x + 1.0) - 0.05}
+    \begin{subfigure}[b]{\y\textwidth}
+      \centering
+      \inputtikz{#1_\index}
+      \caption*{S[\index]}
+    \end{subfigure}
+  }}
 
 %%%% New commands
 
