@@ -1,4 +1,3 @@
-
 %%%% Encodings
 
 \usepackage[utf8]{inputenc} % encoding
@@ -19,6 +18,13 @@
 
 % \usepackage[document]{ragged2e}  % Left-aligned (whole document)
 % \begin{...} ... \end{...}   flushleft, flushright, center
+
+%%%% Standalone
+
+% Allows to compile chapters individually
+% https://texdoc.org/serve/standalone.pdf/0   Chapter 5
+
+% \usepackage{standalone}
 
 %%%% Abstract
 
@@ -75,24 +81,16 @@
 %   \label{fig:cat}
 % \end{figure}
 
-%%%% Graphs
+%%%% Tikz
 
-% Use python instead: https://graphviz.readthedocs.io/en/stable/
+\usepackage{tikz}
+\usetikzlibrary{external, automata, arrows.meta, positioning}
+\tikzexternalize[shell escape=-shell-escape,prefix=tikz/cache/]
 
-% \usepackage{tikz} % https://texample.net/tikz/examples/tag/graphs/
-
-% \begin{tikzpicture}
-% \def \n {5}
-% \def \radius {3cm}
-% \def \margin {8} % margin in angles, depends on the radius
-
-% \foreach \s in {1,...,\n}
-% {
-%   \node[draw, circle] at ({360/\n * (\s - 1)}:\radius) {$\s$};
-%   \draw[->, >=latex] ({360/\n * (\s - 1)+\margin}:\radius)
-%     arc ({360/\n * (\s - 1)+\margin}:{360/\n * (\s)-\margin}:\radius);
-% }
-% \end{tikzpicture}
+\newcommand{\inputtikz}[1]{%
+  \tikzsetnextfilename{#1}%
+  \input{tikz/#1.tikz}
+}
 
 %%%% Flag derivation
 

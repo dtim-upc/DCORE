@@ -3,10 +3,12 @@
 *.aux
 *.bbl
 *.blg
-*.pdf
+report.pdf
 *.glo
 *.ist
 *.lof
 *.toc
 _minted-*
 .auctex-auto
+*synctex.gz
+*.auxlock
