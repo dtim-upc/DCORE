@@ -1,29 +1,4 @@
-
-\documentclass[12pt, a4paper]{article}
-
-\input{preamble}
-\usepackage{fancyhdr}
-\pagestyle{fancy}
-\fancyhf{}
-\rhead{TODO}
-\lhead{TODO}
-\rfoot{Page \thepage}
-
-\title{%
-  \vspace{-10ex}
-  Draft: Distributed Enumeration
-}
-\author{%
-  Arnau Abella \\
-  \large{Universitat Polit\`ecnica de Catalunya}
-}
-\date{\today}
-
-\begin{document}
-\maketitle
-% \tableofcontents
-
-%%%%%%%%%%%%%% DOCUMENT %%%%%%%%%%%%%%%%%%%%%%
+\chapter{Distribution Strategies}\label{chap:distribution_strategies}
 
 \section{Introduction}
 \label{sec:introduction}
@@ -295,21 +270,3 @@ In detail, Algorithm \ref{algo:de} receives as an input a gls{tecs} $\mathcal{E}
 On the other side of the cluster, each worker will be waiting for the remote call \textsc{Enumerate}. \textsc{Enumerate} is a modification of the algorithm \textsc{Enumerate} (Algorithm 2) from \cite{core}. The procedure receives a set $\mathcal{G}$ of binary relations $G$ that are the choices to be made on each union node. Notice, the traversing of the \gls{dag} can be done in a single traversal if we combine all the path choices at each union node (lines \ref{algo:enumerate:16}-\ref{algo:enumerate:21}). Then lines \ref{algo:enumerate:22} and \ref{algo:enumerate:24} have been modified to accommodate this choice.
 
 (we need to prove this, it should be easy) Algorithm \ref{algo:de} still enumerates the set ${\llbracket n \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ in output-liner delay and without repetitions.
-
-%%%%%%%%%%%%%% BIBLIOGRAPHY %%%%%%%%%%%%%%%%%%%%%%
-
-\bibliographystyle{abbrv}
-\bibliography{bibliography}
-%
-% \cite{einstein}
-% \citet{key}               Jones et al. (1990)
-% \citet*{key}              Jones, Baker, and Smith (1990)
-% \citep{key}               (Jones et al. 1990)
-% \citep*{key}              (Jones, Baker, and Smith 1990)
-% \citep[p.~99]{key}        (Jones et al., 1990, p. 99)
-% \citep[e.g.][]{key}       (e.g. Jones et al., 1990)
-% \citep[e.g.][p.~99]{key}  (e.g. Jones et al., 1990, p. 99)
-% \citeauthor{key}          Jones et al.
-% \citeauthor*{key}         Jones, Baker, and Smith
-% \citeyear{key}            1990
-\end{document}
