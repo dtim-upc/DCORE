@@ -82,12 +82,12 @@
 %%%% Tikz
 
 \usepackage{tikz}
-\usetikzlibrary{external, automata, arrows.meta, positioning}
+\usetikzlibrary{external, automata, arrows.meta, positioning, calc}
 \tikzexternalize[shell escape=-shell-escape,prefix=tikz/cache/]
 
 \newcommand{\inputtikz}[1]{%
   \tikzsetnextfilename{#1}%
-  \input{tikz/#1.tikz}
+  \input{tikz/#1.tex}
 }
 
 %%%% Tables
