@@ -5,8 +5,10 @@
 
 \usepackage{parskip}        % \par starts on left (not idented)
 
-\usepackage[numbers]{natbib} % \citet et al
-\usepackage[nottoc]{tocbibind} % Adds the bibliography to the table of contents.
+\usepackage[numbers]{natbib}
+
+% Adds the bibliography, table of figures to the ToC.
+\usepackage[nottoc]{tocbibind}
 
 % Hyperlinks \url{url} or \href{url}{name}
 \usepackage[colorlinks = true,
@@ -15,6 +17,8 @@
             citecolor = blue,
             anchorcolor = blue]{hyperref}
 
+% Geometry of the whole document: https://texdoc.org/serve/geometry.pdf/0
+\usepackage[margin=1in,headsep=.2in]{geometry}
 
 % \usepackage[document]{ragged2e}  % Left-aligned (whole document)
 % \begin{...} ... \end{...}   flushleft, flushright, center
@@ -28,12 +32,7 @@
 
 %%%% Abstract
 
-\usepackage{abstract} % Abstract
-
-% http://www.ctex.org/documents/packages/special/abstract.pdf
-\renewcommand{\absnamepos}{flushleft} % \begin{abstract} \noindent ... \end{abstract}
-\setlength{\absleftindent}{0pt}
-\setlength{\absrightindent}{0pt}
+\usepackage{abstract}
 
 %%%% Math
 
@@ -160,6 +159,10 @@
 
 \usepackage{enumitem} % \begin{enumerate}[label=(\alph*)]
 
+%%%% Appendix
+
+\usepackage[titletoc]{appendix}
+
 %%%% Glossaries & Acronyms
 
 \usepackage{glossaries}
@@ -176,6 +179,10 @@
 \newacronym{cea}{CEA}{Complex Event Automata}
 \newacronym{rmi}{RMI}{Remote Method Invocation}
 \newacronym{dag}{DAG}{Directed Acyclic Graph}
+\newacronym{cer}{CER}{Complex Event Recognition}
+\newacronym{cep}{CEP}{Complex Event Processing}
+\newacronym{cel}{CEL}{Complex Event Logic}
+\newacronym{socel}{SO-CEL}{Set-Oriented Complex Event Logic}
 
 %%%%%% Subfigure
 

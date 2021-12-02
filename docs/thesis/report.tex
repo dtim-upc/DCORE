@@ -4,13 +4,13 @@
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \fancyhf{}
-\rhead{TODO}
-\lhead{TODO}
+% \rhead{TODO}
+% \lhead{TODO}
 \rfoot{Page \thepage}
 
 \title{TODO}
 \author{%
-  Arnau Abella Gassol
+Arnau Abella Gassol
 }
 % \degree{%
 %   Master in Innovation and Research in Informatics\\
@@ -22,7 +22,33 @@
 
 \maketitle
 
-\input{chapters/chapter_0.tex}
+\chapter*{Acknowledgements}%
+TODO
+
+% Not using environment abstract
+\chapter*{Abstract}%
+TODO
+
+\tableofcontents
+\listoffigures
+\listoftables
+\listofalgorithms
+\addcontentsline{toc}{chapter}{List of Algorithm}
+\listoflistings
+\addcontentsline{toc}{chapter}{List of Source Code}
+
+
+\input{chapters/chapter_1.tex}
+\input{chapters/chapter_2.tex}
+\input{chapters/chapter_3.tex}
+\input{chapters/chapter_4.tex}
+\input{chapters/chapter_5.tex}
+\input{chapters/chapter_6.tex}
+\input{chapters/chapter_7.tex}
+
+\begin{appendices}
+\input{chapters/appendix_A.tex}
+\end{appendices}
 
 \bibliographystyle{unsrtnat}
 \bibliography{bibliography}
