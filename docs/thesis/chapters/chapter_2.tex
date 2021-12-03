@@ -1,10 +1,11 @@
 \chapter{Preliminaries}\label{chapter:preliminaries}
 
 % TODO move this to the first time constant-delay is mentioned.
-The notion of constant-delay enumeration was defined in the database community \cite{Segoufin13enumeratingwith, 10.1007/978-3-540-74915-8_18} for defining efficiency whenever generating the output might use considerable time. An enumeration is performed in constant-delay if it takes constant time between any two consecutive solutions.
+% In CORE they use output-linear delay instead of constant-delay ...
+The notion of constant-delay enumeration was defined in the database community \cite{constant-delay-1 , constant-delay-2} for defining efficiency whenever generating the output might use considerable time. An enumeration is performed in constant-delay if it takes constant time between any two consecutive solutions. Formally, it requires the existence of a routine \textsc{Enumerate} that receives $t_{j}$ as input and outputs all complex events in $\llbracket n \rrbracket^{\epsilon}_{\mathcal{E}}(j)$ without repetitions, while spending a constant amount of time before and after each output. Naturally, the time to generate a complex event $C$ must be linear in $|C|$.
 
 % Same for data complexity
-There are three ways to measure the complexity of evaluating queries in a specific language. First, one can fix a specific query in the language and study the complexity of applying this query to arbitrary databases. The complexity is then given as a function of the size of the databases. We call this complexity \textit{data complexity} \cite{DataComplexity}.
+There are three ways to measure the complexity of evaluating queries in a specific language. First, one can fix a specific query in the language and study the complexity of applying this query to arbitrary databases. The complexity is then given as a function of the size of the databases. We call this complexity \textit{data complexity} \cite{data-complexity}.
 
 \section{CORE}
 
@@ -19,5 +20,7 @@ There are three ways to measure the complexity of evaluating queries in a specif
 \end{definition}
 
 \section{SO-CEL}
+
+
 
 \section{Chapter summary}
