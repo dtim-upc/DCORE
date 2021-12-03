@@ -12,6 +12,7 @@ import edu.puc.core.runtime.events.Event
 import edu.puc.core.util.StringUtils
 
 import java.io.BufferedReader
+import java.util.logging.Level
 import java.util.regex.Pattern
 import scala.util.Try
 
@@ -92,7 +93,8 @@ object Engine {
       ).toEither
       executorManager <- Try(ExecutorManager.fromCOREFile(queryFile)).toEither
       streamManager <- Try(StreamManager.fromCOREFile(streamFile)).toEither
-      engine <- Try(
+      engine <- Try {
+        BaseEngine.LOGGER.setLevel(Level.OFF) // Disable logging in CORE
         BaseEngine.newEngine(
           executorManager,
           streamManager,
@@ -100,7 +102,7 @@ object Engine {
           true, // fastRun: do not wait between events using the timestamps
           true // offline: do not create the RMI server
         )
-      ).toEither
+      }.toEither
     } yield engine
 
   /*

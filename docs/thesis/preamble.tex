@@ -1,0 +1,207 @@
+%%%% Encodings
+
+\usepackage[utf8]{inputenc} % encoding
+\usepackage[english]{babel} % use special characters and also translates some elements within the document.
+
+\usepackage{parskip}        % \par starts on left (not idented)
+
+\usepackage[numbers]{natbib}
+
+% Adds the bibliography, table of figures to the ToC.
+\usepackage[nottoc]{tocbibind}
+
+% Hyperlinks \url{url} or \href{url}{name}
+\usepackage[colorlinks = true,
+            linkcolor = blue,
+            urlcolor  = blue,
+            citecolor = blue,
+            anchorcolor = blue]{hyperref}
+
+% Geometry of the whole document: https://texdoc.org/serve/geometry.pdf/0
+\usepackage[margin=1in,headsep=.2in]{geometry}
+
+% \usepackage[document]{ragged2e}  % Left-aligned (whole document)
+% \begin{...} ... \end{...}   flushleft, flushright, center
+
+%%%% Standalone
+
+% Allows to compile chapters individually
+% https://texdoc.org/serve/standalone.pdf/0   Chapter 5
+
+% \usepackage{standalone}
+
+%%%% Abstract
+
+\usepackage{abstract}
+
+%%%% Math
+
+% Some packages depend on amsmath like semantic
+
+\usepackage{amsmath}
+\usepackage{amssymb} % \mathbb{N}
+\usepackage{bm} % $\bm{D + C}$
+\usepackage{stmaryrd} % \llbracket
+
+\usepackage{amsthm} % \newtheorem, \proof, etc
+% \begin{theorem}\label{t:label}  ...  \end{theorem}
+% \begin{proof} ... \end{proof}
+
+\theoremstyle{plain} % default
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem*{corollary}{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{conjecture}{Conjecture}[section]
+\newtheorem{example}{Example}[section]
+
+\theoremstyle{remark}
+\newtheorem*{remark}{Remark}
+\newtheorem*{note}{Note}
+\newtheorem{case}{Case}
+
+% Defines a new environment to write your or claim - proof
+\newenvironment{claim}[1]{\par\noindent\underline{Claim:}\space#1}{}
+\newenvironment{claimproof}[1]{\par\noindent\underline{Proof:}\space#1}{\hfill $\blacksquare$}
+
+%%%% Graphics
+
+\usepackage{graphicx}
+\graphicspath{{./figures/}}
+
+% \begin{figure}[h]
+%   \centering
+%   \includegraphics[scale=0.5]{cat}  % [width=\textwidth, height=4cm],
+%   \caption{Example of a cat}
+%   \label{fig:cat}
+% \end{figure}
+
+%%%% Tikz
+
+\usepackage{tikz}
+\usetikzlibrary{external, automata, arrows.meta, positioning, calc}
+\tikzexternalize[shell escape=-shell-escape,prefix=tikz/cache/]
+
+\newcommand{\inputtikz}[1]{%
+  \tikzsetnextfilename{#1}%
+  \input{tikz/#1.tex}
+}
+
+%%%% Tables
+\usepackage{booktabs} % better default table
+
+% \begin{table}
+% \centering
+% \caption{This is my table, there are many like it, but this one is mine.}
+% \label{tbl:mytable}
+% \begin{tabular}{llr}
+% \toprule
+% \multicolumn{2}{c}{Item} \\
+% \cmidrule(r){1-2}
+% Animal & Description & Price (\$) \\
+% \midrule
+% Gnat  & per gram & 13.65 \\
+%       & each     &  0.01 \\
+% Gnu   & stuffed  & 92.50 \\
+% Emu   & stuffed  & 33.33 \\
+% Armadillo & frozen & 8.99 \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
+
+%%%% Code/Pseudo-code
+
+\newcommand{\code}[1]{\texttt{#1}} % \code{foo.hs} environment
+
+
+\usepackage{minted}
+\usemintedstyle{default}
+\newminted{scala}{frame=lines, framerule=2pt}
+% \mint{html}|<h2>Something <b>here</b></h2>|
+% \inputminted{octave}{BitXorMatrix.m}
+
+%\begin{listing}[H]
+  %\begin{minted}[xleftmargin=20pt,linenos,bgcolor=codegray]{haskell}
+  %\end{minted}
+  %\caption{Example of a listing.}
+  %\label{lst:example} % You can reference it by \ref{lst:example}
+%\end{listing}
+
+
+\usepackage[vlined,ruled]{algorithm2e} % pseudo-code
+% \newcommand\commentfont[1]{\footnotesize\ttfamily\colorbox{gray}{\textcolor{white}{#1}}}
+\newcommand\commentfont[1]{\small\ttfamily\textcolor{darkgray}{#1}}
+\SetCommentSty{commentfont}
+
+%%%% Colors
+
+\usepackage{xcolor} % \definecolor, \color{codegray}
+\definecolor{codegray}{rgb}{0.9, 0.9, 0.9}
+% \color{codegray} ... ...
+% \textcolor{red}{easily}
+
+%%%% Glossaries
+
+%\makeglossaries % before entries
+
+%\newglossaryentry{latex}{
+    %name=latex,
+    %description={Is a mark up language specially suited
+    %for scientific documents}
+%}
+
+% Referencing a glossary \gls{latex}
+% Print glossaries \printglossaries
+
+%%%% Better enumerate
+
+\usepackage{enumitem} % \begin{enumerate}[label=(\alph*)]
+
+%%%% Appendix
+
+\usepackage[titletoc]{appendix}
+
+%%%% Glossaries & Acronyms
+
+\usepackage{glossaries}
+
+\glsdisablehyper % remove hyperlinks to glossaries
+\setacronymstyle{long-short} %short-long
+
+% \gls{tecs}
+% \glsentrylong{tecs} % timed Enumerable Compact Set
+% \glsentryfull{tecs} % timed Enumerable Compact Set (tECS)
+\newacronym{tecs}{tECS}{timed Enumerable Compact Set}
+\newacronym{core}{CORE}{COmplex event Recognition Engine}
+\newacronym{mmde}{MMDE}{\textsc{MaximalMatchesDisjointEnumeration}}
+\newacronym{cea}{CEA}{Complex Event Automata}
+\newacronym{rmi}{RMI}{Remote Method Invocation}
+\newacronym{dag}{DAG}{Directed Acyclic Graph}
+\newacronym{cer}{CER}{Complex Event Recognition}
+\newacronym{cep}{CEP}{Complex Event Processing}
+\newacronym{cel}{CEL}{Complex Event Logic}
+\newacronym{socel}{SO-CEL}{Set-Oriented Complex Event Logic}
+
+%%%%%% Subfigure
+
+\usepackage{subcaption} % \subfigure
+\usepackage{pgffor} % \foreach
+\usepackage{fp}
+
+\def\makeTECS#1#2{%
+  \foreach \index in {0, ..., #2} {%
+    \FPset\x{#2}
+    \FPeval\y{1.0/(x + 1.0) - 0.05}
+    \begin{subfigure}[b]{\y\textwidth}
+      \centering
+      \inputtikz{#1_\index}
+      \caption*{S[\index]}
+    \end{subfigure}
+  }}
+
+%%%% New commands
+
+\newcommand{\comment}[1]{} % \comment{this will not appear in the document}
+\newcommand{\cea}{CEA $\mathcal{A} = (Q, \Delta, q_{0}, F)$}

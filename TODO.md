@@ -1,16 +1,24 @@
 # List of task
 
+## Priority
+
+- [ ] Prepare document about distributed tECS enumeration for Stijn
+  - [ ] Prepare examples of the evaluation of the algorithm. Modify the tECS examples with the paths information (use edges labels). Add examples of how the enumeration works by changing lines to red of the path of each worker.
+  - [ ] Prepare pseudocode by adapting both algorithm 1 and 2.
+  - [ ] Prepare a well-written explanation of the algorithm (instead of what's in chapter_4.tex)
+
 ## Project
 
-- [ ] MaximalMatchEnumeration repeated outputs
-  - [ ] Read Stijn explanation
+- [ ] Maximal Matches Disjoint Enumeration
+  - [ ] Pseudocode
+  - [ ] Theorems of soundness and completeness.
+  - [ ] Implementation
+  - [ ] Benchmarks
+
 - [ ] Prepare benchmarks for UPC cluster
   - [ ] Prepare new script
-- [ ] Simulate Network traffic/problems
-  - [ ] Lookup available options
-    - https://doc.akka.io/docs/akka/current/stream/operators/Source-or-Flow/delay.html
-    - https://www.smartjava.org/content/backpressure-action-websockets-and-akka-streams/
-- [ ] Load balancing: matches vs length (the problem right now is that enumeration does not take length into account)
+
+- [ ] (optional) Load balancing: matches vs length (the problem right now is that enumeration does not take length into account)
   - [ ] Add execution time of MaximalMatch + Configuration
   - [ ] Execute a benchmark and store in CSV: #matches, length of matches, execution time
   - [ ] Plot this information to see if load balancing is affected by length of matches.
@@ -19,13 +27,33 @@
 
 ## Document
 
+- [ ] Set the latex template https://github.com/latextemplates/LNCS
+
+### Chapter 1. Introduction
+
+### Chapter 2. Preliminaries
+
+- [ ] Reestate everything explained in CORE paper.
+- [ ] Formalize the definition of match and maximal match using complex event + S[i] + t_i.
+
+### Chapter 3. Related Work
+
+### Chapter 4. ??? (Theory)
+
 - [ ] Write pseudo-code for Maximal Match Enumeration
 - [ ] Proof soundness and completeness of Maximal Match Enumeration
 
+### Chapter 5. Implementation
+
+### Chapter 6. Experiments
+
+### Chapter 7. Conclusions & Future work
+
 ## Readings & Related Work
 
-- [ ] Read "COmplex event Recognition Engine"
-- [ ] Read "A Formal Framework for Complex Event Processing"
+- [x] Read "A Formal Framework for Complex Event Processing"
+- [x] Read "On the Expressiveness of Languages for Complex Event Recognition"
+- [x] Read "COmplex event Recognition Engine"
 
 ## Future work
 

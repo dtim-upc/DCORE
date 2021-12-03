@@ -1,0 +1,14 @@
+*.out
+*.log
+*.aux
+*.bbl
+*.blg
+report.pdf
+*.glo
+*.ist
+*.lof
+*.toc
+_minted-*
+.auctex-auto
+*synctex.gz
+*.auxlock

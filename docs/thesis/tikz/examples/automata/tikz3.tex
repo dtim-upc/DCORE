@@ -1,0 +1,15 @@
+\documentclass{standalone}
+
+\usepackage{tikz}
+\usetikzlibrary{automata, arrows.meta, positioning, shapes}
+
+\begin{document}
+\begin{tikzpicture} [node distance = 2 cm, on grid]
+  \node (q0) [state,
+  accepting,
+  accepting above,
+  accepting by arrow,
+  accepting distance = 1cm,
+  accepting text = {end}] {$q_{0}$};
+\end{tikzpicture}
+\end{document}
