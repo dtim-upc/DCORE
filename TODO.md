@@ -1,12 +1,5 @@
 # List of task
 
-## Priority
-
-- [ ] Prepare document about distributed tECS enumeration for Stijn
-  - [ ] Prepare examples of the evaluation of the algorithm. Modify the tECS examples with the paths information (use edges labels). Add examples of how the enumeration works by changing lines to red of the path of each worker.
-  - [ ] Prepare pseudocode by adapting both algorithm 1 and 2.
-  - [ ] Prepare a well-written explanation of the algorithm (instead of what's in chapter_4.tex)
-
 ## Project
 
 - [ ] Maximal Matches Disjoint Enumeration
@@ -26,6 +19,11 @@
 - [ ] (Optional) I don't really like the implementation based on node lists. `dcer.data.Match` could store a `List[List[Event]]` instead. This would make grouping 0 cost and traversing is actually still linear with a custom iterator.
 
 ## Document
+
+- [ ] Prepare document about distributed tECS enumeration for Stijn
+  - [ ] Prepare examples of the evaluation of the algorithm. Modify the tECS examples with the paths information (use edges labels). Add examples of how the enumeration works by changing lines to red of the path of each worker.
+  - [ ] Prepare pseudocode by adapting both algorithm 1 and 2.
+  - [ ] Prepare a well-written explanation of the algorithm (instead of what's in chapter_4.tex)
 
 - [ ] Set the latex template https://github.com/latextemplates/LNCS
 
@@ -54,6 +52,7 @@
 - [x] Read "A Formal Framework for Complex Event Processing"
 - [x] Read "On the Expressiveness of Languages for Complex Event Recognition"
 - [x] Read "COmplex event Recognition Engine"
+- [ ] Read "A Formal Framework for Complex Event Recognition"
 
 ## Future work
 
