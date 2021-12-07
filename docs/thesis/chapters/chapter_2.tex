@@ -1,31 +1,16 @@
 \chapter{Preliminaries}\label{chapter:preliminaries}
 
+% In this section, you are going to introduce all the concepts used in CORE: CEL(syntax and semantics), etc.
+
 % TODO move this to the first time constant-delay is mentioned.
 % In CORE they use output-linear delay instead of constant-delay ...
 The notion of constant-delay enumeration was defined in the database community \cite{constant-delay-1 , constant-delay-2} for defining efficiency whenever generating the output might use considerable time. An enumeration is performed in constant-delay if it takes constant time between any two consecutive solutions. Formally, it requires the existence of a routine \textsc{Enumerate} that receives $t_{j}$ as input and outputs all complex events in $\llbracket n \rrbracket^{\epsilon}_{\mathcal{E}}(j)$ without repetitions, while spending a constant amount of time before and after each output. Naturally, the time to generate a complex event $C$ must be linear in $|C|$.
 
 % Same for data complexity
-There are three ways to measure the complexity of evaluating queries in a specific language. First, one can fix a specific query in the language and study the complexity of applying this query to arbitrary databases. The complexity is then given as a function of the size of the databases. We call this complexity \textit{data complexity} \cite{data-complexity}.
+There are three ways to measure the complexity of evaluating queries in a specific language. First, one can fix a specific query in the language and study the complexity of applying this query to arbitrary databases. The complexity is then given as a function of the size of the databases. We call this complexity \emph{data complexity} \cite{data-complexity}.
 
 
 % TODO
-In order to speed up the matching process, it is common to restrict the set of results \cite{10.1016/j.scico.2010.06.010, 10.1145/1142473.1142520, Zhang2014OnCA}. Sadly, most proposals in the literature introduce heuristics to a particular computational model without describing how the semantics are affected. In \cite{formal-framework-cer}, a more general approach, \textit{selection strategies} as unary operators over core-CEL formulas, was introduced. Four selection strategies called strict (\textsc{strict}), next (\textsc{nxt}), last (\textsc{last}) and max (\textsc{max}) were formally defined.
-
-
-\section{CORE}
-
-\begin{definition}[Match]
-  \label{def:match}
-  TODO
-\end{definition}
-
-\begin{definition}[Maximal Match]
-  \label{def:maximalmatch}
-  TODO
-\end{definition}
-
-\section{SO-CEL}
-
-
+In order to speed up the matching process, it is common to restrict the set of results \cite{10.1016/j.scico.2010.06.010, 10.1145/1142473.1142520, Zhang2014OnCA}. Sadly, most proposals in the literature introduce heuristics to a particular computational model without describing how the semantics are affected. In \cite{formal-framework-cer}, a more general approach, \emph{selection strategies} as unary operators over core-CEL formulas, was introduced. Four selection strategies called strict (\textsc{strict}), next (\textsc{nxt}), last (\textsc{last}) and max (\textsc{max}) were formally defined.
 
 \section{Chapter summary}

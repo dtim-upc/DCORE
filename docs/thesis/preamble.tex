@@ -170,18 +170,16 @@
 \glsdisablehyper % remove hyperlinks to glossaries
 \setacronymstyle{long-short} %short-long
 
-% \gls{tecs}
-% \glsentrylong{tecs} % timed Enumerable Compact Set
-% \glsentryfull{tecs} % timed Enumerable Compact Set (tECS)
-\newacronym{tecs}{tECS}{timed Enumerable Compact Set}
-\newacronym{core}{CORE}{COmplex event Recognition Engine}
-\newacronym{mmde}{MMDE}{\textsc{MaximalMatchesDisjointEnumeration}}
+\newacronym{tecs}{tECS}{\emph{timed Enumerable Compact Set}}
+\newacronym{core}{CORE}{Complex Event Recognition Engine}
+\newacronym{mmde}{\textsc{MMDE}}{\emph{Maximal Match Disjoint Enumeration}}
+\newacronym{dte}{\textsc{DTE}}{\emph{Distributed tECS Enumeration}}
 \newacronym{cea}{CEA}{Complex Event Automata}
 \newacronym{rmi}{RMI}{Remote Method Invocation}
 \newacronym{dag}{DAG}{Directed Acyclic Graph}
 \newacronym{cer}{CER}{Complex Event Recognition}
 \newacronym{cep}{CEP}{Complex Event Processing}
-\newacronym{cel}{CEL}{Complex Event Logic}
+\newacronym{cel}{CEL}{\emph{Complex Event Logic}}
 \newacronym{socel}{SO-CEL}{Set-Oriented Complex Event Logic}
 
 %%%%%% Subfigure
@@ -205,3 +203,7 @@
 
 \newcommand{\comment}[1]{} % \comment{this will not appear in the document}
 \newcommand{\cea}{CEA $\mathcal{A} = (Q, \Delta, q_{0}, F)$}
+\newcommand{\enumCEA}{${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$}
+\newcommand{\enumNode}{${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$}
+\newcommand{\tecs}{${\mathcal{E}}$}
+\newcommand{\InDoubleBrackets}[1]{\llbracket #1 \rrbracket}
