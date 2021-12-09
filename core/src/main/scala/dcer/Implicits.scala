@@ -4,7 +4,7 @@ import scala.util.Try
 
 object Implicits extends AllSyntax
 
-trait AllSyntax extends StringSyntax with ListListSyntax
+trait AllSyntax extends StringSyntax with ListListSyntax with MapSyntax
 
 trait StringSyntax {
   implicit final def toStringOps(str: String): StringOps =
@@ -60,6 +60,21 @@ final class ListListOps[A](
       case None => {
         List()
       }
+    }
+  }
+}
+
+trait MapSyntax {
+  implicit final def toMapOps[K, V](self: Map[K, V]): MapOps[K, V] =
+    new MapOps[K, V](self)
+}
+
+final class MapOps[K, +V](private val self: Map[K, V]) extends AnyVal {
+  // updatedWith can be found in scala 2.13
+  def updatedWith[V1 >: V](k: K)(f: Option[V] => Option[V1]): Map[K, V1] = {
+    f(self.get(k)) match {
+      case Some(v) => self + (k -> v)
+      case None    => self - k
     }
   }
 }

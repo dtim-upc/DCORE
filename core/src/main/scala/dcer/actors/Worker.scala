@@ -33,6 +33,14 @@ object Worker {
       replyTo: ActorRef[EngineManager.MatchValidated]
   ) extends Command
       with CborSerializable
+  final case class ProcessBlueprint(
+      id: MatchGroupingId,
+      blueprint: Blueprint,
+      ms: List[MaximalMatch],
+      sop: Predicate,
+      replyTo: ActorRef[EngineManager.MatchValidated]
+  ) extends Command
+      with CborSerializable
   // NB: stop will stop the worker immediately i.e. it is responsible of the user to
   // stop the worker after all jobs have been finished (see EngineManager).
   final case object Stop extends Command with CborSerializable
@@ -64,6 +72,16 @@ object Worker {
     Behaviors.receiveMessage[Command] {
       case ProcessMatch(id, m, sop, replyTo) =>
         processMatch(ctx, id, m, sop, replyTo, Timer())
+
+      case ProcessBlueprint(id, blueprint, maximalMatches, sop, replyTo) =>
+        val matches = blueprint.enumerateWithoutDuplicates(maximalMatches)
+        ctx.log.info(
+          s"${blueprint.pretty} was associated to ${matches.length} matches"
+        )
+        matches.foreach { m =>
+          ctx.self ! ProcessMatch(id, m, sop, replyTo)
+        }
+        Behaviors.same
 
       case ProcessMaximalMatch(id, maximalMatch, blueprint, sop, replyTo) =>
         val matches = blueprint.enumerate(maximalMatch)

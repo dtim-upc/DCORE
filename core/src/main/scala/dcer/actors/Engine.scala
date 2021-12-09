@@ -41,7 +41,7 @@ object Engine {
       ctx: ActorContext[Engine.Command],
       engineManager: ActorRef[EngineManager.Event],
       baseEngine: BaseEngine,
-      groupingCount: Long
+      groupingCount: Long // Used as an ID for the MatchGrouping
   ): Behavior[Engine.Command] = {
     Behaviors.receiveMessage {
       case Start =>
@@ -131,6 +131,8 @@ object Engine {
         case DistributionStrategy.PowerOfTwoChoices =>
           Same
         case DistributionStrategy.MaximalMatchesEnumeration =>
+          newMaximalMatchQueryFile(queryDataFile)
+        case DistributionStrategy.MaximalMatchesDisjointEnumeration =>
           newMaximalMatchQueryFile(queryDataFile)
       }
     } yield queryBuffer
