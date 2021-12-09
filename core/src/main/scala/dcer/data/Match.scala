@@ -7,7 +7,16 @@ import scala.collection.JavaConverters._ // .asScala
 
 // nodeList starts at index 0
 case class Match(events: Array[Event], nodeList: Array[Int])
-    extends CborSerializable
+    extends CborSerializable {
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case other: Match =>
+        other.events.sameElements(this.events) &&
+          other.nodeList.sameElements(this.nodeList)
+      case _ => false
+    }
+  }
+}
 
 object Match {
   type MaximalMatch = Match

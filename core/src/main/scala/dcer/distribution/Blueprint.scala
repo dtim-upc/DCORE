@@ -15,9 +15,20 @@ import scala.annotation.tailrec
   *   - Each element corresponds to the 'k' in the k-combination of the kleene
   *     closure of that event type in the query.
   */
-case class Blueprint(value: Array[Int]) extends AnyVal {
+case class Blueprint(value: Array[Int]) {
   def pretty: String = {
     s"Blueprint(${this.value.mkString(",")})"
+  }
+
+  // Array.equals is defined as referential equality.
+  // By default, value classes reuses underlying values' impls.
+  // We re-define equality to be structural instead.
+  // We sacrifice performance gains (zero allocation) from AnyVal.
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case obj: Blueprint => this.value.sameElements(obj.value)
+      case _              => false
+    }
   }
 
   // Given a maximal match, enumerates all matches in the maximal match

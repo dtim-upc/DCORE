@@ -1,6 +1,5 @@
 package dcer.unit
 
-import dcer.EqualityExtras
 import dcer.data.Match.MaximalMatch
 import dcer.data.{Event, IntValue, Match}
 import dcer.distribution.Blueprint
@@ -8,11 +7,7 @@ import dcer.distribution.Blueprint.NumberOfMatches
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
-class BlueprintSpec
-    extends AnyFunSpec
-    with Matchers
-    with EqualityExtras
-    with AllTest {
+class BlueprintSpec extends AnyFunSpec with Matchers with AllTest {
   describe("Blueprint") {
     describe("fromMaximalMatch") {
       fromMaximalMatchTests.foreach {
