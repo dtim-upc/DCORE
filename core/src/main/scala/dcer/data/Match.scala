@@ -16,6 +16,11 @@ case class Match(events: Array[Event], nodeList: Array[Int])
       case _ => false
     }
   }
+
+  // Is this ok?
+  override def hashCode(): Int = {
+    scala.util.hashing.MurmurHash3.arrayHash(this.events)
+  }
 }
 
 object Match {

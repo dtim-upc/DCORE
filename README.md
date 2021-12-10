@@ -108,9 +108,7 @@ $ bloop test core-test
 $ bloop test core-test -o '*OutputValidation*' 
 ```
 
-> You may see some tests failing. This is expected and must be fixed in the future.
-> The problem is that different tests create different Engine but they use the same query files.
-> CORE uses a static field to hold a reference to all streams, which clashes between tests execution.
+> Integration tests should be run separately from unit tests (not sure why).
 
 Should run all subproject tests.
 

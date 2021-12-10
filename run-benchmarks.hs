@@ -60,9 +60,12 @@ powerOfTwoChoices = "PowerOfTwoChoices"
 maximalMatchesEnumeration :: Strategy
 maximalMatchesEnumeration = "MaximalMatchesEnumeration"
 
+maximalMatchesDisjointEnumeration :: Strategy
+maximalMatchesDisjointEnumeration = "MaximalMatchesDisjointEnumeration"
+
 strategies :: [Strategy]
--- strategies = [sequential, roundRobin, roundRobinWeighted, powerOfTwoChoices, maximalMatchesEnumeration]
-strategies = [sequential, roundRobin, maximalMatchesEnumeration]
+-- strategies = [sequential, roundRobin, roundRobinWeighted, powerOfTwoChoices, maximalMatchesEnumeration, maximalMatchesDisjointEnumeration]
+strategies = [roundRobinWeighted]
 
 -----------------------------------------
 
@@ -199,7 +202,7 @@ saveOutput rootDir outputDir scenario = do
 
 data Mode
   = All -- ^ Run all benchmarks
-  | Only { benchmark :: Integer } -- ^ Run onlu the given benchmark
+  | Only { benchmark :: Integer } -- ^ Run only the given benchmark
   deriving stock (Show)
 
 data ArgsOpts = ArgsOpts

@@ -246,10 +246,10 @@ object Benchmark1 extends Benchmark {
     // Stream file with events
     {
       val n = iteration match {
-        case 1  => 4
-        case 2  => 5
-        case 3  => 6
-        case 4  => 7
+        case 1  => 7
+        case 2  => 8
+        case 3  => 9
+        case 4  => 10
         case it => throw new RuntimeException(s"Iteration $it not implemented")
       }
       (1 to n).foreach { i =>

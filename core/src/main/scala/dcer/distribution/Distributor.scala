@@ -306,7 +306,7 @@ object Distributor {
       // Load-balancing problem.
       // Our first implementation is based on a naive greedy algorithm.
       val k = workers.length
-      val n = groupedBlueprints.size
+      val n = sortedBlueprints.size
       val load: Array[Long] = Array.fill(k)(0)
       val nMatches = Array.fill(k)(0L) // same as load (for now)
 
