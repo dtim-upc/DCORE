@@ -72,7 +72,7 @@ trait Test extends CallbackProvider with Matchers {
         val expectedMatchesTest = expectedMatches.map(MatchTest(_))
         var matchesTest = result(id).map(MatchTest(_))
         if (strategy == MaximalMatchesEnumeration) {
-          // FIXME MaximalMatchEnumeration is repeating elements
+          // Recall MaximalMatchesEnumeration generates duplicates.
           matchesTest = matchesTest.distinct
         }
         matchesTest should have length (expectedMatchesTest.length.toLong)

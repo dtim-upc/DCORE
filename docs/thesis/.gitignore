@@ -12,3 +12,5 @@ _minted-*
 .auctex-auto
 *synctex.gz
 *.auxlock
+*.loa
+*.lot

@@ -1,22 +1,15 @@
 # List of task
 
-## Priority
-
-- [ ] Prepare document about distributed tECS enumeration for Stijn
-  - [ ] Prepare examples of the evaluation of the algorithm. Modify the tECS examples with the paths information (use edges labels). Add examples of how the enumeration works by changing lines to red of the path of each worker.
-  - [ ] Prepare pseudocode by adapting both algorithm 1 and 2.
-  - [ ] Prepare a well-written explanation of the algorithm (instead of what's in chapter_4.tex)
-
 ## Project
-
-- [ ] Maximal Matches Disjoint Enumeration
-  - [ ] Pseudocode
-  - [ ] Theorems of soundness and completeness.
-  - [ ] Implementation
-  - [ ] Benchmarks
 
 - [ ] Prepare benchmarks for UPC cluster
   - [ ] Prepare new script
+  
+- [ ] dCORE
+    - [ ] Create a new branch of CORE.
+    - [ ] Add `paths` to CORE.
+    - [ ] Take `paths` into account while enumerating.
+    - [ ] Prepare new project `dCORE`
 
 - [ ] (optional) Load balancing: matches vs length (the problem right now is that enumeration does not take length into account)
   - [ ] Add execution time of MaximalMatch + Configuration
@@ -43,6 +36,9 @@
 - [ ] Write pseudo-code for Maximal Match Enumeration
 - [ ] Proof soundness and completeness of Maximal Match Enumeration
 
+- [ ] Remove output-linear delay
+- [ ] Explain Algorithm DTE.
+
 ### Chapter 5. Implementation
 
 ### Chapter 6. Experiments
@@ -51,9 +47,7 @@
 
 ## Readings & Related Work
 
-- [x] Read "A Formal Framework for Complex Event Processing"
-- [x] Read "On the Expressiveness of Languages for Complex Event Recognition"
-- [x] Read "COmplex event Recognition Engine"
+- [ ] Read "A Formal Framework for Complex Event Recognition"
 
 ## Future work
 

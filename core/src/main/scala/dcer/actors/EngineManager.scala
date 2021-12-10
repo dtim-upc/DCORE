@@ -32,6 +32,20 @@ Once a worker receives a Stop message, it should unconditionally shutdown.
 Once all workers have stopped, the Manager should stop itself.
  */
 
+/*
+Why does MatchValidated.ignore exist?
+
+The engine manager waits for the load of each worker to be zero.
+This load is retrieved from Distributor.scala.
+The problem is that in some strategies the load a priori e.g. MaximalMatchesDisjointEnumeration.
+Then, the only solutions are:
+1. Change the whole implementation of the shutdown process.
+2. Do a workaround.
+For now, we pick (2). We set an upper bound of the load of the worker in the Engine Manager
+and once the real load is computed we send as many MatchValidated with ignore=true as
+the difference between this upper bound and the real load.
+ */
+
 object EngineManager {
   sealed trait Event
   private final case class WorkersUpdated(
@@ -47,7 +61,8 @@ object EngineManager {
       id: MatchGroupingId,
       m: Match,
       from: ActorAddress,
-      fromRef: ActorRef[Worker.Command]
+      fromRef: ActorRef[Worker.Command],
+      ignore: Boolean /* Explained on the top of the file.*/
   ) extends Event
       with CborSerializable
   final case object EngineStopped extends Event
@@ -212,15 +227,17 @@ object EngineManager {
           isStopping
         )
 
-      case MatchValidated(id, m, from, fromRef) =>
-        ctx.log.info(
-          MatchFilter.marker,
-          s"Match found at ${from.actorName}(${from.id.get})[${from.address}]:\n${data.Match.pretty(m)}"
-        )
+      case MatchValidated(id, m, from, fromRef, ignore) =>
+        if (!ignore) {
+          ctx.log.info(
+            MatchFilter.marker,
+            s"Match found at ${from.actorName}(${from.id.get})[${from.address}]:\n${data.Match.pretty(m)}"
+          )
 
-        callback match {
-          case Some(Callback(matchFound, _)) => matchFound(id, m)
-          case None                          => ()
+          callback match {
+            case Some(Callback(matchFound, _)) => matchFound(id, m)
+            case None                          => ()
+          }
         }
 
         val newLoad: Long = workers(fromRef) - 1

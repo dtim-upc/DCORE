@@ -3,11 +3,10 @@ package dcer.unit
 import akka.actor._
 import akka.serialization._
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException
-import dcer.{Common, EqualityExtras}
+import dcer.Common
 import dcer.data.{Event, Match}
 import dcer.serialization.CborSerializable
 import edu.puc.core.execution.structures.output.{Match => JMatch}
-import org.scalactic.Equality
 import org.scalatest.Assertion
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
@@ -20,13 +19,10 @@ case class Message(x: IDoNotSerialize) extends CborSerializable
 This test verifies that the messages can be passed from one JVM to another JVM using JacksonCborSerializer.
 The test fails if the message cannot be serialized and deserialized.
  */
-class CborSerializableSpec
-    extends AnyFunSpec
-    with Matchers
-    with EqualityExtras {
+class CborSerializableSpec extends AnyFunSpec with Matchers {
   private def roundTrip[T <: CborSerializable](
       original: T
-  )(implicit clazz: Class[_ <: T], equality: Equality[T]): Assertion = {
+  )(implicit clazz: Class[_ <: T]): Assertion = {
     val system = ActorSystem("example")
     val serialization = SerializationExtension(system)
 
@@ -38,7 +34,7 @@ class CborSerializableSpec
     val bytes: Array[Byte] = serializer.toBinary(original)
     val back: AnyRef = serializer.fromBinary(bytes, clazz)
 
-    assert(equality.areEqual(back.asInstanceOf[T], original))
+    assert(back.asInstanceOf[T] == original)
   }
 
   private def roundTrip2(original: AnyRef): Assertion = {
@@ -68,7 +64,7 @@ class CborSerializableSpec
 
     it("should round-trip serialize an Event") {
       val event = Event(producer.getEventAtRandom())
-      roundTrip(event)(event.getClass, implicitly[Equality[Event]])
+      roundTrip(event)(event.getClass)
       roundTrip2(event)
     }
 
@@ -79,8 +75,8 @@ class CborSerializableSpec
           jMatch.push(event)
       }
       val m = Match(jMatch)
-      roundTrip(m)(m.getClass, matchEquality)
-      // TODO roundTrip2(m)
+      roundTrip(m)(m.getClass)
+      roundTrip2(m)
     }
 
     it(
@@ -88,7 +84,7 @@ class CborSerializableSpec
     ) {
       val message = Message(IJustDoNotSerialize)
       assertThrows[InvalidDefinitionException] {
-        roundTrip(message)(message.getClass, implicitly[Equality[Message]])
+        roundTrip(message)(message.getClass)
       }
       assertThrows[InvalidDefinitionException] {
         roundTrip2(message)
