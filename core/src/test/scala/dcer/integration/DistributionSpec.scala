@@ -27,8 +27,7 @@ class DistributionSpec extends AsyncFunSpec {
   describe("Distribution") {
     List(Test1, Test2).foreach { test =>
       describe(test.getClass.getName) {
-//        DistributionStrategy.all.foreach { strategy =>
-        List(dcer.data.DistributionStrategy.Sequential).foreach { strategy =>
+        DistributionStrategy.all.foreach { strategy =>
           describe(strategy.toString) {
             it("should return the expected output") {
               test.runTest(strategy, timeout = 20.seconds)

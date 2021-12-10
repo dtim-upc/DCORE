@@ -74,12 +74,22 @@ object Worker {
         processMatch(ctx, id, m, sop, replyTo, Timer())
 
       case ProcessBlueprint(id, blueprint, maximalMatches, sop, replyTo) =>
-        val matches = blueprint.enumerateDistinct(maximalMatches)
+        val (matches, repeated) = blueprint.enumerateDistinct(maximalMatches)
         ctx.log.info(
-          s"${blueprint.pretty} was associated to ${matches.length} matches"
+          s"${blueprint.pretty}: ${maximalMatches.length} maximal matches(${matches.length} sub matches)"
         )
         matches.foreach { m =>
           ctx.self ! ProcessMatch(id, m, sop, replyTo)
+        }
+        // Explained at EngineManager.scala
+        (0 until repeated).foreach { _ =>
+          replyTo ! EngineManager.MatchValidated(
+            id,
+            null,
+            ActorAddress.parse(ctx.self.path.name).get,
+            ctx.self,
+            ignore = true
+          )
         }
         Behaviors.same
 
@@ -138,7 +148,8 @@ object Worker {
             matchGroupingId,
             m,
             ActorAddress.parse(ctx.self.path.name).get,
-            ctx.self
+            ctx.self,
+            ignore = false
           )
           queue.foreach { msg => ctx.self ! msg }
           running(ctx)

@@ -1,11 +1,9 @@
 # List of task
 
-- [x] Implement MMDE
-- [ ] Test enumerationWithoutDuplicates
-- [ ] Test it using integration tests
-- [ ] Benchmark it
-
 ## Project
+
+- [ ] Benchmark MMDE
+- [ ] Compare MME vs MMDE
 
 - [ ] Prepare benchmarks for UPC cluster
   - [ ] Prepare new script
@@ -34,6 +32,8 @@
 
 - [ ] Write pseudo-code for Maximal Match Enumeration
 - [ ] Proof soundness and completeness of Maximal Match Enumeration
+
+- [ ] Remove output-linear delay
 - [ ] Explain Algorithm DTE.
 
 ### Chapter 5. Implementation

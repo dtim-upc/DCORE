@@ -15,6 +15,40 @@ class BlueprintSpec
     with EnumerateTest
     with EnumerateDistinctTest {
   describe("Blueprint") {
+    describe("Equality & Hash Code") {
+      it("should use structural equality") {
+        import dcer.Implicits._
+
+        val bp1 = Blueprint(Array(1, 1, 1))
+        val bp2 = Blueprint(Array(1, 1, 1))
+        assert(bp1 == bp2)
+
+        // Distinct uses hash equality
+        val xs = List(bp1, bp2)
+        assert(xs.distinct == List(bp1))
+
+        // HashTrieMap uses
+        val bp3 = Blueprint(Array(1, 1, 2))
+        val bp4 = Blueprint(Array(1, 1, 1))
+        val bp5 = Blueprint(Array(1, 1, 2))
+        val blueprints = List((bp1, 1), (bp2, 2), (bp3, 3), (bp4, 4), (bp5, 5))
+        val result = blueprints.foldLeft(Map.empty[Blueprint, List[Int]]) {
+          case (acc, (blueprint, i)) =>
+            acc.updatedWith(blueprint) {
+              case None =>
+                Some(List(i))
+              case Some(ii) =>
+                Some(i :: ii)
+            }
+        }
+        val expected: Map[Blueprint, List[Int]] =
+          Map(
+            Blueprint(Array(1, 1, 1)) -> List(4, 2, 1),
+            Blueprint(Array(1, 1, 2)) -> List(5, 3)
+          )
+        assert(result == expected)
+      }
+    }
     describe("fromMaximalMatch") {
       fromMaximalMatchTests.foreach {
         case Expectation(testName, maximalMatch, expected) =>
@@ -37,11 +71,17 @@ class BlueprintSpec
     }
     describe("enumerateDistinct") {
       enumerateDistinctTests.foreach {
-        case Expectation(testName, (blueprint, maximalMatches), expected) =>
+        case Expectation(
+              testName,
+              (blueprint, maximalMatches),
+              (expected, expectedRepeated)
+            ) =>
           it(testName) {
-            val result = blueprint.enumerateDistinct(maximalMatches)
+            val (result, resultRepeated) =
+              blueprint.enumerateDistinct(maximalMatches)
             result should have length expected.length.toLong
             result should contain theSameElementsAs expected
+            resultRepeated shouldBe expectedRepeated
           }
       }
     }
@@ -205,7 +245,7 @@ trait EnumerateTest { self: TestHelper =>
 trait EnumerateDistinctTest { self: TestHelper =>
 
   type EnumerateDistinctExpectation =
-    Expectation[(Blueprint, List[MaximalMatch]), List[Match]]
+    Expectation[(Blueprint, List[MaximalMatch]), (List[Match], Int)]
 
   private val test1 = {
     val testName = "(A = 1): A1A2A3"
@@ -222,7 +262,7 @@ trait EnumerateDistinctTest { self: TestHelper =>
     Expectation(
       testName,
       input = (blueprint, maximalMatches),
-      expected = expectedResult
+      expected = (expectedResult, 0)
     )
   }
 
@@ -242,7 +282,7 @@ trait EnumerateDistinctTest { self: TestHelper =>
     Expectation(
       testName,
       input = (blueprint, maximalMatches),
-      expected = expectedResult
+      expected = (expectedResult, 1)
     )
   }
 
@@ -263,7 +303,7 @@ trait EnumerateDistinctTest { self: TestHelper =>
     Expectation(
       testName,
       input = (blueprint, maximalMatches),
-      expected = expectedResult
+      expected = (expectedResult, 1)
     )
   }
 
@@ -291,7 +331,7 @@ trait EnumerateDistinctTest { self: TestHelper =>
     Expectation(
       testName,
       input = (blueprint, maximalMatches),
-      expected = expectedResult
+      expected = (expectedResult, 3)
     )
   }
 

@@ -53,7 +53,7 @@ object Distributor {
       case DistributionStrategy.MaximalMatchesEnumeration =>
         MaximalMatchesEnumeration(ctx, workers, predicate)
       case DistributionStrategy.MaximalMatchesDisjointEnumeration =>
-        MaximalMatchesEnumeration(ctx, workers, predicate)
+        MaximalMatchesDisjointEnumeration(ctx, workers, predicate)
     }
 
   def fromConfig(config: Configuration.Parser)(

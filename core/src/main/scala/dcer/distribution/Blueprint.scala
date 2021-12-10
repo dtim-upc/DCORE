@@ -32,6 +32,11 @@ case class Blueprint(value: Array[Int]) {
       case _              => false
     }
   }
+  // We also need to override hashcode since some data structures
+  // e.g. HashTrieMap and HashSet uses hashes to compute equality
+  override def hashCode(): Int = {
+    scala.util.hashing.MurmurHash3.arrayHash(this.value)
+  }
 
   // Given a maximal match, enumerates all matches in the maximal match
   // where the blueprint holds i.e. the sequences of each event type
@@ -89,8 +94,9 @@ case class Blueprint(value: Array[Int]) {
   // by using an auxiliary data structure to keep track of the matches found.
   def enumerateDistinct(
       maximalMatches: List[MaximalMatch]
-  ): List[Match] = {
+  ): (List[Match], Int /*repeated matches*/ ) = {
     val buffer = ListBuffer.empty[Match]
+    var repeated: Int = 0
 
     def go(
         events: List[(Event, EventType)], // Remaining events
@@ -132,6 +138,8 @@ case class Blueprint(value: Array[Int]) {
           inner { (events, _, isNew) =>
             if (isNew) {
               buffer += Match(events.toArray, Array.empty)
+            } else {
+              repeated += 1
             }
           }
 
@@ -157,7 +165,7 @@ case class Blueprint(value: Array[Int]) {
       go(events, firstEventType, Set(firstEvent), Nil, root, isNew = false)
     }
 
-    buffer.toList
+    (buffer.toList, repeated)
   }
 }
 
