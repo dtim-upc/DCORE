@@ -74,7 +74,7 @@ object Worker {
         processMatch(ctx, id, m, sop, replyTo, Timer())
 
       case ProcessBlueprint(id, blueprint, maximalMatches, sop, replyTo) =>
-        val matches = blueprint.enumerateWithoutDuplicates(maximalMatches)
+        val matches = blueprint.enumerateDistinct(maximalMatches)
         ctx.log.info(
           s"${blueprint.pretty} was associated to ${matches.length} matches"
         )

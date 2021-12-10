@@ -87,7 +87,7 @@ case class Blueprint(value: Array[Int]) {
   // This is part of the algorithm MaximalMatchesDisjointEnumeration.
   // The algorithm is similar to enumerate but does not generates duplicates
   // by using an auxiliary data structure to keep track of the matches found.
-  def enumerateWithoutDuplicates(
+  def enumerateDistinct(
       maximalMatches: List[MaximalMatch]
   ): List[Match] = {
     val buffer = ListBuffer.empty[Match]
