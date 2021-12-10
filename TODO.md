@@ -2,11 +2,14 @@
 
 ## Project
 
-- [ ] Benchmark MMDE
-- [ ] Compare MME vs MMDE
-
 - [ ] Prepare benchmarks for UPC cluster
   - [ ] Prepare new script
+  
+- [ ] dCORE
+    - [ ] Create a new branch of CORE.
+    - [ ] Add `paths` to CORE.
+    - [ ] Take `paths` into account while enumerating.
+    - [ ] Prepare new project `dCORE`
 
 - [ ] (optional) Load balancing: matches vs length (the problem right now is that enumeration does not take length into account)
   - [ ] Add execution time of MaximalMatch + Configuration
