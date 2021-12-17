@@ -245,12 +245,12 @@ We are ready to description algorithm \acrshort{dte}. An efficient implementatio
         \ElseIf{$n' \in N_{U}$}{
           \If{$max(right(n')) \ge \tau$}{
             \eIf{$paths(left(n')) > s'$}{
-              $a'' \leftarrow a' - max(0, paths(left(n)) - s')$\;
+              $a'' \leftarrow a' - max(0, paths(left(n')) - s')$\;
             }{
               $a'' \leftarrow a'$\;
             }
-            $s'' \leftarrow s' - paths(left(n))$\;
-            \If{$paths(right(n)) > s'' \land a'' > 0$}{
+            $s'' \leftarrow max(0, s' - paths(left(n')))$\;
+            \If{$paths(right(n')) > s'' \land a'' > 0$}{
               push(st, (right($n'$), $P$, $s''$, $a''$))\;
             }
           }
@@ -373,7 +373,6 @@ TODO: explain algorithm
   \end{subfigure}
   \begin{subfigure}[t]{0.28\linewidth}
     \inputtikz{A+B+_4}
-  \end{subfigure}
   \caption{Illustration of Algorithm 1 on the CEA $\mathcal{A}$ and stream $S$ of Figure ???.}
   \label{fig:label}
 \end{figure}
