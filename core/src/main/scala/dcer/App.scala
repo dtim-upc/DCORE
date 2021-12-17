@@ -1,23 +1,30 @@
 package dcer
 
-import akka.actor.typed.ActorSystem
+import akka.actor.typed.{ActorSystem, Behavior}
 import cats.implicits._
 import com.monovore.decline._
-import com.typesafe.config.ConfigFactory
-import dcer.StartUp.startup
+import com.typesafe.config.{Config, ConfigFactory}
 import dcer.common.actors.Root
-import dcer.common.data.{Callback, Engine, Port, QueryPath, Role, Worker}
+import dcer.common.data.{Callback, Master, Port, QueryPath, Role, Slave}
 import dcer.core.data.DistributionStrategy
 import dcer.core.distribution.Predicate
 
 import java.nio.file.Path
+import scala.concurrent.duration.FiniteDuration
 
 object App
     extends CommandApp(
       name = "dcer",
       header = "A distributed complex event processing engine.",
       main = {
-        val run = {
+        def getRunOpts(
+            start: (
+                Role,
+                Port,
+                Option[QueryPath],
+                Option[DistributionStrategy]
+            ) => Unit
+        ): Opts[Unit] = {
           val roleOpt =
             Opts
               .option[String]("role", help = s"Available roles: ${Role.all}")
@@ -62,38 +69,45 @@ object App
               val port = portOpt match {
                 case None =>
                   role match {
-                    case Engine => Port.SeedPort
-                    case Worker => Port.RandomPort
+                    case Master => Port.SeedPort
+                    case Slave  => Port.RandomPort
                   }
                 case Some(port) => port
               }
-              startup(role, port, queryPath, callback = None, strategy)
+              start(role, port, queryPath, strategy)
           }
         }
 
         val coreSubcommand =
           Opts.subcommand("core", help = "Execute using CORE.") {
-            val demo = {
+            val demoOps = {
               val demo = Opts.flag("demo", help = "Run the demo")
               demo.map { _ =>
-                startup(common.data.Engine, Port.SeedPort)
-                startup(common.data.Worker, Port.RandomPort)
-                startup(common.data.Worker, Port.RandomPort)
+                Init.startCore(common.data.Master, Port.SeedPort)
+                Init.startCore(common.data.Slave, Port.RandomPort)
+                Init.startCore(common.data.Slave, Port.RandomPort)
               }
             }
-            demo <+> run
+            val runOpts = getRunOpts((role, port, queryPath, strategy) =>
+              Init.startCore(role, port, queryPath, strategy = strategy)
+            )
+            demoOps <+> runOpts
           }
+
         val core2Subcommand =
           Opts.subcommand("core2", help = "Execute using CORE2.") {
-            run
+            getRunOpts((role, port, queryPath, _) =>
+              Init.startCore2(role, port, queryPath)
+            )
           }
 
         coreSubcommand <+> core2Subcommand
       }
     )
 
-object StartUp {
-  def startup(
+object Init {
+  // Starts CORE system.
+  def startCore(
       role: Role,
       port: Port,
       queryPath: Option[QueryPath] = None,
@@ -101,6 +115,64 @@ object StartUp {
       strategy: Option[DistributionStrategy] = None,
       predicate: Option[Predicate] = None
   ): Unit = {
+    val config =
+      parseConfig(role, port, queryPath, strategy, predicate)
+
+    def getWorker(): (String, Behavior[_]) = {
+      ("Worker", dcer.core.actors.Worker())
+    }
+
+    def getManager(
+        queryPath: QueryPath,
+        callback: Option[Callback],
+        warmUpTime: FiniteDuration
+    ): (String, Behavior[_]) = {
+      ("Manager", dcer.core.actors.Manager(queryPath, callback, warmUpTime))
+    }
+
+    val _ = ActorSystem(
+      Root(callback, getWorker, getManager),
+      "ClusterSystem",
+      config
+    )
+  }
+
+  // Starts CORE2 system.
+  def startCore2(
+      role: Role,
+      port: Port,
+      queryPath: Option[QueryPath] = None,
+      callback: Option[Callback] = None
+  ): Unit = {
+    val config =
+      parseConfig(role, port, queryPath, None, None)
+
+    def getWorker(): (String, Behavior[_]) = {
+      ("Worker", dcer.core2.actors.Worker())
+    }
+
+    def getManager(
+        queryPath: QueryPath,
+        callback: Option[Callback],
+        warmUpTime: FiniteDuration
+    ): (String, Behavior[_]) = {
+      ("Manager", dcer.core.actors.Manager(queryPath, callback, warmUpTime))
+    }
+
+    val _ = ActorSystem(
+      Root(callback, getWorker, getManager),
+      "ClusterSystem",
+      config
+    )
+  }
+
+  private def parseConfig(
+      role: Role,
+      port: Port,
+      queryPath: Option[QueryPath],
+      strategy: Option[DistributionStrategy],
+      predicate: Option[Predicate]
+  ): Config = {
     def optional[V](
         key: String,
         value: Option[V],
@@ -125,18 +197,15 @@ object StartUp {
       show = (_: Predicate).toString
     )
 
-    val config =
-      ConfigFactory
-        .parseString(
-          s"""akka.remote.artery.canonical.port=${port.port}
+    ConfigFactory
+      .parseString(
+        s"""akka.remote.artery.canonical.port=${port.port}
              |akka.cluster.roles = [${role.toString}]
              |$queryOption
              |$strategyOption
              |$predicateOption
              |""".stripMargin
-        )
-        .withFallback(ConfigFactory.load())
-
-    val _ = ActorSystem(Root(callback), "ClusterSystem", config)
+      )
+      .withFallback(ConfigFactory.load())
   }
 }

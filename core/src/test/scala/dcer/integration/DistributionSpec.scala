@@ -1,11 +1,11 @@
 package dcer.integration
 
 import dcer.common.data
-import dcer.common.data.{Callback, Engine, Port, QueryPath, Worker}
+import dcer.common.data.{Callback, Master, Port, QueryPath, Slave}
 import dcer.core.actors.Manager.MatchGroupingId
 import dcer.core.data.DistributionStrategy.MaximalMatchesEnumeration
 import dcer.core.data._
-import dcer.{MatchTest, StartUp}
+import dcer.{MatchTest, Init}
 import org.scalatest.Assertion
 import org.scalatest.funspec.AsyncFunSpec
 import org.scalatest.matchers.should._
@@ -58,16 +58,16 @@ trait Test extends CallbackProvider with Matchers {
     val (callback, promise) =
       getPromiseAndCallback(timeout)(executionContext)
 
-    StartUp.startup(
-      Engine,
+    Init.startCore(
+      Master,
       Port.SeedPort,
       Some(query),
       Some(callback),
       Some(strategy)
     )
-    StartUp.startup(Worker, Port.RandomPort)
-    StartUp.startup(Worker, Port.RandomPort)
-    StartUp.startup(Worker, Port.RandomPort)
+    Init.startCore(Slave, Port.RandomPort)
+    Init.startCore(Slave, Port.RandomPort)
+    Init.startCore(Slave, Port.RandomPort)
 
     promise.future.map { result =>
       expectedResult.foreach { case (id, expectedMatches) =>

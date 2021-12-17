@@ -49,7 +49,7 @@ Options and flags:
     --demo
         Run the demo
     --role <string>
-        Available roles: List(Engine, Worker)
+        Available roles: List(Master, Slave)
     --port <string>
         Available ports: [1024, 49152]
     --query <path>
@@ -77,13 +77,13 @@ $ bloop run core -- --demo
 
 ```sh
 # Machine 1
-sbt "run --role engine"
+sbt "run --role master"
 
 # Machine 2
-sbt "run --role worker"
+sbt "run --role slave"
 
 # (Optional) Machine N
-sbt "run --role worker"
+sbt "run --role slave"
 ```
 
 #### Configuration

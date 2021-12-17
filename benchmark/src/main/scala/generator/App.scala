@@ -88,7 +88,7 @@ object Generator {
         |""".stripMargin
 
     val importsDec =
-      """import dcer.StartUp
+      """import dcer.Init._
         |import dcer.common.data
         |import dcer.common.data.{Port, QueryPath}
         |import dcer.core.data.DistributionStrategy._
@@ -99,7 +99,7 @@ object Generator {
       s"""object ${className(jvm = 1)} {
          |  def main(args: Array[String]): Unit = {
          |    val query = QueryPath("${queryDir}").get
-         |    StartUp.startup(data.Engine, Port.SeedPort, Some(query), strategy = Some(${strategy}), predicate = Some(${predicate}()))
+         |    startCore(data.Master, Port.SeedPort, Some(query), strategy = Some(${strategy}), predicate = Some(${predicate}()))
          |  }
          |}
          |""".stripMargin
@@ -107,7 +107,7 @@ object Generator {
     def workerActorDec(n: Int): String =
       s"""object ${className(jvm = n)} {
          |  def main(args: Array[String]): Unit = {
-         |    StartUp.startup(data.Worker, Port.RandomPort)
+         |    startCore(data.Slave, Port.RandomPort)
          |  }
          |}
          |""".stripMargin
