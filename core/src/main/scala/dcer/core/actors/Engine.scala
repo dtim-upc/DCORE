@@ -3,8 +3,9 @@ package dcer.core.actors
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import better.files._
-import dcer.core.actors.EngineManager.MatchGroupingFound
-import dcer.core.data.{Configuration, DistributionStrategy, QueryPath}
+import dcer.common.data.{Configuration, QueryPath}
+import dcer.core.actors.Manager.MatchGroupingFound
+import dcer.core.data.DistributionStrategy
 import edu.puc.core.engine.BaseEngine
 import edu.puc.core.engine.executors.ExecutorManager
 import edu.puc.core.engine.streams.StreamManager
@@ -24,7 +25,7 @@ object Engine {
 
   def apply(
       queryPath: QueryPath,
-      engineManager: ActorRef[EngineManager.Event]
+      engineManager: ActorRef[Manager.Event]
   ): Behavior[Engine.Command] = {
     Behaviors.setup { ctx =>
       val configParser = Configuration(ctx)
@@ -39,7 +40,7 @@ object Engine {
 
   private def running(
       ctx: ActorContext[Engine.Command],
-      engineManager: ActorRef[EngineManager.Event],
+      engineManager: ActorRef[Manager.Event],
       baseEngine: BaseEngine,
       groupingCount: Long // Used as an ID for the MatchGrouping
   ): Behavior[Engine.Command] = {
@@ -73,7 +74,7 @@ object Engine {
             ctx.log.info("No more events on the source stream")
             ctx.log.info("Engine stopped")
             BaseEngine.clear() // Remove static variables
-            engineManager ! EngineManager.EngineStopped
+            engineManager ! Manager.EngineStopped
             Behaviors.stopped
         }
     }

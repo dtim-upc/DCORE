@@ -3,9 +3,10 @@ package dcer.core.actors
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
-import dcer.core.actors.EngineManager.MatchGroupingId
+import dcer.common.data.{ActorAddress, Timer}
+import dcer.core.actors.Manager.MatchGroupingId
 import dcer.core.data.Match.MaximalMatch
-import dcer.core.data.{ActorAddress, Match, Timer}
+import dcer.core.data.Match
 import dcer.core.distribution.{Blueprint, Predicate}
 import dcer.core.logging.TimeFilter
 import dcer.common.serialization.CborSerializable
@@ -22,7 +23,7 @@ object Worker {
       id: MatchGroupingId,
       m: Match,
       sop: Predicate,
-      replyTo: ActorRef[EngineManager.MatchValidated]
+      replyTo: ActorRef[Manager.MatchValidated]
   ) extends Command
       with CborSerializable
   final case class ProcessMaximalMatch(
@@ -30,7 +31,7 @@ object Worker {
       m: MaximalMatch,
       blueprint: Blueprint,
       sop: Predicate,
-      replyTo: ActorRef[EngineManager.MatchValidated]
+      replyTo: ActorRef[Manager.MatchValidated]
   ) extends Command
       with CborSerializable
   final case class ProcessBlueprint(
@@ -38,7 +39,7 @@ object Worker {
       blueprint: Blueprint,
       ms: List[MaximalMatch],
       sop: Predicate,
-      replyTo: ActorRef[EngineManager.MatchValidated]
+      replyTo: ActorRef[Manager.MatchValidated]
   ) extends Command
       with CborSerializable
   // NB: stop will stop the worker immediately i.e. it is responsible of the user to
@@ -83,7 +84,7 @@ object Worker {
         }
         // Explained at EngineManager.scala
         (0 until repeated).foreach { _ =>
-          replyTo ! EngineManager.MatchValidated(
+          replyTo ! Manager.MatchValidated(
             id,
             null,
             ActorAddress.parse(ctx.self.path.name).get,
@@ -119,7 +120,7 @@ object Worker {
       matchGroupingId: MatchGroupingId,
       m: Match,
       sop: Predicate,
-      replyTo: ActorRef[EngineManager.MatchValidated],
+      replyTo: ActorRef[Manager.MatchValidated],
       timer: Timer
   ): Behavior[Command] = {
     ctx.log.debug(
@@ -144,7 +145,7 @@ object Worker {
             TimeFilter.marker,
             s"Match (#events=${m.events.length}, complexity=$sop) processed in ${timer.elapsedTime().toMillis} milliseconds"
           )
-          replyTo ! EngineManager.MatchValidated(
+          replyTo ! Manager.MatchValidated(
             matchGroupingId,
             m,
             ActorAddress.parse(ctx.self.path.name).get,

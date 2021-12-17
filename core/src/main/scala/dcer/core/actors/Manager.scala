@@ -4,6 +4,13 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import cats.implicits._
+import dcer.common.data.{
+  ActorAddress,
+  Callback,
+  Configuration,
+  QueryPath,
+  Timer
+}
 import dcer.core.data._
 import dcer.core.distribution.Distributor
 import dcer.core.logging.{MatchFilter, StatsFilter, TimeFilter}
@@ -45,7 +52,7 @@ and once the real load is computed we send as many MatchValidated with ignore=tr
 the difference between this upper bound and the real load.
  */
 
-object EngineManager {
+object Manager {
   sealed trait Event
   private final case class WorkersUpdated(
       updatedWorkers: Set[ActorRef[Worker.Command]]

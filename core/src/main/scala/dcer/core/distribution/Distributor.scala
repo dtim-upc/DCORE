@@ -2,10 +2,11 @@ package dcer.core.distribution
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
-import dcer.core.actors.EngineManager.MatchGroupingId
-import dcer.core.actors.{EngineManager, Worker}
+import dcer.common.data.Configuration
+import dcer.core.actors.Manager.MatchGroupingId
+import dcer.core.actors.{Manager, Worker}
 import dcer.core.data.Match.MaximalMatch
-import dcer.core.data.{Configuration, DistributionStrategy, Match}
+import dcer.core.data.{DistributionStrategy, Match}
 import dcer.core.distribution.Blueprint.NumberOfMatches
 import edu.puc.core.execution.structures.output.MatchGrouping
 
@@ -14,7 +15,7 @@ import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
 
 sealed trait Distributor {
-  val ctx: ActorContext[EngineManager.Event]
+  val ctx: ActorContext[Manager.Event]
   val workers: Array[ActorRef[Worker.Command]]
   val predicate: Predicate
 
@@ -37,7 +38,7 @@ object Distributor {
 
   def apply(
       distributionStrategy: DistributionStrategy,
-      ctx: ActorContext[EngineManager.Event],
+      ctx: ActorContext[Manager.Event],
       workers: Array[ActorRef[Worker.Command]],
       predicate: Predicate
   ): Distributor =
@@ -57,7 +58,7 @@ object Distributor {
     }
 
   def fromConfig(config: Configuration.Parser)(
-      ctx: ActorContext[EngineManager.Event],
+      ctx: ActorContext[Manager.Event],
       workers: Array[ActorRef[Worker.Command]]
   ): Distributor = {
     val predicate: Predicate =
@@ -74,7 +75,7 @@ object Distributor {
   }
 
   private case class Sequential(
-      ctx: ActorContext[EngineManager.Event],
+      ctx: ActorContext[Manager.Event],
       workers: Array[ActorRef[Worker.Command]],
       predicate: Predicate
   ) extends Distributor {
@@ -99,7 +100,7 @@ object Distributor {
   }
 
   private case class RoundRobin(
-      ctx: ActorContext[EngineManager.Event],
+      ctx: ActorContext[Manager.Event],
       workers: Array[ActorRef[Worker.Command]],
       predicate: Predicate
   ) extends Distributor {
@@ -124,7 +125,7 @@ object Distributor {
   }
 
   private case class RoundRobinWeighted(
-      ctx: ActorContext[EngineManager.Event],
+      ctx: ActorContext[Manager.Event],
       workers: Array[ActorRef[Worker.Command]],
       predicate: Predicate
   ) extends Distributor {
@@ -172,7 +173,7 @@ object Distributor {
   }
 
   private case class PowerOfTwoChoices(
-      ctx: ActorContext[EngineManager.Event],
+      ctx: ActorContext[Manager.Event],
       workers: Array[ActorRef[Worker.Command]],
       predicate: Predicate
   ) extends Distributor {
@@ -219,7 +220,7 @@ object Distributor {
   }
 
   private case class MaximalMatchesEnumeration(
-      ctx: ActorContext[EngineManager.Event],
+      ctx: ActorContext[Manager.Event],
       workers: Array[ActorRef[Worker.Command]],
       predicate: Predicate
   ) extends Distributor {
@@ -275,7 +276,7 @@ object Distributor {
   // The positive counterpart is that it sends less messages i.e.
   // less network traffic.
   private case class MaximalMatchesDisjointEnumeration(
-      ctx: ActorContext[EngineManager.Event],
+      ctx: ActorContext[Manager.Event],
       workers: Array[ActorRef[Worker.Command]],
       predicate: Predicate
   ) extends Distributor {

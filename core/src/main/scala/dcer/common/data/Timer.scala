@@ -1,4 +1,4 @@
-package dcer.core.data
+package dcer.common.data
 
 import scala.concurrent.duration._
 

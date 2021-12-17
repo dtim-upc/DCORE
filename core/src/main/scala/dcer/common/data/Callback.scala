@@ -1,8 +1,10 @@
-package dcer.core.data
+package dcer.common.data
 
-import dcer.core.actors.EngineManager.MatchGroupingId
+import dcer.core.actors.Manager.MatchGroupingId
+import dcer.core.data.Match
 
 /** Callback
+  *
   * @param matchFound
   *   Call when a '''validated''' match is found.
   * @param exit

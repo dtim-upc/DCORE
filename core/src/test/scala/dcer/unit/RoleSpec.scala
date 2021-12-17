@@ -1,6 +1,6 @@
 package dcer.unit
 
-import dcer.core.data.Role
+import dcer.common.data.Role
 import org.scalatest.funspec.AnyFunSpec
 
 class RoleSpec extends AnyFunSpec {

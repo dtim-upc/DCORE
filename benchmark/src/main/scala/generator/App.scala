@@ -89,8 +89,8 @@ object Generator {
 
     val importsDec =
       """import dcer.StartUp
-        |import dcer.core.data
-        |import dcer.core.data._
+        |import dcer.common.data
+        |import dcer.common.data.{Port, QueryPath}
         |import dcer.core.data.DistributionStrategy._
         |import dcer.core.distribution.Predicate._
         |""".stripMargin

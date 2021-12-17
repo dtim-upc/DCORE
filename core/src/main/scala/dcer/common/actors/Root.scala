@@ -1,16 +1,18 @@
-package dcer.core.actors
+package dcer.common.actors
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.cluster.typed.Cluster
-import dcer.core.data.{
+import dcer.common.data.{
   ActorAddress,
   Address,
+  Callback,
   Configuration,
+  Engine,
   QueryPath,
-  Callback
+  Worker
 }
-import dcer.core.{actors, data}
+import dcer.core.actors
 
 import scala.concurrent.duration.DurationInt
 
@@ -27,7 +29,7 @@ object Root {
       val address = Address.fromCtx(ctx)
 
       cluster.selfMember.roles match {
-        case roles if roles.contains(data.Worker.toString) =>
+        case roles if roles.contains(Worker.toString) =>
           val workersPerNode =
             config.getInt(Configuration.WorkersPerNodeKey)
 
@@ -41,7 +43,7 @@ object Root {
           running(ctx, workersPerNode)
 
         // Recall it is possible to create a cluster singleton actor.
-        case roles if roles.contains(data.Engine.toString) =>
+        case roles if roles.contains(Engine.toString) =>
           val queryPath =
             config.getValueOrThrow(Configuration.QueryPathKey)(QueryPath.apply)
 
@@ -51,7 +53,7 @@ object Root {
           val actorName = "EngineManager"
           val actorAddress = ActorAddress(actorName, id = None, address)
           val actor = ctx.spawn(
-            actors.EngineManager(
+            actors.Manager(
               queryPath,
               callback,
               warmUpTime

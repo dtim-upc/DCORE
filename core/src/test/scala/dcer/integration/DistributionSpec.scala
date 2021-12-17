@@ -1,6 +1,8 @@
 package dcer.integration
 
-import dcer.core.actors.EngineManager.MatchGroupingId
+import dcer.common.data
+import dcer.common.data.{Callback, Engine, Port, QueryPath, Worker}
+import dcer.core.actors.Manager.MatchGroupingId
 import dcer.core.data.DistributionStrategy.MaximalMatchesEnumeration
 import dcer.core.data._
 import dcer.{MatchTest, StartUp}
@@ -120,7 +122,7 @@ sealed trait CallbackProvider extends Types {
         p.success(result.get())
       }
 
-      Callback(matchFound, exit)
+      data.Callback(matchFound, exit)
     }
 
     Future {

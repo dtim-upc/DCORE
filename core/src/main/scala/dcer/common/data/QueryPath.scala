@@ -1,4 +1,4 @@
-package dcer.core.data
+package dcer.common.data
 
 import java.nio.file.{Files, Path, Paths}
 

@@ -1,4 +1,4 @@
-package dcer.core.data
+package dcer.common.data
 
 import com.typesafe.config.ConfigFactory
 

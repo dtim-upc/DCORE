@@ -1,4 +1,4 @@
-package dcer.core.data
+package dcer.common.data
 
 import akka.actor.typed.scaladsl.ActorContext
 import akka.cluster.Cluster

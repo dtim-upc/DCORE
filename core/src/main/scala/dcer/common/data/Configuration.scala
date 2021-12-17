@@ -1,4 +1,4 @@
-package dcer.core.data
+package dcer.common.data
 
 import akka.actor.typed.scaladsl.ActorContext
 import com.typesafe.config.Config
@@ -7,7 +7,7 @@ object Configuration {
   case class Key(value: String) extends AnyVal
   final val WorkersPerNodeKey = Key("dcer.workers-per-node")
   final val WarmUpTimeKey = Key("dcer.warmup-time-seconds")
-  final val DistributionStrategyKey = Key("dcer.core.distribution-strategy")
+  final val DistributionStrategyKey = Key("dcer.distribution-strategy")
   final val SecondOrderPredicateKey = Key("dcer.second-order-predicate")
   final val QueryPathKey = Key("dcer.query-path")
 

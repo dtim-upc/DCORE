@@ -5,9 +5,9 @@ import cats.implicits._
 import com.monovore.decline._
 import com.typesafe.config.ConfigFactory
 import dcer.StartUp.startup
-import dcer.core.actors.Root
-import dcer.core.data
-import dcer.core.data.{Callback, DistributionStrategy, Port, QueryPath, Role}
+import dcer.common.actors.Root
+import dcer.common.data.{Callback, Engine, Port, QueryPath, Role, Worker}
+import dcer.core.data.DistributionStrategy
 import dcer.core.distribution.Predicate
 
 import java.nio.file.Path
@@ -62,8 +62,8 @@ object App
               val port = portOpt match {
                 case None =>
                   role match {
-                    case data.Engine => Port.SeedPort
-                    case data.Worker => Port.RandomPort
+                    case Engine => Port.SeedPort
+                    case Worker => Port.RandomPort
                   }
                 case Some(port) => port
               }
@@ -76,9 +76,9 @@ object App
             val demo = {
               val demo = Opts.flag("demo", help = "Run the demo")
               demo.map { _ =>
-                startup(data.Engine, Port.SeedPort)
-                startup(data.Worker, Port.RandomPort)
-                startup(data.Worker, Port.RandomPort)
+                startup(common.data.Engine, Port.SeedPort)
+                startup(common.data.Worker, Port.RandomPort)
+                startup(common.data.Worker, Port.RandomPort)
               }
             }
             demo <+> run
@@ -114,7 +114,7 @@ object StartUp {
       show = (_: QueryPath).value.toString
     )
     val strategyOption = optional(
-      key = "dcer.core.distribution-strategy",
+      key = "dcer.distribution-strategy",
       value = strategy,
       show = (_: DistributionStrategy).toString
     )

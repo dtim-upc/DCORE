@@ -265,10 +265,10 @@ main = do
   r <- try $ runBenchmarks "benchmark/" args
   case r of
     Right elapsedTime -> do
-      echo "Status: ✅"
+      echo "Status: OK"
       echo $ "Benchmarks have finished in " <> unsafeTextToLine (repr elapsedTime)
     Left (e :: SomeException) -> do
-      echo "Status: 🚫"
+      echo "Status: KO"
       echo $ "Benchmarks failed: " <> unsafeTextToLine (repr e)
 
 runBenchmarks :: FilePath -> ArgsOpts -> IO NominalDiffTime
