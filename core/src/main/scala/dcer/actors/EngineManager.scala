@@ -3,13 +3,12 @@ package dcer.actors
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
-import dcer.data
+import cats.implicits._
 import dcer.data._
 import dcer.distribution.Distributor
 import dcer.logging.{MatchFilter, StatsFilter, TimeFilter}
 import dcer.serialization.CborSerializable
 import edu.puc.core.execution.structures.output.MatchGrouping
-import cats.implicits._
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
@@ -231,7 +230,9 @@ object EngineManager {
         if (!ignore) {
           ctx.log.info(
             MatchFilter.marker,
-            s"Match found at ${from.actorName}(${from.id.get})[${from.address}]:\n${data.Match.pretty(m)}"
+            s"""Match found at ${from.actorName}(${from.id.get})[${from.address}]:
+               |$m
+               |""".stripMargin
           )
 
           callback match {

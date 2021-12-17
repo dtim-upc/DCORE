@@ -16,6 +16,10 @@ case class Event(
     attributes: Map[String, Value] = Map.empty
 ) extends CborSerializable {
   override def toString: String = {
+    s"$name($index)"
+  }
+
+  def pretty(): String = {
     val builder = StringBuilder.newBuilder
     attributes.foreach { case (name, value) =>
       builder ++= s", $name=$value"

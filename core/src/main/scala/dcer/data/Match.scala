@@ -21,6 +21,15 @@ case class Match(events: Array[Event], nodeList: Array[Int])
   override def hashCode(): Int = {
     scala.util.hashing.MurmurHash3.arrayHash(this.events)
   }
+
+  override def toString: String = {
+    val builder = new StringBuilder("")
+    builder ++= events.head.toString
+    events.tail.foreach { event =>
+      builder ++= s", $event"
+    }
+    builder.result()
+  }
 }
 
 object Match {
@@ -36,7 +45,7 @@ object Match {
   def pretty(m: Match): String = {
     val builder = new StringBuilder("")
     m.events.foreach { event =>
-      builder ++= event.toString
+      builder ++= event.pretty()
       builder += '\n'
     }
     builder.result()

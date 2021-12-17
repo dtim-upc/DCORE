@@ -1,6 +1,9 @@
 # DCORE
 
-Distributed [COmplex event Recognition Engine](https://github.com/CORE-cer/CORE).
+The goal of this project is to empirically demonstrate the performance gains of the 
+distribution of the enumeration process and the evaluation of second order predicates of [M. Bucchi et al.](https://github.com/CORE-cer/full-paper/blob/master/CORE:%20a%20COmplex%20event%20Recognition%20Engine%20(full%20version).pdf).
+
+This project is an extension of [CORE: a COmplex event Recognition Engine](https://github.com/CORE-cer/CORE).
 
 ## Installation
 
@@ -18,9 +21,9 @@ Compilation should work out-of-box. Feel free to open an [issue](https://github.
 
 ### Unmanaged dependencies: CORE
 
-This project depends on [CORE](https://github.com/CORE-cer/CORE). 
-The project currently depends on CORE's JAR since CORE's project uses `gradle` while we are using `sbt`.
-The current setup uses the JAR from `/lib` which has been created through the `gradle fatJar` from [CORE (fork)](https://github.com/dtim-upc/CORE).
+This project depends on [CORE](https://github.com/dtim-upc/CORE) (private) and [CORE2](https://github.com/dtim-upc/CORE2).
+
+The project currently depends on the `jar`s since CORE's project uses `gradle` while we are using `sbt`.
 In the future, we could properly integrate both projects: 
   - (a) Add CORE as a submodule and upgrade `build.sbt` to build it.
   - (b) Publish CORE to a centralized repository e.g. Maven Central and add it to `DCORE` as a remote dependency.
@@ -243,7 +246,7 @@ ssh dtim@dtim3
 
 ## Contributing
 
-> If you are going to hack on the project, I would recommend installing [bloop](https://scalacenter.github.io/bloop) to speedup compilation and testing.
+ns> If you are going to hack on the project, I would recommend installing [bloop](https://scalacenter.github.io/bloop) to speedup compilation and testing.
 
 This project is developed using `Intellij` but also tested on [metals](https://scalameta.org/metals).
 So, we focus on being able to compile, test and run the project on `sbt`.
