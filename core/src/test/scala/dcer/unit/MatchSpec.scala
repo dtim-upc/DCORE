@@ -1,6 +1,6 @@
 package dcer.unit
 
-import dcer.data.{Event, Match}
+import dcer.core.data.{Event, Match}
 import org.scalatest.funspec.AnyFunSpec
 
 class MatchSpec extends AnyFunSpec {

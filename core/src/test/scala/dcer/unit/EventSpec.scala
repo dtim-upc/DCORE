@@ -1,7 +1,7 @@
 package dcer.unit
 
 import dcer.Common
-import dcer.data.{DoubleValue, Event, StringValue}
+import dcer.core.data.{DoubleValue, Event, StringValue}
 import edu.puc.core.runtime.events.{Event => CoreEvent}
 import org.scalatest.funspec.AnyFunSpec
 

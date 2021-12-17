@@ -1,6 +1,6 @@
 package dcer
 
-import dcer.data.{Event, Match, Value}
+import dcer.core.data.{Event, Match, Value}
 
 /** Match class is hard to compare since you have to get the events' timestamp
   * correct which is utterly unnecessary for testing equality.

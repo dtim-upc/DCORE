@@ -28,7 +28,7 @@
     </appender>
 
     <appender name="TIME FILE" class="ch.qos.logback.core.FileAppender">
-        <filter class="dcer.logging.TimeFilter" />
+        <filter class="dcer.core.logging.TimeFilter" />
         <file>benchmark/target/time.log</file>
         <append>true</append>
         <immediateFlush>true</immediateFlush>
@@ -38,7 +38,7 @@
     </appender>
 
     <appender name="STATS FILE" class="ch.qos.logback.core.FileAppender">
-        <filter class="dcer.logging.StatsFilter" />
+        <filter class="dcer.core.logging.StatsFilter" />
         <file>benchmark/target/stats.log</file>
         <append>true</append>
         <immediateFlush>true</immediateFlush>

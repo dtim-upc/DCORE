@@ -1,9 +1,9 @@
 package dcer.unit
 
-import dcer.data.Match.MaximalMatch
-import dcer.data.{Event, IntValue, Match}
-import dcer.distribution.Blueprint
-import dcer.distribution.Blueprint.NumberOfMatches
+import dcer.core.data.Match.MaximalMatch
+import dcer.core.data.{Event, IntValue, Match}
+import dcer.core.distribution.Blueprint
+import dcer.core.distribution.Blueprint.NumberOfMatches
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -17,7 +17,7 @@ class BlueprintSpec
   describe("Blueprint") {
     describe("Equality & Hash Code") {
       it("should use structural equality") {
-        import dcer.Implicits._
+        import dcer.common.Implicits._
 
         val bp1 = Blueprint(Array(1, 1, 1))
         val bp2 = Blueprint(Array(1, 1, 1))

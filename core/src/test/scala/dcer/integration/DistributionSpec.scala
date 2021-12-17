@@ -1,8 +1,8 @@
 package dcer.integration
 
-import dcer.actors.EngineManager.MatchGroupingId
-import dcer.data.DistributionStrategy.MaximalMatchesEnumeration
-import dcer.data._
+import dcer.core.actors.EngineManager.MatchGroupingId
+import dcer.core.data.DistributionStrategy.MaximalMatchesEnumeration
+import dcer.core.data._
 import dcer.{MatchTest, StartUp}
 import org.scalatest.Assertion
 import org.scalatest.funspec.AsyncFunSpec

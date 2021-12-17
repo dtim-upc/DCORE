@@ -5,9 +5,10 @@ import cats.implicits._
 import com.monovore.decline._
 import com.typesafe.config.ConfigFactory
 import dcer.StartUp.startup
-import dcer.actors.Root
-import dcer.data.{Callback, DistributionStrategy, Port, QueryPath, Role}
-import dcer.distribution.Predicate
+import dcer.core.actors.Root
+import dcer.core.data
+import dcer.core.data.{Callback, DistributionStrategy, Port, QueryPath, Role}
+import dcer.core.distribution.Predicate
 
 import java.nio.file.Path
 
@@ -16,15 +17,6 @@ object App
       name = "dcer",
       header = "A distributed complex event processing engine.",
       main = {
-        val demo = {
-          val demo = Opts.flag("demo", help = "Run the demo")
-          demo.map { _ =>
-            startup(data.Engine, Port.SeedPort)
-            startup(data.Worker, Port.RandomPort)
-            startup(data.Worker, Port.RandomPort)
-          }
-        }
-
         val run = {
           val roleOpt =
             Opts
@@ -79,7 +71,24 @@ object App
           }
         }
 
-        demo <+> run
+        val coreSubcommand =
+          Opts.subcommand("core", help = "Execute using CORE.") {
+            val demo = {
+              val demo = Opts.flag("demo", help = "Run the demo")
+              demo.map { _ =>
+                startup(data.Engine, Port.SeedPort)
+                startup(data.Worker, Port.RandomPort)
+                startup(data.Worker, Port.RandomPort)
+              }
+            }
+            demo <+> run
+          }
+        val core2Subcommand =
+          Opts.subcommand("core2", help = "Execute using CORE2.") {
+            run
+          }
+
+        coreSubcommand <+> core2Subcommand
       }
     )
 
@@ -105,7 +114,7 @@ object StartUp {
       show = (_: QueryPath).value.toString
     )
     val strategyOption = optional(
-      key = "dcer.distribution-strategy",
+      key = "dcer.core.distribution-strategy",
       value = strategy,
       show = (_: DistributionStrategy).toString
     )
