@@ -3,11 +3,11 @@ package dcer.core.actors
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
-import dcer.common.data.{ActorAddress, Timer}
+import dcer.common.data.{ActorAddress, Predicate, Timer}
 import dcer.core.actors.Manager.MatchGroupingId
 import dcer.core.data.Match.MaximalMatch
 import dcer.core.data.Match
-import dcer.core.distribution.{Blueprint, Predicate}
+import dcer.core.distribution.Blueprint
 import dcer.core.logging.TimeFilter
 import dcer.common.serialization.CborSerializable
 

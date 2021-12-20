@@ -5,9 +5,16 @@ import cats.implicits._
 import com.monovore.decline._
 import com.typesafe.config.{Config, ConfigFactory}
 import dcer.common.actors.Root
-import dcer.common.data.{Callback, Master, Port, QueryPath, Role, Slave}
+import dcer.common.data.{
+  Callback,
+  Master,
+  Port,
+  Predicate,
+  QueryPath,
+  Role,
+  Slave
+}
 import dcer.core.data.DistributionStrategy
-import dcer.core.distribution.Predicate
 
 import java.nio.file.Path
 import scala.concurrent.duration.FiniteDuration
@@ -122,20 +129,18 @@ object Init {
     val config =
       parseConfig(role, port, queryPath, strategy, predicate)
 
-    def getWorker(): (String, Behavior[_]) = {
-      ("Worker", dcer.core.actors.Worker())
-    }
+    val getWorker: QueryPath => (String, Behavior[_]) =
+      _ => ("Worker", dcer.core.actors.Worker())
 
-    def getManager(
-        queryPath: QueryPath,
-        callback: Option[Callback],
-        warmUpTime: FiniteDuration
-    ): (String, Behavior[_]) = {
-      ("Manager", dcer.core.actors.Manager(queryPath, callback, warmUpTime))
-    }
+    val getManager: (QueryPath, FiniteDuration) => (
+        String,
+        Behavior[_]
+    ) =
+      (queryPath, warmUpTime) =>
+        ("Manager", dcer.core.actors.Manager(queryPath, callback, warmUpTime))
 
     val _ = ActorSystem(
-      Root(callback, getWorker, getManager),
+      Root(getWorker, getManager),
       "ClusterSystem",
       config
     )
@@ -145,26 +150,22 @@ object Init {
   def startCore2(
       role: Role,
       port: Port,
-      queryPath: Option[QueryPath] = None,
-      callback: Option[Callback] = None
+      queryPath: Option[QueryPath] = None
   ): Unit = {
     val config =
       parseConfig(role, port, queryPath, None, None)
 
-    def getWorker(): (String, Behavior[_]) = {
-      ("Worker", dcer.core2.actors.Worker())
-    }
+    val getWorker: QueryPath => (String, Behavior[_]) =
+      queryPath => ("Worker", dcer.core2.actors.Worker(queryPath))
 
-    def getManager(
-        queryPath: QueryPath,
-        callback: Option[Callback],
-        warmUpTime: FiniteDuration
-    ): (String, Behavior[_]) = {
-      ("Manager", dcer.core2.actors.Manager(queryPath, callback, warmUpTime))
-    }
+    val getManager: (QueryPath, FiniteDuration) => (
+        String,
+        Behavior[_]
+    ) =
+      (_, warmUpTime) => ("Manager", dcer.core2.actors.Manager(warmUpTime))
 
     val _ = ActorSystem(
-      Root(callback, getWorker, getManager),
+      Root(getWorker, getManager),
       "ClusterSystem",
       config
     )

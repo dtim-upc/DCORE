@@ -3,8 +3,8 @@ package generator
 import better.files.Dsl._
 import better.files._
 import com.monovore.decline._
+import dcer.common.data.Predicate
 import dcer.core.data.DistributionStrategy
-import dcer.core.distribution.Predicate
 
 // TODO
 // This could have been implemented using metaprogramming (macros)
@@ -92,7 +92,7 @@ object Generator {
         |import dcer.common.data
         |import dcer.common.data.{Port, QueryPath}
         |import dcer.core.data.DistributionStrategy._
-        |import dcer.core.distribution.Predicate._
+        |import dcer.common.data.Predicate._
         |""".stripMargin
 
     val engineActorDec =

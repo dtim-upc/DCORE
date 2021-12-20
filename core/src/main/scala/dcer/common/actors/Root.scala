@@ -6,7 +6,6 @@ import akka.cluster.typed.Cluster
 import dcer.common.data.{
   ActorAddress,
   Address,
-  Callback,
   Configuration,
   Master,
   QueryPath,
@@ -20,9 +19,8 @@ object Root {
   final case class ActorTerminated(name: String) extends Command
 
   def apply(
-      callback: Option[Callback],
-      getWorker: () => (String, Behavior[_]),
-      getManager: (QueryPath, Option[Callback], FiniteDuration) => (
+      getWorker: (QueryPath) => (String, Behavior[_]),
+      getManager: (QueryPath, FiniteDuration) => (
           String,
           Behavior[_]
       )
@@ -31,6 +29,8 @@ object Root {
       val cluster = Cluster(ctx.system)
       val config = Configuration(ctx)
       val address = Address.fromCtx(ctx)
+      val queryPath =
+        config.getValueOrThrow(Configuration.QueryPathKey)(QueryPath.apply)
 
       cluster.selfMember.roles match {
         case roles if roles.contains(Slave.toString) =>
@@ -38,7 +38,7 @@ object Root {
             config.getInt(Configuration.WorkersPerNodeKey)
 
           (1 to workersPerNode).foreach { n =>
-            val (actorName, worker) = getWorker()
+            val (actorName, worker) = getWorker(queryPath)
             val actorAddress = ActorAddress(actorName, id = Some(n), address)
             val actor = ctx.spawn(worker, actorAddress.toString)
             ctx.watchWith(actor, ActorTerminated(actorName))
@@ -48,13 +48,10 @@ object Root {
 
         // Recall it is possible to create a cluster singleton actor.
         case roles if roles.contains(Master.toString) =>
-          val queryPath =
-            config.getValueOrThrow(Configuration.QueryPathKey)(QueryPath.apply)
-
           val warmUpTime =
             config.getInt(Configuration.WarmUpTimeKey).seconds
 
-          val (actorName, manager) = getManager(queryPath, callback, warmUpTime)
+          val (actorName, manager) = getManager(queryPath, warmUpTime)
           val actorAddress = ActorAddress(actorName, id = None, address)
           val actor = ctx.spawn(manager, actorAddress.toString)
           ctx.watchWith(actor, ActorTerminated(actorAddress.toString))

@@ -2,7 +2,7 @@ package dcer.core.distribution
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.ActorContext
-import dcer.common.data.Configuration
+import dcer.common.data.{Configuration, Predicate}
 import dcer.core.actors.Manager.MatchGroupingId
 import dcer.core.actors.{Manager, Worker}
 import dcer.core.data.Match.MaximalMatch

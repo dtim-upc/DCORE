@@ -1,4 +1,4 @@
-package dcer.core.distribution
+package dcer.common.data
 
 import com.fasterxml.jackson.annotation.{JsonSubTypes, JsonTypeInfo}
 import dcer.common.serialization.CborSerializable
