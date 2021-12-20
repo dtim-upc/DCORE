@@ -1,11 +1,17 @@
 package dcer.core2.data
 
+import dcer.common.data.Strategy
+
 sealed trait DistributionStrategy
-object DistributionStrategy {
+
+object DistributionStrategy extends Strategy {
+
   case object Sequential extends DistributionStrategy
   case object Distributed extends DistributionStrategy
 
-  def parse(s: String): Option[DistributionStrategy] = {
+  type R = DistributionStrategy
+
+  override def parse(s: String): Option[R] = {
     s.toLowerCase match {
       case x if x == Sequential.toString.toLowerCase =>
         Some(Sequential)
@@ -16,7 +22,7 @@ object DistributionStrategy {
     }
   }
 
-  def all: List[DistributionStrategy] =
+  override val all: List[R] =
     List(
       Sequential,
       Distributed

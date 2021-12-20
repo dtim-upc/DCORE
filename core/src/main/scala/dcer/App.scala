@@ -12,9 +12,11 @@ import dcer.common.data.{
   Predicate,
   QueryPath,
   Role,
-  Slave
+  Slave,
+  Strategy
 }
-import dcer.core.data.DistributionStrategy
+import dcer.core.data.{DistributionStrategy => DS1}
+import dcer.core2.data.{DistributionStrategy => DS2}
 
 import java.nio.file.Path
 import scala.concurrent.duration.FiniteDuration
@@ -27,27 +29,49 @@ object App
         // Uses CORE as a dependency.
         val coreSubcommand =
           Opts.subcommand("core", help = "Execute using CORE.") {
+            val runOpts =
+              Init.getRunOpts(DS1) { (role, port, queryPath, strategy) =>
+                Init.startCore(DS1)(role, port, queryPath, strategy = strategy)
+              }
+
             val demoOps = {
               val demo = Opts.flag("demo", help = "Run the demo")
               demo.map { _ =>
-                Init.startCore(common.data.Master, Port.SeedPort)
-                Init.startCore(common.data.Slave, Port.RandomPort)
-                Init.startCore(common.data.Slave, Port.RandomPort)
+                Init.startCore(DS1)(
+                  common.data.Master,
+                  Port.SeedPort,
+                  strategy = Some(DS1.RoundRobin)
+                )
+                Init.startCore(DS1)(common.data.Slave, Port.RandomPort)
+                Init.startCore(DS1)(common.data.Slave, Port.RandomPort)
               }
             }
-            val runOpts =
-              Init.getRunOpts { (role, port, queryPath, strategy) =>
-                Init.startCore(role, port, queryPath, strategy = strategy)
-              }
+
             demoOps <+> runOpts
           }
 
         // Uses CORE2 as a dependency.
         val core2Subcommand =
           Opts.subcommand("core2", help = "Execute using CORE2.") {
-            Init.getRunOpts { (role, port, queryPath, _) =>
-              Init.startCore2(role, port, queryPath)
+            val runOpts =
+              Init.getRunOpts(DS2) { (role, port, queryPath, strategy) =>
+                Init.startCore2(DS2)(role, port, queryPath, strategy)
+              }
+
+            val demoOps = {
+              val demo = Opts.flag("demo", help = "Run the demo")
+              demo.map { _ =>
+                Init.startCore2(DS2)(
+                  common.data.Master,
+                  Port.SeedPort,
+                  strategy = Some(DS2.Distributed)
+                )
+                Init.startCore2(DS2)(common.data.Slave, Port.RandomPort)
+                Init.startCore2(DS2)(common.data.Slave, Port.RandomPort)
+              }
             }
+
+            demoOps <+> runOpts
           }
 
         coreSubcommand <+> core2Subcommand
@@ -56,12 +80,12 @@ object App
 
 object Init {
   // Creates the runCoreX CLI parsing options
-  def getRunOpts(
+  def getRunOpts(strategy: Strategy)(
       start: (
           Role,
           Port,
           Option[QueryPath],
-          Option[DistributionStrategy]
+          Option[strategy.R]
       ) => Unit
   ): Opts[Unit] = {
     val roleOpt =
@@ -94,12 +118,10 @@ object Init {
       Opts
         .option[String](
           "strategy",
-          help = s"Available strategies: ${DistributionStrategy.all}"
+          help = s"Available strategies: ${strategy.all}"
         )
         .mapValidated { str =>
-          DistributionStrategy
-            .parse(str)
-            .toValidNel(s"Invalid strategy: $str")
+          strategy.parse(str).toValidNel(s"Invalid strategy: $str")
         }
         .orNone
 
@@ -118,16 +140,16 @@ object Init {
   }
 
   // Starts CORE system.
-  def startCore(
+  def startCore(s: Strategy)(
       role: Role,
       port: Port,
       queryPath: Option[QueryPath] = None,
       callback: Option[Callback] = None,
-      strategy: Option[DistributionStrategy] = None,
+      strategy: Option[s.R] = None,
       predicate: Option[Predicate] = None
   ): Unit = {
     val config =
-      parseConfig(role, port, queryPath, strategy, predicate)
+      parseConfig(s)(role, port, queryPath, strategy, predicate)
 
     val getWorker: QueryPath => (String, Behavior[_]) =
       _ => ("Worker", dcer.core.actors.Worker())
@@ -147,13 +169,14 @@ object Init {
   }
 
   // Starts CORE2 system.
-  def startCore2(
+  def startCore2(s: Strategy)(
       role: Role,
       port: Port,
-      queryPath: Option[QueryPath] = None
+      queryPath: Option[QueryPath] = None,
+      strategy: Option[s.R] = None
   ): Unit = {
     val config =
-      parseConfig(role, port, queryPath, None, None)
+      parseConfig(s)(role, port, queryPath, strategy, None)
 
     val getWorker: QueryPath => (String, Behavior[_]) =
       queryPath => ("Worker", dcer.core2.actors.Worker(queryPath))
@@ -171,11 +194,11 @@ object Init {
     )
   }
 
-  private def parseConfig(
+  private def parseConfig(s: Strategy)(
       role: Role,
       port: Port,
       queryPath: Option[QueryPath],
-      strategy: Option[DistributionStrategy],
+      strategy: Option[s.R],
       predicate: Option[Predicate]
   ): Config = {
     def optional[V](
@@ -193,7 +216,7 @@ object Init {
     val strategyOption = optional(
       key = "dcer.distribution-strategy",
       value = strategy,
-      show = (_: DistributionStrategy).toString
+      show = (_: s.R).toString
     )
 
     val predicateOption = optional(

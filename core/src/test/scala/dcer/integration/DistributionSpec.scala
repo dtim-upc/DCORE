@@ -58,16 +58,16 @@ trait Test extends CallbackProvider with Matchers {
     val (callback, promise) =
       getPromiseAndCallback(timeout)(executionContext)
 
-    Init.startCore(
+    Init.startCore(DistributionStrategy)(
       Master,
       Port.SeedPort,
       Some(query),
       Some(callback),
       Some(strategy)
     )
-    Init.startCore(Slave, Port.RandomPort)
-    Init.startCore(Slave, Port.RandomPort)
-    Init.startCore(Slave, Port.RandomPort)
+    Init.startCore(DistributionStrategy)(Slave, Port.RandomPort)
+    Init.startCore(DistributionStrategy)(Slave, Port.RandomPort)
+    Init.startCore(DistributionStrategy)(Slave, Port.RandomPort)
 
     promise.future.map { result =>
       expectedResult.foreach { case (id, expectedMatches) =>

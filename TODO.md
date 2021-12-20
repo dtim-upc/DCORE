@@ -32,6 +32,8 @@ This may not be needed, just consider if it is worth doing.
 
 - [ ] I don't really like the implementation based on node lists. `dcer.core.data.Match` could store a `List[List[Event]]` instead. This would make grouping 0 cost and traversing is actually still linear with a custom iterator.
 
+- [ ] I dislike the implementation of `Init.getRunOpts` and `Init.startCore`.
+
 ## Document
 
 - [ ] Set the latex template https://github.com/latextemplates/LNCS

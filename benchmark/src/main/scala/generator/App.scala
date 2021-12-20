@@ -93,21 +93,23 @@ object Generator {
         |import dcer.common.data.{Port, QueryPath}
         |import dcer.core.data.DistributionStrategy._
         |import dcer.common.data.Predicate._
+        |import dcer.core.data.{DistributionStrategy => DS}
         |""".stripMargin
 
     val engineActorDec =
       s"""object ${className(jvm = 1)} {
          |  def main(args: Array[String]): Unit = {
          |    val query = QueryPath("${queryDir}").get
-         |    startCore(data.Master, Port.SeedPort, Some(query), strategy = Some(${strategy}), predicate = Some(${predicate}()))
+         |    startCore(DS)(data.Master, Port.SeedPort, Some(query), strategy = Some(${strategy}), predicate = Some(${predicate}()))
          |  }
          |}
          |""".stripMargin
 
     def workerActorDec(n: Int): String =
       s"""object ${className(jvm = n)} {
+         |  val query = QueryPath("${queryDir}").get
          |  def main(args: Array[String]): Unit = {
-         |    startCore(data.Slave, Port.RandomPort)
+         |    startCore(DS)(data.Slave, Port.RandomPort, Some(query))
          |  }
          |}
          |""".stripMargin
