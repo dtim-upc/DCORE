@@ -17,67 +17,7 @@ object App
       name = "dcer",
       header = "A distributed complex event processing engine.",
       main = {
-        def getRunOpts(
-            start: (
-                Role,
-                Port,
-                Option[QueryPath],
-                Option[DistributionStrategy]
-            ) => Unit
-        ): Opts[Unit] = {
-          val roleOpt =
-            Opts
-              .option[String]("role", help = s"Available roles: ${Role.all}")
-              .mapValidated { r =>
-                Role.parse(r).toValidNel(s"Invalid role: $r")
-              }
-
-          val portOpt =
-            Opts
-              .option[String]("port", help = s"Available ports: [1024, 49152]")
-              .mapValidated { p =>
-                Port.parse(p).toValidNel(s"Invalid port: $p")
-              }
-              .orNone
-
-          val queryPathOpt =
-            Opts
-              .option[Path](
-                "query",
-                help = s"Examples at './core/src/main/resources/'"
-              )
-              .mapValidated { path =>
-                QueryPath(path).toValidNel(s"Invalid query path: $path")
-              }
-              .orNone
-
-          val strategyOpt =
-            Opts
-              .option[String](
-                "strategy",
-                help = s"Available strategies: ${DistributionStrategy.all}"
-              )
-              .mapValidated { str =>
-                DistributionStrategy
-                  .parse(str)
-                  .toValidNel(s"Invalid strategy: $str")
-              }
-              .orNone
-
-          (roleOpt, portOpt, queryPathOpt, strategyOpt).mapN {
-            (role, portOpt, queryPath, strategy) =>
-              val port = portOpt match {
-                case None =>
-                  role match {
-                    case Master => Port.SeedPort
-                    case Slave  => Port.RandomPort
-                  }
-                case Some(port) => port
-              }
-              start(role, port, queryPath, strategy)
-          }
-        }
-
+        // Uses CORE as a dependency.
         val coreSubcommand =
           Opts.subcommand("core", help = "Execute using CORE.") {
             val demoOps = {
@@ -88,17 +28,19 @@ object App
                 Init.startCore(common.data.Slave, Port.RandomPort)
               }
             }
-            val runOpts = getRunOpts((role, port, queryPath, strategy) =>
-              Init.startCore(role, port, queryPath, strategy = strategy)
-            )
+            val runOpts =
+              Init.getRunOpts { (role, port, queryPath, strategy) =>
+                Init.startCore(role, port, queryPath, strategy = strategy)
+              }
             demoOps <+> runOpts
           }
 
+        // Uses CORE2 as a dependency.
         val core2Subcommand =
           Opts.subcommand("core2", help = "Execute using CORE2.") {
-            getRunOpts((role, port, queryPath, _) =>
+            Init.getRunOpts { (role, port, queryPath, _) =>
               Init.startCore2(role, port, queryPath)
-            )
+            }
           }
 
         coreSubcommand <+> core2Subcommand
@@ -106,6 +48,68 @@ object App
     )
 
 object Init {
+  // Creates the runCoreX CLI parsing options
+  def getRunOpts(
+      start: (
+          Role,
+          Port,
+          Option[QueryPath],
+          Option[DistributionStrategy]
+      ) => Unit
+  ): Opts[Unit] = {
+    val roleOpt =
+      Opts
+        .option[String]("role", help = s"Available roles: ${Role.all}")
+        .mapValidated { r =>
+          Role.parse(r).toValidNel(s"Invalid role: $r")
+        }
+
+    val portOpt =
+      Opts
+        .option[String]("port", help = s"Available ports: [1024, 49152]")
+        .mapValidated { p =>
+          Port.parse(p).toValidNel(s"Invalid port: $p")
+        }
+        .orNone
+
+    val queryPathOpt =
+      Opts
+        .option[Path](
+          "query",
+          help = s"Examples at './core/src/main/resources/'"
+        )
+        .mapValidated { path =>
+          QueryPath(path).toValidNel(s"Invalid query path: $path")
+        }
+        .orNone
+
+    val strategyOpt =
+      Opts
+        .option[String](
+          "strategy",
+          help = s"Available strategies: ${DistributionStrategy.all}"
+        )
+        .mapValidated { str =>
+          DistributionStrategy
+            .parse(str)
+            .toValidNel(s"Invalid strategy: $str")
+        }
+        .orNone
+
+    (roleOpt, portOpt, queryPathOpt, strategyOpt).mapN {
+      (role, portOpt, queryPath, strategy) =>
+        val port = portOpt match {
+          case None =>
+            role match {
+              case Master => Port.SeedPort
+              case Slave  => Port.RandomPort
+            }
+          case Some(port) => port
+        }
+        start(role, port, queryPath, strategy)
+    }
+  }
+
   // Starts CORE system.
   def startCore(
       role: Role,
@@ -156,7 +160,7 @@ object Init {
         callback: Option[Callback],
         warmUpTime: FiniteDuration
     ): (String, Behavior[_]) = {
-      ("Manager", dcer.core.actors.Manager(queryPath, callback, warmUpTime))
+      ("Manager", dcer.core2.actors.Manager(queryPath, callback, warmUpTime))
     }
 
     val _ = ActorSystem(
