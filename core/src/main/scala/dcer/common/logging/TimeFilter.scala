@@ -1,4 +1,4 @@
-package dcer.core.logging
+package dcer.common.logging
 
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.filter.Filter
@@ -7,11 +7,11 @@ import org.slf4j.{Marker, MarkerFactory}
 
 // This class should only be used in `logback.xml`.
 
-class StatsFilter extends Filter[ILoggingEvent] {
+class TimeFilter extends Filter[ILoggingEvent] {
   override def decide(event: ILoggingEvent): FilterReply = {
     Option(event.getMarker) match {
       case Some(marker) =>
-        if (marker == StatsFilter.marker) {
+        if (marker == TimeFilter.marker) {
           FilterReply.ACCEPT
         } else {
           FilterReply.DENY
@@ -21,6 +21,6 @@ class StatsFilter extends Filter[ILoggingEvent] {
   }
 }
 
-object StatsFilter {
-  val marker: Marker = MarkerFactory.getMarker("STATS")
+object TimeFilter {
+  val marker: Marker = MarkerFactory.getMarker("TIME")
 }

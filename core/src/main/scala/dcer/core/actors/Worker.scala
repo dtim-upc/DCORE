@@ -8,7 +8,7 @@ import dcer.core.actors.Manager.MatchGroupingId
 import dcer.core.data.Match.MaximalMatch
 import dcer.core.data.Match
 import dcer.core.distribution.Blueprint
-import dcer.core.logging.TimeFilter
+import dcer.common.logging.TimeFilter
 import dcer.common.serialization.CborSerializable
 
 import scala.collection.immutable.Queue
@@ -164,6 +164,8 @@ object Worker {
     // Mock computational time depending on the complexity
     val n =
       sop match {
+        case Predicate.None() =>
+          0L
         case Predicate.Linear() =>
           m.events.length.toDouble
         case Predicate.Quadratic() =>

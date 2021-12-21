@@ -3,8 +3,9 @@ package dcer.core2.actors
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
-import dcer.common.data.{ActorAddress, Configuration}
+import dcer.common.data.{ActorAddress, Configuration, Timer}
 import dcer.common.serialization.CborSerializable
+import dcer.common.logging.TimeFilter
 import dcer.core2.distribution.Distributor
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -70,7 +71,8 @@ object Manager {
           distributor.distributeWorkload()
           waitingWorkers(
             ctx,
-            workers
+            workers,
+            Timer()
           )
         }
 
@@ -83,7 +85,8 @@ object Manager {
 
   private def waitingWorkers(
       ctx: ActorContext[Event],
-      workers: Set[Worker.Ref]
+      workers: Set[Worker.Ref],
+      timer: Timer
   ): Behavior[Event] = {
     Behaviors.receiveMessage {
       case WorkerFinished(worker, address) =>
@@ -92,16 +95,21 @@ object Manager {
         )
         val newWorkers = workers - worker
         if (newWorkers.isEmpty) {
+          val timeElapsedSinceStart = timer.elapsedTime()
+          ctx.log.info(
+            TimeFilter.marker,
+            s"All events processed in ${timeElapsedSinceStart.toMillis} milliseconds"
+          )
           ctx.log.info("All workers have finished. Stopping manager.")
           Behaviors.stopped
         } else {
-          waitingWorkers(ctx, newWorkers)
+          waitingWorkers(ctx, newWorkers, timer)
         }
 
       case WorkersUpdated(_) =>
         // We are ignoring changing in the connected workers for now.
         // In the future, we could take into account changes in the network.
-        waitingWorkers(ctx, workers)
+        waitingWorkers(ctx, workers, timer)
 
       case e: Event =>
         ctx.log.error(

@@ -3,12 +3,15 @@ package dcer.core2.actors
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import dcer.common.data.QueryPath
+import dcer.common.logging.StatsFilter
 import dcer.core2.actors.Worker.EngineFinished
 import edu.puc.core2.engine.BaseEngine
 import edu.puc.core2.engine.executors.ExecutorManager
 import edu.puc.core2.engine.streams.StreamManager
 import edu.puc.core2.runtime.events.Event
+import edu.puc.core2.runtime.profiling.Profiler
 import edu.puc.core2.util.{DistributionConfiguration, StringUtils}
+import org.slf4j.Logger
 
 import java.util.Optional
 import java.util.logging.Level
@@ -66,6 +69,7 @@ object Engine {
 
           case None =>
             ctx.log.info("No more events.\nStopping the engine.")
+            printProfiler(ctx.log)
             replyTo ! EngineFinished()
             Behaviors.stopped
         }
@@ -111,4 +115,15 @@ object Engine {
         engine
       }.toEither
     } yield engine
+
+  private def printProfiler(logger: Logger): Unit = {
+    val toSeconds: Long => Double = x => x.toDouble / 1.0e9d
+    val pretty =
+      s"""Execution time: ${toSeconds(Profiler.getExecutionTime)} seconds.
+         |Enumeration time: ${toSeconds(Profiler.getEnumerationTime)} seconds.
+         |Complex events: ${Profiler.getNumberOfMatches}.
+         |CleanUps: ${Profiler.getCleanUps}.
+         |""".stripMargin
+    logger.info(StatsFilter.marker, pretty)
+  }
 }

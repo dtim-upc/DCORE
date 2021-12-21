@@ -13,7 +13,7 @@ import dcer.common.data.{
 }
 import dcer.core.data._
 import dcer.core.distribution.Distributor
-import dcer.core.logging.{MatchFilter, StatsFilter, TimeFilter}
+import dcer.common.logging.{MatchFilter, StatsFilter, TimeFilter}
 import dcer.common.serialization.CborSerializable
 import edu.puc.core.execution.structures.output.MatchGrouping
 

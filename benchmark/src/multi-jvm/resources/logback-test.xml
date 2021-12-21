@@ -21,14 +21,15 @@
         </filter>
         <append>true</append>
         <immediateFlush>true</immediateFlush>
-        <file>benchmark/target/error-${bySecond}.log</file>
+<!--        <file>benchmark/target/error-${bySecond}.log</file>-->
+        <file>benchmark/target/error.log</file>
         <encoder>
             <pattern>[%level] [%X{akkaAddress}] - %msg%n</pattern>
         </encoder>
     </appender>
 
     <appender name="TIME FILE" class="ch.qos.logback.core.FileAppender">
-        <filter class="dcer.core.logging.TimeFilter" />
+        <filter class="dcer.common.logging.TimeFilter" />
         <file>benchmark/target/time.log</file>
         <append>true</append>
         <immediateFlush>true</immediateFlush>
@@ -38,7 +39,7 @@
     </appender>
 
     <appender name="STATS FILE" class="ch.qos.logback.core.FileAppender">
-        <filter class="dcer.core.logging.StatsFilter" />
+        <filter class="dcer.common.logging.StatsFilter" />
         <file>benchmark/target/stats.log</file>
         <append>true</append>
         <immediateFlush>true</immediateFlush>
