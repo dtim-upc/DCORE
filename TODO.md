@@ -2,6 +2,8 @@
 
 ## Project
 
+- [ ] Update run-benchmarks.hs
+
 - [ ] dCORE2
   - [X] CORE2
     - [X] Fork the project
@@ -9,6 +11,7 @@
     - [X] Distributed enumeration using `paths`
   - [ ] Distributed enumeration in CORE2
     - [ ] Implementation
+      - [ ] Add Statistics (timer)
     - [ ] Benchmark
       - [ ] Local
       - [ ] Cluster
@@ -31,8 +34,6 @@ This may not be needed, just consider if it is worth doing.
   - [ ] Plot this information to see if load balancing is affected by length of matches.
 
 - [ ] I don't really like the implementation based on node lists. `dcer.core.data.Match` could store a `List[List[Event]]` instead. This would make grouping 0 cost and traversing is actually still linear with a custom iterator.
-
-- [ ] I dislike the implementation of `Init.getRunOpts` and `Init.startCore`.
 
 ## Document
 

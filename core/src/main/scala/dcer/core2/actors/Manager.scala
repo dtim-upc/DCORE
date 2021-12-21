@@ -4,6 +4,7 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import dcer.common.data.{ActorAddress, Configuration}
+import dcer.common.serialization.CborSerializable
 import dcer.core2.distribution.Distributor
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -20,6 +21,7 @@ object Manager {
 
   case class WorkerFinished(worker: Worker.Ref, address: ActorAddress)
       extends Event
+      with CborSerializable
 
   type Ref = ActorRef[Event]
 
@@ -66,12 +68,10 @@ object Manager {
           val config = Configuration(ctx)
           val distributor = Distributor.fromConfig(config)(ctx, workers.toArray)
           distributor.distributeWorkload()
-
           waitingWorkers(
             ctx,
             workers
           )
-
         }
 
       case e: Event =>
@@ -92,12 +92,16 @@ object Manager {
         )
         val newWorkers = workers - worker
         if (newWorkers.isEmpty) {
-          ctx.log.info("All workers have finished.")
-          ctx.log.info("Stopping manager...")
+          ctx.log.info("All workers have finished. Stopping manager.")
           Behaviors.stopped
         } else {
           waitingWorkers(ctx, newWorkers)
         }
+
+      case WorkersUpdated(_) =>
+        // We are ignoring changing in the connected workers for now.
+        // In the future, we could take into account changes in the network.
+        waitingWorkers(ctx, workers)
 
       case e: Event =>
         ctx.log.error(

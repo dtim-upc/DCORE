@@ -29,6 +29,7 @@ object Engine {
     Behaviors.setup { ctx =>
       Behaviors.receiveMessage {
         case Start(process, processes) =>
+          ctx.log.info(s"Start received at engine.")
           val distributionConfiguration =
             new DistributionConfiguration(process, processes)
           val baseEngine =
@@ -36,6 +37,7 @@ object Engine {
               case Left(err)     => throw err
               case Right(engine) => engine
             }
+          ctx.self ! NextEvent(Option(baseEngine.nextEvent()))
           running(ctx, replyTo, baseEngine)
         case c: Command =>
           ctx.log.error(
@@ -55,15 +57,15 @@ object Engine {
       case NextEvent(event) =>
         event match {
           case Some(event) =>
+            ctx.log.info("Event received: " + event.toString)
             // Send will trigger the update and enumeration phase.
-            ctx.log.info("Event send: " + event.toString)
             baseEngine.sendEvent(event)
 
             ctx.self ! NextEvent(Option(baseEngine.nextEvent()))
             running(ctx, replyTo, baseEngine)
 
           case None =>
-            ctx.log.info("No more events...Stopping the engine.")
+            ctx.log.info("No more events.\nStopping the engine.")
             replyTo ! EngineFinished()
             Behaviors.stopped
         }
@@ -102,6 +104,7 @@ object Engine {
           true, // fastRun: do not wait between events using the timestamps
           true // offline: do not create the RMI server
         )
+        engine.start(true)
         // By default engine will print the complex event to the stdout.
         // Don't do something like this: engine.setMatchCallback(math => ())
         // This will avoid enumerating the tECS.

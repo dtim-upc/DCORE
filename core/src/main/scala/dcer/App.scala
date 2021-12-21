@@ -13,7 +13,8 @@ import dcer.common.data.{
   QueryPath,
   Role,
   Slave,
-  Strategy
+  Strategy,
+  StrategyObject
 }
 import dcer.core.data.{DistributionStrategy => DS1}
 import dcer.core2.data.{DistributionStrategy => DS2}
@@ -31,19 +32,19 @@ object App
           Opts.subcommand("core", help = "Execute using CORE.") {
             val runOpts =
               Init.getRunOpts(DS1) { (role, port, queryPath, strategy) =>
-                Init.startCore(DS1)(role, port, queryPath, strategy = strategy)
+                Init.startCore(role, port, queryPath, strategy = strategy)
               }
 
             val demoOps = {
               val demo = Opts.flag("demo", help = "Run the demo")
               demo.map { _ =>
-                Init.startCore(DS1)(
+                Init.startCore(
                   common.data.Master,
                   Port.SeedPort,
                   strategy = Some(DS1.RoundRobin)
                 )
-                Init.startCore(DS1)(common.data.Slave, Port.RandomPort)
-                Init.startCore(DS1)(common.data.Slave, Port.RandomPort)
+                Init.startCore(common.data.Slave, Port.RandomPort)
+                Init.startCore(common.data.Slave, Port.RandomPort)
               }
             }
 
@@ -55,23 +56,25 @@ object App
           Opts.subcommand("core2", help = "Execute using CORE2.") {
             val runOpts =
               Init.getRunOpts(DS2) { (role, port, queryPath, strategy) =>
-                Init.startCore2(DS2)(role, port, queryPath, strategy)
+                Init.startCore2(role, port, queryPath, strategy)
               }
 
-            val demoOps = {
-              val demo = Opts.flag("demo", help = "Run the demo")
-              demo.map { _ =>
-                Init.startCore2(DS2)(
-                  common.data.Master,
-                  Port.SeedPort,
-                  strategy = Some(DS2.Distributed)
-                )
-                Init.startCore2(DS2)(common.data.Slave, Port.RandomPort)
-                Init.startCore2(DS2)(common.data.Slave, Port.RandomPort)
-              }
-            }
+            // There are n engines simultaneously making it impossible to run them concurrently since
+            // CORE uses static global variables aplenty.
+//            val demoOps = {
+//              val demo = Opts.flag("demo", help = "Run the demo")
+//              demo.map { _ =>
+//                Init.startCore2(DS2)(
+//                  common.data.Master,
+//                  Port.SeedPort,
+//                  strategy = Some(DS2.Distributed)
+//                )
+//                Init.startCore2(DS2)(common.data.Slave, Port.RandomPort)
+//                Init.startCore2(DS2)(common.data.Slave, Port.RandomPort)
+//              }
+//            }
 
-            demoOps <+> runOpts
+            runOpts
           }
 
         coreSubcommand <+> core2Subcommand
@@ -80,12 +83,12 @@ object App
 
 object Init {
   // Creates the runCoreX CLI parsing options
-  def getRunOpts(strategy: Strategy)(
+  def getRunOpts(s: StrategyObject)(
       start: (
           Role,
           Port,
           Option[QueryPath],
-          Option[strategy.R]
+          Option[s.R]
       ) => Unit
   ): Opts[Unit] = {
     val roleOpt =
@@ -118,10 +121,10 @@ object Init {
       Opts
         .option[String](
           "strategy",
-          help = s"Available strategies: ${strategy.all}"
+          help = s"Available strategies: ${s.all}"
         )
         .mapValidated { str =>
-          strategy.parse(str).toValidNel(s"Invalid strategy: $str")
+          s.parse(str).toValidNel(s"Invalid strategy: $str")
         }
         .orNone
 
@@ -140,16 +143,16 @@ object Init {
   }
 
   // Starts CORE system.
-  def startCore(s: Strategy)(
+  def startCore(
       role: Role,
       port: Port,
       queryPath: Option[QueryPath] = None,
       callback: Option[Callback] = None,
-      strategy: Option[s.R] = None,
+      strategy: Option[Strategy] = None,
       predicate: Option[Predicate] = None
   ): Unit = {
     val config =
-      parseConfig(s)(role, port, queryPath, strategy, predicate)
+      parseConfig(role, port, queryPath, strategy, predicate)
 
     val getWorker: QueryPath => (String, Behavior[_]) =
       _ => ("Worker", dcer.core.actors.Worker())
@@ -169,14 +172,14 @@ object Init {
   }
 
   // Starts CORE2 system.
-  def startCore2(s: Strategy)(
+  def startCore2(
       role: Role,
       port: Port,
       queryPath: Option[QueryPath] = None,
-      strategy: Option[s.R] = None
+      strategy: Option[Strategy] = None
   ): Unit = {
     val config =
-      parseConfig(s)(role, port, queryPath, strategy, None)
+      parseConfig(role, port, queryPath, strategy, None)
 
     val getWorker: QueryPath => (String, Behavior[_]) =
       queryPath => ("Worker", dcer.core2.actors.Worker(queryPath))
@@ -194,11 +197,11 @@ object Init {
     )
   }
 
-  private def parseConfig(s: Strategy)(
+  private def parseConfig(
       role: Role,
       port: Port,
       queryPath: Option[QueryPath],
-      strategy: Option[s.R],
+      strategy: Option[Strategy],
       predicate: Option[Predicate]
   ): Config = {
     def optional[V](
@@ -216,7 +219,7 @@ object Init {
     val strategyOption = optional(
       key = "dcer.distribution-strategy",
       value = strategy,
-      show = (_: s.R).toString
+      show = (_: Strategy).toString
     )
 
     val predicateOption = optional(

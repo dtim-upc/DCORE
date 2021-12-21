@@ -45,11 +45,19 @@ object Distributor {
       ctx: ActorContext[Manager.Event],
       workers: Array[Worker.Ref]
   ) extends Distributor {
-    val theWorker: Worker.Ref = workers.head
+    val (theWorker, restOfWorkers) = workers match {
+      case Array(hd, tl @ _*) => (hd, tl)
+      case _ => throw new RuntimeException("Expecting at least one worker.")
+    }
 
     override def distributeWorkload(): Unit = {
       val config = DistributionConfiguration.DEFAULT
+      ctx.log.info(s"Sending start to worker ${theWorker.path}")
       theWorker ! Worker.Start(config.process, config.processes, ctx.self)
+      restOfWorkers.foreach { worker =>
+        ctx.log.info(s"Sending stop to worker ${worker.path}")
+        worker ! Worker.Stop(ctx.self)
+      }
     }
   }
 
@@ -59,6 +67,7 @@ object Distributor {
   ) extends Distributor {
     override def distributeWorkload(): Unit = {
       workers.zipWithIndex.foreach { case (worker, index) =>
+        ctx.log.info(s"Sending start to worker ${worker.path}")
         worker ! Worker.Start(index, workers.length, ctx.self)
       }
     }

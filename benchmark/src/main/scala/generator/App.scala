@@ -3,8 +3,7 @@ package generator
 import better.files.Dsl._
 import better.files._
 import com.monovore.decline._
-import dcer.common.data.Predicate
-import dcer.core.data.DistributionStrategy
+import dcer.common.data.{Predicate, Strategy}
 
 // TODO
 // This could have been implemented using metaprogramming (macros)
@@ -41,21 +40,25 @@ object Generator {
     }
 
     val generateQueryN = benchmark.generateQuery(rootDir = BenchmarkDir)(_)
-    val generateCodeN = generateCode(rootDir = ExecutableDir)(_, _, _, _, _, _)
+    val generateCodeN =
+      generateCode(rootDir = ExecutableDir)(_, _, _, _, _, _, _)
 
     (1 to benchmark.iterations) foreach { iteration =>
       val queryDir = generateQueryN(iteration)
-      Predicate.all foreach { predicate =>
-        DistributionStrategy.all.foreach { strategy =>
-          benchmark.jvmWorkers.foreach { nWorkers =>
-            generateCodeN(
-              benchmark,
-              iteration,
-              queryDir,
-              strategy,
-              predicate,
-              nWorkers
-            )
+      Project.all.foreach { project =>
+        benchmark.jvmWorkers.foreach { nWorkers =>
+          Predicate.all foreach { predicate =>
+            project.strategies.foreach { strategy =>
+              generateCodeN(
+                benchmark,
+                iteration,
+                queryDir,
+                strategy,
+                predicate,
+                nWorkers,
+                project
+              )
+            }
           }
         }
       }
@@ -66,50 +69,60 @@ object Generator {
       benchmark: Benchmark,
       query: Int,
       queryDir: File,
-      strategy: DistributionStrategy,
+      strategy: Strategy,
       predicate: Predicate,
-      nWorkers: Int
+      nWorkers: Int,
+      project: Project
   ): Unit = {
     val predicatePath = predicate.toString.toLowerCase()
     val queryPath = s"query${query}"
     val nWorkersPath = s"workers${nWorkers}"
 
     val packageDir =
-      (rootDir / benchmark.path / queryPath / nWorkersPath / predicatePath)
+      (rootDir / project.path / benchmark.path / queryPath / nWorkersPath / predicatePath)
         .createDirectoryIfNotExists()
 
     def className(jvm: Int): String =
       s"${strategy}MultiJvmNode${jvm}"
 
     val packageName =
-      s"${benchmark.path}.${queryPath}.${nWorkersPath}.${predicatePath}"
+      s"${project.path}.${benchmark.path}.${queryPath}.${nWorkersPath}.${predicatePath}"
     val packageDec =
       s"""package ${packageName}
         |""".stripMargin
 
     val importsDec =
-      """import dcer.Init._
+      s"""import dcer.Init._
         |import dcer.common.data
         |import dcer.common.data.{Port, QueryPath}
-        |import dcer.core.data.DistributionStrategy._
         |import dcer.common.data.Predicate._
-        |import dcer.core.data.{DistributionStrategy => DS}
+        |import dcer.${project.path}.data.DistributionStrategy._
         |""".stripMargin
 
     val engineActorDec =
       s"""object ${className(jvm = 1)} {
          |  def main(args: Array[String]): Unit = {
          |    val query = QueryPath("${queryDir}").get
-         |    startCore(DS)(data.Master, Port.SeedPort, Some(query), strategy = Some(${strategy}), predicate = Some(${predicate}()))
+         |    ${project match {
+        case Core =>
+          s"startCore(data.Master, Port.SeedPort, Some(query), strategy = Some(${strategy}), predicate = Some(${predicate}()))"
+        case Core2 =>
+          s"startCore2(data.Master, Port.SeedPort, Some(query), strategy = Some(${strategy}))"
+      }}
          |  }
          |}
          |""".stripMargin
 
     def workerActorDec(n: Int): String =
       s"""object ${className(jvm = n)} {
-         |  val query = QueryPath("${queryDir}").get
          |  def main(args: Array[String]): Unit = {
-         |    startCore(DS)(data.Slave, Port.RandomPort, Some(query))
+         |    val query = QueryPath("${queryDir}").get
+         |    ${project match {
+        case Core =>
+          s"startCore(data.Slave, Port.RandomPort, Some(query))"
+        case Core2 =>
+          s"startCore2(data.Slave, Port.RandomPort, Some(query))"
+      }}
          |  }
          |}
          |""".stripMargin
@@ -140,8 +153,8 @@ trait Benchmark {
   val iterations: Int
 
   // The benchmark must be executed for each JVM Workers size.
-  // NB: each JVM spawns n workers (4 by default).
-  val jvmWorkers: List[Int] = List(1, 4, 8)
+  // NB: each JVM spawns n workers (1 by default).
+  val jvmWorkers: List[Int] = List(2, 4, 8)
 
   // Given the rootDir and the iteration number generates a query file.
   def generateQuery(rootDir: File)(iteration: Int): File
@@ -263,4 +276,22 @@ object Benchmark1 extends Benchmark {
 
     queryDir
   }
+}
+
+sealed trait Project {
+  val path: String
+  val strategies: List[Strategy]
+}
+object Project {
+  val all: List[Project] = List(Core, Core2)
+}
+case object Core extends Project {
+  override val path = "core"
+  override val strategies: List[Strategy] =
+    dcer.core.data.DistributionStrategy.all
+}
+case object Core2 extends Project {
+  override val path = "core2"
+  override val strategies: List[Strategy] =
+    dcer.core2.data.DistributionStrategy.all
 }
