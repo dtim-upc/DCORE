@@ -2,18 +2,16 @@
 
 ## Project
 
-- [ ] Update run-benchmarks.hs
-
 - [ ] dCORE2
   - [X] CORE2
     - [X] Fork the project
     - [X] Add `paths`
     - [X] Distributed enumeration using `paths`
-  - [ ] Distributed enumeration in CORE2
-    - [ ] Implementation
-      - [ ] Add Statistics (timer)
-    - [ ] Benchmark
-      - [ ] Local
+  - [X] Distributed enumeration in CORE2
+    - [X] Implementation
+      - [X] Add Statistics (timer)
+    - [X] Benchmark
+      - [X] Local
       - [ ] Cluster
   - [ ] Distributed second order predicates in CORE2
     - [ ] Implementation
