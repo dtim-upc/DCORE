@@ -1,6 +1,15 @@
 # DCORE
 
-Distributed [COmplex event Recognition Engine](https://github.com/CORE-cer/CORE).
+The goal of this project is to empirically demonstrate the performance gains of the distribution of Complex Event Recognition.
+Particularly, the enumeration process and the evaluation of second order predicates.
+
+This project is mainly based on the work of:
+
+- [A. Grez et al.](./papers/AFormalFrameworkForComplexEventRecognition.pdf)
+- [M. Bucchi et al.](./papers/CORE.pdf)
+- [CORE: a COmplex event Recognition Engine](https://github.com/CORE-cer/CORE)
+
+This project depends on [CORE](https://github.com/dtim-upc/CORE) (private) and [CORE2](https://github.com/dtim-upc/CORE2).
 
 ## Installation
 
@@ -18,9 +27,8 @@ Compilation should work out-of-box. Feel free to open an [issue](https://github.
 
 ### Unmanaged dependencies: CORE
 
-This project depends on [CORE](https://github.com/CORE-cer/CORE). 
-The project currently depends on CORE's JAR since CORE's project uses `gradle` while we are using `sbt`.
-The current setup uses the JAR from `/lib` which has been created through the `gradle fatJar` from [CORE (fork)](https://github.com/dtim-upc/CORE).
+The project currently depends on the `jar`s since CORE's project uses `gradle` while we are using `sbt`.
+
 In the future, we could properly integrate both projects: 
   - (a) Add CORE as a submodule and upgrade `build.sbt` to build it.
   - (b) Publish CORE to a centralized repository e.g. Maven Central and add it to `DCORE` as a remote dependency.
@@ -46,7 +54,7 @@ Options and flags:
     --demo
         Run the demo
     --role <string>
-        Available roles: List(Engine, Worker)
+        Available roles: List(Master, Slave)
     --port <string>
         Available ports: [1024, 49152]
     --query <path>
@@ -74,13 +82,13 @@ $ bloop run core -- --demo
 
 ```sh
 # Machine 1
-sbt "run --role engine"
+sbt "run --role master"
 
 # Machine 2
-sbt "run --role worker"
+sbt "run --role slave"
 
 # (Optional) Machine N
-sbt "run --role worker"
+sbt "run --role slave"
 ```
 
 #### Configuration
@@ -243,7 +251,7 @@ ssh dtim@dtim3
 
 ## Contributing
 
-> If you are going to hack on the project, I would recommend installing [bloop](https://scalacenter.github.io/bloop) to speedup compilation and testing.
+ns> If you are going to hack on the project, I would recommend installing [bloop](https://scalacenter.github.io/bloop) to speedup compilation and testing.
 
 This project is developed using `Intellij` but also tested on [metals](https://scalameta.org/metals).
 So, we focus on being able to compile, test and run the project on `sbt`.

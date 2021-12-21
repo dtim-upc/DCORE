@@ -4,7 +4,7 @@ import org.scalatest.funspec.AnyFunSpec
 
 class ImplicitsSpec extends AnyFunSpec {
 
-  import dcer.Implicits._
+  import dcer.common.Implicits._
 
   describe("Implicits") {
     describe("ListListOps") {

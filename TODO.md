@@ -2,21 +2,36 @@
 
 ## Project
 
+- [ ] dCORE2
+  - [X] CORE2
+    - [X] Fork the project
+    - [X] Add `paths`
+    - [X] Distributed enumeration using `paths`
+  - [X] Distributed enumeration in CORE2
+    - [X] Implementation
+      - [X] Add Statistics (timer)
+    - [X] Benchmark
+      - [X] Local
+      - [ ] Cluster
+  - [ ] Distributed second order predicates in CORE2
+    - [ ] Implementation
+    - [ ] Benchmark
+      - [ ] Local
+      - [ ] Cluster
+
 - [ ] Prepare benchmarks for UPC cluster
   - [ ] Prepare new script
-  
-- [ ] dCORE
-    - [ ] Create a new branch of CORE.
-    - [ ] Add `paths` to CORE.
-    - [ ] Take `paths` into account while enumerating.
-    - [ ] Prepare new project `dCORE`
 
-- [ ] (optional) Load balancing: matches vs length (the problem right now is that enumeration does not take length into account)
+### Optional
+
+This may not be needed, just consider if it is worth doing.
+
+- [ ] Load balancing: matches vs length (the problem right now is that enumeration does not take length into account)
   - [ ] Add execution time of MaximalMatch + Configuration
   - [ ] Execute a benchmark and store in CSV: #matches, length of matches, execution time
   - [ ] Plot this information to see if load balancing is affected by length of matches.
 
-- [ ] (Optional) I don't really like the implementation based on node lists. `dcer.data.Match` could store a `List[List[Event]]` instead. This would make grouping 0 cost and traversing is actually still linear with a custom iterator.
+- [ ] I don't really like the implementation based on node lists. `dcer.core.data.Match` could store a `List[List[Event]]` instead. This would make grouping 0 cost and traversing is actually still linear with a custom iterator.
 
 ## Document
 
@@ -26,7 +41,7 @@
 
 ### Chapter 2. Preliminaries
 
-- [ ] Reestate everything explained in CORE paper.
+- [ ] Restate everything explained in CORE paper.
 - [ ] Formalize the definition of match and maximal match using complex event + S[i] + t_i.
 
 ### Chapter 3. Related Work

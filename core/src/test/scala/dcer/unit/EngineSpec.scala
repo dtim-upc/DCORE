@@ -1,7 +1,7 @@
 package dcer.unit
 
 import better.files._
-import dcer.actors.Engine
+import dcer.core.actors.Engine
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 

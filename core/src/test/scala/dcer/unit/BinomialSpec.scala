@@ -1,6 +1,6 @@
 package dcer.unit
 
-import dcer.Binomial
+import dcer.common.Binomial
 import org.scalatest.funspec.AnyFunSpec
 
 import java.math.BigInteger

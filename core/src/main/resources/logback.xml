@@ -33,7 +33,7 @@
 
     <!-- This should only log messages marked with the MatchesFilter.marker -->
     <appender name="MATCHES FILE" class="ch.qos.logback.core.FileAppender">
-        <filter class="dcer.logging.MatchFilter" />
+        <filter class="dcer.common.logging.MatchFilter" />
         <file>target/matches.log</file>
         <append>false</append>
         <!-- set immediateFlush to false for much higher logging throughput -->
@@ -45,7 +45,7 @@
 
     <!-- This should only log messages marked with the TimeFilter.marker -->
     <appender name="TIME FILE" class="ch.qos.logback.core.FileAppender">
-        <filter class="dcer.logging.TimeFilter" />
+        <filter class="dcer.common.logging.TimeFilter" />
         <file>target/time.log</file>
         <append>false</append>
         <!-- set immediateFlush to false for much higher logging throughput -->
@@ -57,7 +57,7 @@
 
     <!-- This should only log messages marked with the StatsFilter.marker -->
     <appender name="STATS FILE" class="ch.qos.logback.core.FileAppender">
-        <filter class="dcer.logging.StatsFilter" />
+        <filter class="dcer.common.logging.StatsFilter" />
         <file>target/stats.log</file>
         <append>false</append>
         <!-- set immediateFlush to false for much higher logging throughput -->
