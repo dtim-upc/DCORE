@@ -2,7 +2,7 @@
 
 ## Project
 
-- getNumberOfMatches doesn't return the size
+- [ ] Validate that `sbt "benchmark/multi-jvm:run core2.benchmark1.query1.workers4.linear.Distributed" > /dev/null 2>&1`  is actually waiting.
 
 - [ ] Distributed second order predicates in CORE2
   - [ ] Implementation

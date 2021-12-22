@@ -8,13 +8,16 @@ import dcer.core2.actors.Worker.EngineFinished
 import edu.puc.core2.engine.BaseEngine
 import edu.puc.core2.engine.executors.ExecutorManager
 import edu.puc.core2.engine.streams.StreamManager
+import edu.puc.core2.execution.structures.output.CDSComplexEventGrouping
 import edu.puc.core2.runtime.events.Event
 import edu.puc.core2.runtime.profiling.Profiler
 import edu.puc.core2.util.{DistributionConfiguration, StringUtils}
 import org.slf4j.Logger
 
 import java.util.Optional
+import java.util.function.Consumer
 import java.util.logging.Level
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util.Try
 
 object Engine {
@@ -37,7 +40,12 @@ object Engine {
           val distributionConfiguration =
             new DistributionConfiguration(process, processes)
           val baseEngine = {
-            buildEngine(queryPath, distributionConfiguration) match {
+            buildEngine(
+              ctx,
+              queryPath,
+              distributionConfiguration,
+              predicate
+            ) match {
               case Left(err)     => throw err
               case Right(engine) => engine
             }
@@ -64,24 +72,8 @@ object Engine {
         event match {
           case Some(event) =>
             ctx.log.info("Event received: " + event.toString)
-
-            val numberOfNewComplexEvents = processNewEvent(baseEngine, event)
-
-            // Eventually, replace with the REAL predicate application.
-            Predicate.predicateSimulationDuration(
-              predicate,
-              numberOfNewComplexEvents
-            ) match {
-              case Some(duration) =>
-                ctx.scheduleOnce(
-                  duration,
-                  ctx.self,
-                  NextEvent(Option(baseEngine.nextEvent()))
-                )
-              case None =>
-                ctx.self ! NextEvent(Option(baseEngine.nextEvent()))
-            }
-
+            processNewEvent(baseEngine, event)
+            ctx.self ! NextEvent(Option(baseEngine.nextEvent()))
             running(ctx, replyTo, baseEngine, predicate)
 
           case None =>
@@ -99,8 +91,10 @@ object Engine {
   }
 
   private def buildEngine(
+      ctx: ActorContext[Engine.Command],
       queryPath: QueryPath,
-      distributionConfiguration: DistributionConfiguration
+      distributionConfiguration: DistributionConfiguration,
+      predicate: Predicate
   ): Either[Throwable, BaseEngine] =
     for {
       queryFile <- Try(
@@ -117,21 +111,20 @@ object Engine {
       ).toEither
       streamManager <- Try(StreamManager.fromCOREFile(streamFile)).toEither
       engine <- Try {
-        BaseEngine.LOGGER.setLevel(Level.OFF) // Disable logging in CORE
-        val engine = BaseEngine.newEngine(
+        BaseEngine.newEngine(
           executorManager,
           streamManager,
           false, // logMetrics
           true, // fastRun: do not wait between events using the timestamps
           true // offline: do not create the RMI server
         )
-        engine.start(true)
-        // By default engine will print the complex event to the stdout.
-        // Don't do something like this: engine.setMatchCallback(math => ())
-        // This will avoid enumerating the tECS.
-        engine
       }.toEither
-    } yield engine
+    } yield {
+      BaseEngine.LOGGER.setLevel(Level.OFF) // Disable logging in CORE
+      engine.start(true)
+      engine.setMatchCallback(getPredicateCallback(ctx, predicate))
+      engine
+    }
 
   private def printProfiler(logger: Logger): Unit = {
     val toSeconds: Long => Double = x => x.toDouble / 1.0e9d
@@ -144,13 +137,51 @@ object Engine {
     logger.info(StatsFilter.marker, pretty)
   }
 
-  // Returns the number of complex events triggered by this event.
-  private def processNewEvent(engine: BaseEngine, event: Event): Long = {
-    val startComplexEvents = Profiler.getNumberOfMatches
-
+  private def processNewEvent(engine: BaseEngine, event: Event): Unit = {
     // Send will trigger the update and enumeration phase.
     engine.sendEvent(event)
+  }
 
-    Profiler.getNumberOfMatches - startComplexEvents
+  // This should be eventually implemented as REAL second-order predicates.
+  private def getPredicateCallback(
+      ctx: ActorContext[Engine.Command],
+      predicate: Predicate
+  ): Consumer[CDSComplexEventGrouping[_]] = {
+    val waitTimeOnEvent: FiniteDuration =
+      predicate match {
+        case Predicate.None() =>
+          0.millis
+        case Predicate.Linear() =>
+          Predicate.EventProcessingDuration
+        case Predicate.Quadratic() =>
+          Predicate.EventProcessingDuration * 2
+        case Predicate.Cubic() =>
+          Predicate.EventProcessingDuration * 3
+      }
+    val waitTimeMs: Long = waitTimeOnEvent.toMillis
+
+    // Same as MatchCallback.printCallback
+    // but with predicates on ComplexEvents.
+    def callback(complexEvents: CDSComplexEventGrouping[_]): Unit = {
+      ctx.log.info(
+        "Event " + complexEvents.getLastEvent + " triggered matches:"
+      )
+      complexEvents.forEach { complexEvent =>
+        if (complexEvent ne null) {
+          Profiler.incrementMatches()
+          val builder = new StringBuilder("\t")
+          builder ++= "Interval [" + complexEvent.getStart + ", " + complexEvent.getEnd + "]: "
+          complexEvent.forEach { event =>
+            Thread.sleep(waitTimeMs)
+            builder ++= event.toString
+            builder ++= " "
+          }
+          ctx.log.info(builder.result())
+        }
+      }
+      ctx.log.info("")
+    }
+
+    callback
   }
 }
