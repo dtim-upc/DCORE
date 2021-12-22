@@ -3,7 +3,7 @@ package dcer.core2.actors
 import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
-import dcer.common.data.{ActorAddress, QueryPath}
+import dcer.common.data.{ActorAddress, Predicate, QueryPath}
 import dcer.common.serialization.CborSerializable
 import dcer.core2.actors.Manager.WorkerFinished
 
@@ -12,8 +12,12 @@ object Worker {
 
   sealed trait Command
 
-  case class Start(process: Int, processes: Int, replyTo: Manager.Ref)
-      extends Command
+  case class Start(
+      process: Int,
+      processes: Int,
+      replyTo: Manager.Ref,
+      predicate: Predicate
+  ) extends Command
       with CborSerializable
 
   case class EngineFinished() extends Command
@@ -46,11 +50,11 @@ object Worker {
       engine: Engine.Ref
   ): Behavior[Command] =
     Behaviors.receiveMessage[Command] {
-      case Worker.Start(process, processes, replyTo) =>
+      case Worker.Start(process, processes, replyTo, predicate) =>
         ctx.log.info(
           s"Start(process=$process, processes=$processes) received at worker ${ctx.self.path}"
         )
-        engine ! Engine.Start(process, processes)
+        engine ! Engine.Start(process, processes, predicate)
         waitingEngine(ctx, replyTo)
 
       case Worker.Stop(replyTo) =>

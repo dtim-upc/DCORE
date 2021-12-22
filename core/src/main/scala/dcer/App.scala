@@ -176,10 +176,11 @@ object Init {
       role: Role,
       port: Port,
       queryPath: Option[QueryPath] = None,
-      strategy: Option[Strategy] = None
+      strategy: Option[Strategy] = None,
+      predicate: Option[Predicate] = None
   ): Unit = {
     val config =
-      parseConfig(role, port, queryPath, strategy, None)
+      parseConfig(role, port, queryPath, strategy, predicate)
 
     val getWorker: QueryPath => (String, Behavior[_]) =
       queryPath => ("Worker", dcer.core2.actors.Worker(queryPath))

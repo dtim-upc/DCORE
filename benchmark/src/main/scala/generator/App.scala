@@ -107,7 +107,7 @@ object Generator {
         case Core =>
           s"startCore(data.Master, Port.SeedPort, Some(query), strategy = Some(${strategy}), predicate = Some(${predicate}()))"
         case Core2 =>
-          s"startCore2(data.Master, Port.SeedPort, Some(query), strategy = Some(${strategy}))"
+          s"startCore2(data.Master, Port.SeedPort, Some(query), strategy = Some(${strategy}), predicate = Some(${predicate}()))"
       }}
          |  }
          |}
@@ -154,7 +154,7 @@ trait Benchmark {
 
   // The benchmark must be executed for each JVM Workers size.
   // NB: each JVM spawns n workers (1 by default).
-  val jvmWorkers: List[Int] = List(2, 4, 8)
+  val jvmWorkers: List[Int] = List(1, 2, 4, 8)
 
   // Given the rootDir and the iteration number generates a query file.
   def generateQuery(rootDir: File)(iteration: Int): File

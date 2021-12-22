@@ -2,22 +2,21 @@
 
 ## Project
 
-- [ ] dCORE2
-  - [X] CORE2
-    - [X] Fork the project
-    - [X] Add `paths`
-    - [X] Distributed enumeration using `paths`
-  - [X] Distributed enumeration in CORE2
-    - [X] Implementation
-      - [X] Add Statistics (timer)
-    - [X] Benchmark
-      - [X] Local
-      - [ ] Cluster
-  - [ ] Distributed second order predicates in CORE2
-    - [ ] Implementation
-    - [ ] Benchmark
-      - [ ] Local
-      - [ ] Cluster
+- getNumberOfMatches doesn't return the size
+
+- [ ] Distributed second order predicates in CORE2
+  - [ ] Implementation
+  - [ ] Benchmark
+    - [ ] Local
+    - [ ] Cluster
+
+- [ ] Is there a difference between enumerate(0,1M) and enumerate(1M, 2M) ?
+- On multiple queries since may affect the cost.
+- A;B+;C (or A+;B+;C) vs A;B;C (this is bounded and should be better)   Benchmark: AAAA..BBBB..C  = n^2 number of CE
+- This A;B;C will affect if the second point makes sense since we want to enumerate and evaluate second-order filter on small workloads.
+- [ ] A;B;C FILTER A.x = B.y and B.z = C.u 
+- Validate this binary predicate distributed.
+- There is polynomial number of complex events.
 
 - [ ] Prepare benchmarks for UPC cluster
   - [ ] Prepare new script

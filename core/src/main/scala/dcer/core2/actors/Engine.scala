@@ -2,7 +2,7 @@ package dcer.core2.actors
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
-import dcer.common.data.QueryPath
+import dcer.common.data.{Predicate, QueryPath}
 import dcer.common.logging.StatsFilter
 import dcer.core2.actors.Worker.EngineFinished
 import edu.puc.core2.engine.BaseEngine
@@ -20,7 +20,8 @@ import scala.util.Try
 object Engine {
 
   sealed trait Command
-  final case class Start(process: Int, processes: Int) extends Command
+  final case class Start(process: Int, processes: Int, predicate: Predicate)
+      extends Command
   final case class NextEvent(event: Option[Event]) extends Command
 
   type Ref = ActorRef[Engine.Command]
@@ -31,17 +32,18 @@ object Engine {
   ): Behavior[Engine.Command] = {
     Behaviors.setup { ctx =>
       Behaviors.receiveMessage {
-        case Start(process, processes) =>
+        case Start(process, processes, predicate) =>
           ctx.log.info(s"Start received at engine.")
           val distributionConfiguration =
             new DistributionConfiguration(process, processes)
-          val baseEngine =
+          val baseEngine = {
             buildEngine(queryPath, distributionConfiguration) match {
               case Left(err)     => throw err
               case Right(engine) => engine
             }
+          }
           ctx.self ! NextEvent(Option(baseEngine.nextEvent()))
-          running(ctx, replyTo, baseEngine)
+          running(ctx, replyTo, baseEngine, predicate)
         case c: Command =>
           ctx.log.error(
             s"Received an unexpected command ${c.getClass.getName}."
@@ -54,18 +56,33 @@ object Engine {
   private def running(
       ctx: ActorContext[Engine.Command],
       replyTo: Worker.Ref,
-      baseEngine: BaseEngine
+      baseEngine: BaseEngine,
+      predicate: Predicate
   ): Behavior[Engine.Command] = {
     Behaviors.receiveMessage {
       case NextEvent(event) =>
         event match {
           case Some(event) =>
             ctx.log.info("Event received: " + event.toString)
-            // Send will trigger the update and enumeration phase.
-            baseEngine.sendEvent(event)
 
-            ctx.self ! NextEvent(Option(baseEngine.nextEvent()))
-            running(ctx, replyTo, baseEngine)
+            val numberOfNewComplexEvents = processNewEvent(baseEngine, event)
+
+            // Eventually, replace with the REAL predicate application.
+            Predicate.predicateSimulationDuration(
+              predicate,
+              numberOfNewComplexEvents
+            ) match {
+              case Some(duration) =>
+                ctx.scheduleOnce(
+                  duration,
+                  ctx.self,
+                  NextEvent(Option(baseEngine.nextEvent()))
+                )
+              case None =>
+                ctx.self ! NextEvent(Option(baseEngine.nextEvent()))
+            }
+
+            running(ctx, replyTo, baseEngine, predicate)
 
           case None =>
             ctx.log.info("No more events.\nStopping the engine.")
@@ -125,5 +142,15 @@ object Engine {
          |CleanUps: ${Profiler.getCleanUps}.
          |""".stripMargin
     logger.info(StatsFilter.marker, pretty)
+  }
+
+  // Returns the number of complex events triggered by this event.
+  private def processNewEvent(engine: BaseEngine, event: Event): Long = {
+    val startComplexEvents = Profiler.getNumberOfMatches
+
+    // Send will trigger the update and enumeration phase.
+    engine.sendEvent(event)
+
+    Profiler.getNumberOfMatches - startComplexEvents
   }
 }

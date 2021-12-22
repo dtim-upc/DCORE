@@ -4,6 +4,7 @@ import akka.actor._
 import akka.serialization._
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException
 import dcer.Common
+import dcer.common.data.Predicate
 import dcer.core.data.{Event, Match}
 import dcer.common.serialization.CborSerializable
 import edu.puc.core.execution.structures.output.{Match => JMatch}
@@ -90,5 +91,15 @@ class CborSerializableSpec extends AnyFunSpec with Matchers {
         roundTrip2(message)
       }
     }
+
+    describe("should round-trip serialize all predicates") {
+      Predicate.all.foreach { predicate =>
+        it(predicate.toString) {
+          roundTrip(predicate)(predicate.getClass)
+          roundTrip2(predicate)
+        }
+      }
+    }
+
   }
 }
