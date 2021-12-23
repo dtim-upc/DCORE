@@ -121,8 +121,9 @@ object Engine {
       }.toEither
     } yield {
       BaseEngine.LOGGER.setLevel(Level.OFF) // Disable logging in CORE
-      engine.start(true)
+      // The order is important: matchCallback then start.
       engine.setMatchCallback(getPredicateCallback(ctx, predicate))
+      engine.start(true)
       engine
     }
 
@@ -169,7 +170,7 @@ object Engine {
       complexEvents.forEach { complexEvent =>
         if (complexEvent ne null) {
           Profiler.incrementMatches()
-          val builder = new StringBuilder("\t")
+          val builder = new StringBuilder("")
           builder ++= "Interval [" + complexEvent.getStart + ", " + complexEvent.getEnd + "]: "
           complexEvent.forEach { event =>
             Thread.sleep(waitTimeMs)
