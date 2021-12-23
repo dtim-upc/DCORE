@@ -2,8 +2,6 @@
 
 ## Project
 
-- [ ] Validate that `sbt "benchmark/multi-jvm:run core2.benchmark1.query1.workers4.linear.Distributed" > /dev/null 2>&1`  is actually waiting.
-
 - [ ] Distributed second order predicates in CORE2
   - [ ] Implementation
   - [ ] Benchmark
@@ -11,9 +9,9 @@
     - [ ] Cluster
 
 - [ ] Is there a difference between enumerate(0,1M) and enumerate(1M, 2M) ?
-- On multiple queries since may affect the cost.
-- A;B+;C (or A+;B+;C) vs A;B;C (this is bounded and should be better)   Benchmark: AAAA..BBBB..C  = n^2 number of CE
-- This A;B;C will affect if the second point makes sense since we want to enumerate and evaluate second-order filter on small workloads.
+  - On multiple queries since may affect the cost.
+  - A;B+;C (or A+;B+;C) vs A;B;C (this is bounded and should be better)   Benchmark: AAAA..BBBB..C  = n^2 number of CE
+  - This A;B;C will affect if the second point makes sense since we want to enumerate and evaluate second-order filter on small workloads.
 - [ ] A;B;C FILTER A.x = B.y and B.z = C.u 
 - Validate this binary predicate distributed.
 - There is polynomial number of complex events.

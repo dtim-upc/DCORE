@@ -1,6 +1,6 @@
 package dcer.core2.actors
 
-import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
+import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import dcer.common.data.{ActorAddress, Predicate, QueryPath}
@@ -37,11 +37,7 @@ object Worker {
       val engineRef =
         ctx.spawn(Engine(queryPath, ctx.self), "Engine")
 
-      Behaviors
-        .supervise {
-          waitingStart(ctx, engineRef)
-        }
-        .onFailure[Exception](SupervisorStrategy.stop)
+      waitingStart(ctx, engineRef)
     }
   }
 
