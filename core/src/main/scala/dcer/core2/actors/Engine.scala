@@ -57,7 +57,9 @@ object Engine {
               distributionConfiguration,
               predicate
             ) match {
-              case Left(err)     => throw err
+              case Left(err) =>
+                ctx.log.error("Error on buildEngine", err)
+                throw err
               case Right(engine) => engine
             }
           }
@@ -172,11 +174,11 @@ object Engine {
     }
 
   private def printProfiler(logger: Logger, process: Int): Unit = {
-    val toSeconds: Long => Double = x => x.toDouble / 1.0e9d
+    val toMs: Long => Double = x => x.toDouble / 1.0e6d
     val pretty =
       s"""Process $process:
-         |- Execution time: ${toSeconds(Profiler.getExecutionTime)} seconds.
-         |- Enumeration time: ${toSeconds(Profiler.getEnumerationTime)} seconds.
+         |- Execution time: ${toMs(Profiler.getExecutionTime)} ms.
+         |- Enumeration time: ${toMs(Profiler.getEnumerationTime)} ms.
          |- Complex events: ${Profiler.getNumberOfMatches}.
          |- CleanUps: ${Profiler.getCleanUps}.
          |""".stripMargin
