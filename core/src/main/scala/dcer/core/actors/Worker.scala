@@ -135,10 +135,9 @@ object Worker {
     ): Behavior[Command] = {
       Behaviors.receiveMessage[Command] {
         case MatchProcessingFinished =>
-//          ctx.log.info(
-//            TimeFilter.marker,
-//            s"Match (#events=${m.events.length}, complexity=$sop) processed in ${timer.elapsedTime().toMillis} milliseconds"
-//          )
+          ctx.log.info(
+            s"Match (#events=${m.events.length}, complexity=$sop) processed in ${timer.elapsedTime().toMillis} milliseconds"
+          )
           replyTo ! Manager.MatchValidated(
             matchGroupingId,
             m,

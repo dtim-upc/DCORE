@@ -16,7 +16,7 @@ import Control.Exception
 import qualified Control.Foldl as Fold
 import qualified Data.Char as Char
 import Data.Coerce
-import Data.Foldable (for_)
+import Data.Foldable (for_, traverse_)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (mapMaybe)
@@ -216,20 +216,47 @@ runMake subCmd = do
   shells cmd empty
 
 saveOutput :: MonadIO m => FilePath -> FilePath -> Scenario -> m ()
-saveOutput rootDir outputDir scenario = do
+saveOutput logsDir outputDir scenario = do
   createDirIfNotExists outputDir
   printf ("Saving output to " % fp % "/ ... \n") outputDir
+  case sProject scenario of
+    Core -> error "not implemented"
+    Core2 -> do
+      parseTimeLog logsDir >>= writeCSV (outputDir </> "time.csv") scenario
+      parseStatsLog logsDir >>= writeCSV (outputDir </> "stats.csv") scenario
 
-  let targetDir = rootDir </> "target"
+type HeaderCSV = Text
+type LineCSV = Text
 
-      statsInFilePath = targetDir </> "stats.log"
-      timeInFilePath = targetDir </> "time.log"
+parseStatsLog :: MonadIO m => FilePath -> m (HeaderCSV, [LineCSV])
+parseStatsLog logsDir = do
+  let file = logsDir </> "stats.log"
+  content <- liftIO $ Text.readFile (encodeString file)
+  let lines@(header : _) = Text.lines content
+  return (header, go (next lines) [])
+  where
+    next = splitAt 2
 
-      statsOutFilePath = outputDir </> fromText (scenarioToFilename scenario <> "_stats.log")
-      timeOutFilePath = outputDir </> fromText (scenarioToFilename scenario <> "_time.log")
+    go :: ([Text], [Text]) -> [Text] -> [Text]
+    go ([], _) lines = reverse lines
+    go ([header, line], rem) lines = go (next rem) (line : rem)
+    go (_, _) _ = error "Format not expected in parseStatsLog"
 
-  mv statsInFilePath statsOutFilePath
-  mv timeInFilePath timeOutFilePath
+parseTimeLog :: MonadIO m => FilePath -> m (HeaderCSV, [LineCSV])
+parseTimeLog logsDir = do
+  let file = logsDir </> "time.log"
+  content <- liftIO $ Text.readFile (encodeString file)
+  let [header, line] = Text.lines content
+  return (header, [line])
+
+writeCSV :: MonadIO m => FilePath -> Scenario -> (HeaderCSV, [LineCSV]) -> m ()
+writeCSV file scenario (header, lines) = do
+  exists <- testfile file
+  when (not exists) $ do
+    let header' = "scenario," <> header
+    liftIO $ Text.writeFile (encodeString file) header'
+  for_ lines $ \line ->
+    liftIO . Text.appendFile (encodeString file) $ scenarioToFilename scenario <> "," <> line
 
 -----------------------------------------
 -- Command-line parsing
@@ -345,5 +372,5 @@ runBenchmarks rootDir args@ArgsOpts {isClean, project, outputDir, ..} = do
                       + 1
               printf (s % " (" % d % "/" % d % ")\n") (scenarioToFilename scenario) current total
               runScenario scenario
-              saveOutput rootDir outputDir scenario
+              saveOutput (rootDir </> "target") outputDir scenario
   return elapsedTime
