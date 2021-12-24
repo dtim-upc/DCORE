@@ -100,8 +100,8 @@ newtype Workers = Workers {unWorkers :: Text}
   deriving newtype (Show, Eq, Read, IsString)
 
 workerss :: [Workers]
--- workerss = ["workers2", "workers4", "workers8"]
-workerss = ["workers4"]
+-- workerss = (Workers . ("workers" <>)) . Text.pack . show <$> [1,2,4,6,8]
+workerss = (Workers . ("workers" <>)) . Text.pack . show <$> [8]
 
 -----------------------------------------
 

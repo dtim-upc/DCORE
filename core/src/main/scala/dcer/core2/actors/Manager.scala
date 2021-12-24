@@ -3,6 +3,7 @@ package dcer.core2.actors
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
+import dcer.common.CSV
 import dcer.common.data.{ActorAddress, Configuration, Timer}
 import dcer.common.serialization.CborSerializable
 import dcer.common.logging.TimeFilter
@@ -96,9 +97,13 @@ object Manager {
         val newWorkers = workers - worker
         if (newWorkers.isEmpty) {
           val timeElapsedSinceStart = timer.elapsedTime()
+          val csv = CSV.toCSV(
+            header = Some(List("total_execution_time_ms")),
+            values = List(List(timeElapsedSinceStart.toMillis))
+          )
           ctx.log.info(
             TimeFilter.marker,
-            s"All events processed in ${timeElapsedSinceStart.toMillis} milliseconds"
+            csv
           )
           ctx.log.info("All workers have finished. Stopping manager.")
           Behaviors.stopped

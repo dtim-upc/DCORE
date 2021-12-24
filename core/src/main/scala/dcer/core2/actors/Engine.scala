@@ -2,6 +2,7 @@ package dcer.core2.actors
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
+import dcer.common.CSV
 import dcer.common.data.{Predicate, QueryPath}
 import dcer.common.logging.{MatchFilter, StatsFilter}
 import dcer.core2.actors.Worker.EngineFinished
@@ -82,7 +83,7 @@ object Engine {
 
           case None =>
             ctx.log.info("No more events.\nStopping the engine.")
-            printProfiler(ctx.log, process)
+            logStats(ctx.log, process)
             replyTo ! EngineFinished()
             Behaviors.stopped
         }
@@ -132,16 +133,32 @@ object Engine {
       engine
     }
 
-  private def printProfiler(logger: Logger, process: Int): Unit = {
+  private def logStats(logger: Logger, process: Int): Unit = {
     val toMs: Long => Double = x => x.toDouble / 1.0e6d
-    val pretty =
-      s"""Process $process:
-         |- Execution time: ${toMs(Profiler.getExecutionTime)} ms.
-         |- Enumeration time: ${toMs(Profiler.getEnumerationTime)} ms.
-         |- Complex events: ${Profiler.getNumberOfMatches}.
-         |- CleanUps: ${Profiler.getCleanUps}.
-         |""".stripMargin
-    logger.info(StatsFilter.marker, pretty)
+    val header = List(
+      "process",
+      "update_time_ms",
+      "enumeration_time_ms",
+      "complex_events",
+      "garbage_collections"
+    )
+    val updateTime = toMs(Profiler.getExecutionTime)
+    val enumerationTime = toMs(Profiler.getEnumerationTime)
+    val complexEvents = Profiler.getNumberOfMatches
+    val garbageCollections = Profiler.getCleanUps
+    val csv = CSV.toCSV(
+      header = Some(header),
+      values = List(
+        List[Any](
+          process,
+          updateTime,
+          enumerationTime,
+          complexEvents,
+          garbageCollections
+        )
+      )
+    )
+    logger.info(StatsFilter.marker, csv)
   }
 
   private def processNewEvent(engine: BaseEngine, event: Event): Unit = {
