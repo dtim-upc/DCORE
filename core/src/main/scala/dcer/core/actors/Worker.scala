@@ -12,7 +12,6 @@ import dcer.common.logging.TimeFilter
 import dcer.common.serialization.CborSerializable
 
 import scala.collection.immutable.Queue
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 object Worker {
 
@@ -127,10 +126,6 @@ object Worker {
       s"Processing match (#events=${m.events.length}, complexity=$sop):"
     )
 
-    // This amount of time is kinda arbitrary.
-    // At some point, this would be replaced by a real evaluation of SOL predicates.
-    val eventProcessingDuration = 10.millis
-
     // Why such a complex logic when we could Thread.sleep(n) ?
     // Thread.sleep may be problematic in the concurrency model of Akka.
     // If the scheduler is not clever enough, it may queue more than one actor per thread and
@@ -161,21 +156,17 @@ object Worker {
       }
     }
 
-    // Mock computational time depending on the complexity
-    val n =
-      sop match {
-        case Predicate.None() =>
-          0L
-        case Predicate.Linear() =>
-          m.events.length.toDouble
-        case Predicate.Quadratic() =>
-          scala.math.pow(m.events.length.toDouble, 2)
-        case Predicate.Cubic() =>
-          scala.math.pow(m.events.length.toDouble, 3)
-      }
-
-    val duration: FiniteDuration = eventProcessingDuration * n.toLong
-    ctx.scheduleOnce(duration, ctx.self, MatchProcessingFinished)
+    // Eventually, replace with the REAL predicate application.
+    Predicate.predicateSimulationDuration(sop, m.events.length.toLong) match {
+      case Some(duration) =>
+        ctx.scheduleOnce(
+          duration,
+          ctx.self,
+          MatchProcessingFinished
+        )
+      case None =>
+        ctx.self ! MatchProcessingFinished
+    }
     waitMatchProcessing(Queue.empty)
   }
 }

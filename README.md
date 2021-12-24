@@ -249,6 +249,14 @@ ssh dtim@dtim2
 ssh dtim@dtim3
 ```
 
+#### Getting hardware info on Linux
+
+```sh
+uname -a # Kernel version
+lshw -short # nix-shell -p lshw --run 'lshw -short' # CPU, RAM, etc
+java -version # OpenJDK version
+```
+
 ## Contributing
 
 ns> If you are going to hack on the project, I would recommend installing [bloop](https://scalacenter.github.io/bloop) to speedup compilation and testing.

@@ -329,7 +329,7 @@ runBenchmarks rootDir args@ArgsOpts {isClean, project, outputDir, ..} = do
   let strategies = strategiesDict Map.! project
   (_, elapsedTime) <- time $
     fori_ benchmarks $ \(benchmark, i) -> do
-      queries <- getQueries (rootDir </> benchmarkDir benchmark)
+      queries <- getQueries (rootDir </> benchmarkDir benchmark </> fromText (project2Text project))
       let total = countTotal [toAny benchmarks, toAny queries, toAny workerss, toAny complexities, toAny strategies]
       fori_ queries $ \(query, j) ->
         fori_ workerss $ \(workers, k) -> do

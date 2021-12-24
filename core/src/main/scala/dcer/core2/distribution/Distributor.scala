@@ -1,7 +1,7 @@
 package dcer.core2.distribution
 
 import akka.actor.typed.scaladsl.ActorContext
-import dcer.common.data.Configuration
+import dcer.common.data.{Configuration, Predicate}
 import dcer.core2.actors.{Manager, Worker}
 import dcer.core2.data.DistributionStrategy
 import edu.puc.core2.util.DistributionConfiguration
@@ -10,6 +10,7 @@ sealed trait Distributor {
 
   val ctx: ActorContext[Manager.Event]
   val workers: Array[Worker.Ref]
+  val predicate: Predicate
 
   def distributeWorkload(): Unit
 }
@@ -18,13 +19,14 @@ object Distributor {
   def apply(
       distributionStrategy: DistributionStrategy,
       ctx: ActorContext[Manager.Event],
-      workers: Array[Worker.Ref]
+      workers: Array[Worker.Ref],
+      predicate: Predicate
   ): Distributor = {
     distributionStrategy match {
       case DistributionStrategy.Sequential =>
-        Sequential(ctx, workers)
+        Sequential(ctx, workers, predicate)
       case DistributionStrategy.Distributed =>
-        Distributed(ctx, workers)
+        Distributed(ctx, workers, predicate)
     }
   }
 
@@ -38,12 +40,18 @@ object Distributor {
         DistributionStrategy.parse
       )
 
-    Distributor(strategy, ctx, workers)
+    val predicate: Predicate =
+      config.getValueOrThrow(Configuration.SecondOrderPredicateKey)(
+        Predicate.parse
+      )
+
+    Distributor(strategy, ctx, workers, predicate)
   }
 
   private case class Sequential(
       ctx: ActorContext[Manager.Event],
-      workers: Array[Worker.Ref]
+      workers: Array[Worker.Ref],
+      predicate: Predicate
   ) extends Distributor {
     val (theWorker, restOfWorkers) = workers match {
       case Array(hd, tl @ _*) => (hd, tl)
@@ -53,7 +61,12 @@ object Distributor {
     override def distributeWorkload(): Unit = {
       val config = DistributionConfiguration.DEFAULT
       ctx.log.info(s"Sending start to worker ${theWorker.path}")
-      theWorker ! Worker.Start(config.process, config.processes, ctx.self)
+      theWorker ! Worker.Start(
+        config.process,
+        config.processes,
+        ctx.self,
+        predicate
+      )
       restOfWorkers.foreach { worker =>
         ctx.log.info(s"Sending stop to worker ${worker.path}")
         worker ! Worker.Stop(ctx.self)
@@ -63,12 +76,13 @@ object Distributor {
 
   private case class Distributed(
       ctx: ActorContext[Manager.Event],
-      workers: Array[Worker.Ref]
+      workers: Array[Worker.Ref],
+      predicate: Predicate
   ) extends Distributor {
     override def distributeWorkload(): Unit = {
       workers.zipWithIndex.foreach { case (worker, index) =>
         ctx.log.info(s"Sending start to worker ${worker.path}")
-        worker ! Worker.Start(index, workers.length, ctx.self)
+        worker ! Worker.Start(index, workers.length, ctx.self, predicate)
       }
     }
   }
