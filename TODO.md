@@ -3,6 +3,21 @@
 
 ## Project
 
+- [ ] Update run-benchmarks.hs to use the new CSV format
+  - The output of stats.csv is not ok.
+  - first, you need to delete the previous *.log (since log4j appends)
+  - then, have a look at why only 2 processes are output.
+
+```
+❯ ./run-benchmarks.hs only -b 1 -p core2
+core2_benchmark1_query1_workers8_none_Distributed (1/2)
+Saving output to ./output/ ... 
+core2_benchmark1_query2_workers8_none_Distributed (2/2)
+Saving output to ./output/ ... 
+Status: KO
+Benchmarks failed: /home/arnau/projects/TFM/DCORE/run-benchmarks.hs:251:7-41: Non-exhaustive patterns in [header, line]
+```
+
 - [ ] Benchmark local
 
 - [ ] Prepare benchmarks for UPC cluster
