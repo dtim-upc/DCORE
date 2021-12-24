@@ -8,7 +8,6 @@ import dcer.core.actors.Manager.MatchGroupingId
 import dcer.core.data.Match.MaximalMatch
 import dcer.core.data.Match
 import dcer.core.distribution.Blueprint
-import dcer.common.logging.TimeFilter
 import dcer.common.serialization.CborSerializable
 
 import scala.collection.immutable.Queue
@@ -136,10 +135,10 @@ object Worker {
     ): Behavior[Command] = {
       Behaviors.receiveMessage[Command] {
         case MatchProcessingFinished =>
-          ctx.log.info(
-            TimeFilter.marker,
-            s"Match (#events=${m.events.length}, complexity=$sop) processed in ${timer.elapsedTime().toMillis} milliseconds"
-          )
+//          ctx.log.info(
+//            TimeFilter.marker,
+//            s"Match (#events=${m.events.length}, complexity=$sop) processed in ${timer.elapsedTime().toMillis} milliseconds"
+//          )
           replyTo ! Manager.MatchValidated(
             matchGroupingId,
             m,

@@ -4,7 +4,6 @@
 ## Project
 
 - [ ] Benchmark local
-  - Output to a single file?
 
 - [ ] Prepare benchmarks for UPC cluster
   - [ ] Prepare new script
