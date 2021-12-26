@@ -1,5 +1,5 @@
 #!/usr/bin/env stack
--- stack --resolver lts-18.13 script --package turtle --package foldl --package text --package containers
+-- stack --resolver lts-18.13 script --package turtle --package foldl --package bytestring --package text --package containers --package cassava --package vector --package attoparsec --package unordered-containers
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -9,6 +9,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE LambdaCase #-}
 
 -----------------------------------------
 
@@ -23,8 +24,21 @@ import Data.Maybe (mapMaybe)
 import Data.Semigroup (Product (..))
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
+import qualified Data.Text.Encoding as Text
 import Turtle
 import Prelude hiding (FilePath)
+import Data.Csv (Header, NamedRecord)
+import qualified Data.Csv as Csv
+import qualified Data.Csv.Parser as Csv
+import qualified Data.Vector as Vector
+import qualified Data.Attoparsec.ByteString as Atto
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as LBS
+import Control.Foldl (Vector)
+import GHC.Base (assert)
+import GHC.IO (mkUserError)
+import Control.Exception (throwIO)
+import qualified Data.HashMap.Strict as HashMap
 
 -----------------------------------------
 
@@ -58,7 +72,7 @@ cubic = "cubic"
 
 complexities :: [Complexity]
 --complexities = [none, linear, quadratic, cubic]
-complexities = [linear]
+complexities = [none]
 
 -----------------------------------------
 
@@ -91,7 +105,8 @@ strategiesDict =
   Map.fromList
     -- [ (Core, [sequential, roundRobin, roundRobinWeighted, powerOfTwoChoices, maximalMatchesEnumeration, maximalMatchesDisjointEnumeration]),
     [ (Core, [roundRobin]),
-      (Core2, [sequential, distributed])
+      -- (Core2, [sequential, distributed])
+      (Core2, [distributed])
     ]
 
 -----------------------------------------
@@ -101,7 +116,7 @@ newtype Workers = Workers {unWorkers :: Text}
 
 workerss :: [Workers]
 -- workerss = (Workers . ("workers" <>)) . Text.pack . show <$> [1,2,4,6,8]
-workerss = (Workers . ("workers" <>)) . Text.pack . show <$> [8]
+workerss = (Workers . ("workers" <>)) . Text.pack . show <$> [10]
 
 -----------------------------------------
 
@@ -222,40 +237,44 @@ saveOutput logsDir outputDir scenario = do
   case sProject scenario of
     Core -> error "not implemented"
     Core2 -> do
-      parseTimeLog logsDir >>= writeCSV (outputDir </> "time.csv") scenario
-      parseStatsLog logsDir >>= writeCSV (outputDir </> "stats.csv") scenario
+      parseTimeLog logsDir >>= writeCsv (outputDir </> "time.csv") scenario
+      parseStatsLog logsDir >>= writeCsv (outputDir </> "stats.csv") scenario
+  rm (logsDir </> "matches.log")
+  rm (logsDir </> "stats.log")
+  rm (logsDir </> "time.log")
 
-type HeaderCSV = Text
-type LineCSV = Text
+parseStatsLog :: MonadIO m => FilePath -> m (Header, Vector.Vector NamedRecord)
+parseStatsLog logsDir = parseCsvFile (logsDir </> "stats.log")
 
-parseStatsLog :: MonadIO m => FilePath -> m (HeaderCSV, [LineCSV])
-parseStatsLog logsDir = do
-  let file = logsDir </> "stats.log"
-  content <- liftIO $ Text.readFile (encodeString file)
-  let lines@(header : _) = Text.lines content
-  return (header, go (next lines) [])
+parseTimeLog :: MonadIO m => FilePath -> m (Header, Vector.Vector NamedRecord)
+parseTimeLog logsDir = parseCsvFile (logsDir </> "time.log")
+
+parseCsvFile :: MonadIO m => FilePath -> m (Header, Vector.Vector NamedRecord)
+parseCsvFile = liftIO . parseCsvFile'
+
+parseCsvFile' :: FilePath -> IO (Header, Vector.Vector NamedRecord)
+parseCsvFile' fp = do
+  bs <- BS.readFile (encodeString fp)
+  case Atto.parseOnly (Csv.csvWithHeader Csv.defaultDecodeOptions) bs of
+    Left err -> throwIO (mkUserError err)
+    Right a -> return a
+
+writeCsv :: MonadIO m => FilePath -> Scenario -> (Header, Vector.Vector NamedRecord) -> m ()
+writeCsv fp scenario (newHeader, newRecords) = do
+  previousRecords <- liftIO previousContent
+  let header = Vector.cons "scenario" newHeader
+      scenarioBS = Text.encodeUtf8 (scenarioToFilename scenario)
+      newRecords' = HashMap.insert "scenario" scenarioBS <$> newRecords
+      records = previousRecords <> newRecords'
+      lbs = Csv.encodeByName header (Vector.toList records)
+  liftIO $ LBS.writeFile (encodeString fp) lbs
   where
-    next = splitAt 2
-    -- Be careful, the csv contains newlines
-    go :: ([Text], [Text]) -> [Text] -> [Text]
-    go ([header, line], rem) lines = go (next rem) (line : rem)
-    go (_, _) lines = reverse lines
-
-parseTimeLog :: MonadIO m => FilePath -> m (HeaderCSV, [LineCSV])
-parseTimeLog logsDir = do
-  let file = logsDir </> "time.log"
-  content <- liftIO $ Text.readFile (encodeString file)
-  let (header : line : _) = Text.lines content
-  return (header, [line])
-
-writeCSV :: MonadIO m => FilePath -> Scenario -> (HeaderCSV, [LineCSV]) -> m ()
-writeCSV file scenario (header, lines) = do
-  exists <- testfile file
-  when (not exists) $ do
-    let header' = "scenario," <> header <> "\n"
-    liftIO $ Text.writeFile (encodeString file) header'
-  let newLines = fmap ((scenarioToFilename scenario <> ",") <>) lines
-  liftIO $ Text.appendFile (encodeString file) (Text.unlines newLines)
+    previousContent :: IO (Vector.Vector NamedRecord)
+    previousContent = do
+      r <- try (parseCsvFile' fp)
+      case r of
+        Left (_ :: IOException) -> return Vector.empty
+        Right (_, records) -> return records
 
 -----------------------------------------
 -- Command-line parsing
@@ -275,7 +294,7 @@ data ArgsOpts = ArgsOpts
   }
   deriving stock (Show)
 
-modeParser :: Parser Mode
+modeParser :: Turtle.Parser Mode
 modeParser = subcommandAll <|> subcommandOnly
   where
     subcommandAll :: Parser Mode
@@ -284,13 +303,13 @@ modeParser = subcommandAll <|> subcommandOnly
     subcommandOnly :: Parser Mode
     subcommandOnly = Turtle.subcommand "only" "Run only the given benchmark" (Only <$> optInteger "benchmark" 'b' "Benchmark number")
 
-projectParser :: Parser Project
+projectParser :: Turtle.Parser Project
 projectParser = optRead "project" 'p' "Available: core and core2"
 
-cleanParser :: Parser Bool
+cleanParser :: Turtle.Parser Bool
 cleanParser = switch "clean" 'c' "Clean run" <|> pure False
 
-outputParser :: Parser FilePath
+outputParser :: Turtle.Parser FilePath
 outputParser = optPath "output" 'o' "Output folder" <|> pure "./output"
 
 -- | Command-line parsing with description and help.
@@ -326,6 +345,11 @@ countTotal = getProduct . foldMap (Product . length)
 fori_ :: Applicative f => [a] -> ((a, Int) -> f b) -> f ()
 fori_ xs = for_ (zip xs [0 ..])
 
+deleteDirIfExists :: MonadIO m => FilePath -> m ()
+deleteDirIfExists dir = do
+  b <- testdir dir
+  when b $ rmtree dir
+
 createDirIfNotExists :: MonadIO m => FilePath -> m ()
 createDirIfNotExists fp = do
   dirExists <- testdir fp
@@ -351,6 +375,7 @@ runBenchmarks :: FilePath -> ArgsOpts -> IO NominalDiffTime
 runBenchmarks rootDir args@ArgsOpts {isClean, project, outputDir, ..} = do
   when isClean $
     runMake "benchmarks"
+  deleteDirIfExists outputDir
   benchmarks <- getBenchDir args rootDir
   let strategies = strategiesDict Map.! project
   (_, elapsedTime) <- time $

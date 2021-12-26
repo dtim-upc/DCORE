@@ -1,6 +1,12 @@
 package dcer.common
 
+/*
+It would have been better to log using
+ */
 object CSV {
+  def header2Csv(header: List[String]): String =
+    header.mkString(",")
+
   def toCSV(
       header: Option[List[String]],
       values: List[List[Any]]
@@ -8,7 +14,7 @@ object CSV {
     val builder = new StringBuilder()
 
     header.foreach { header =>
-      builder ++= header.mkString(",")
+      builder ++= header2Csv(header)
       builder += '\n'
     }
 

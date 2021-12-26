@@ -135,19 +135,12 @@ object Engine {
 
   private def logStats(logger: Logger, process: Int): Unit = {
     val toMs: Long => Double = x => x.toDouble / 1.0e6d
-    val header = List(
-      "process",
-      "update_time_ms",
-      "enumeration_time_ms",
-      "complex_events",
-      "garbage_collections"
-    )
     val updateTime = toMs(Profiler.getExecutionTime)
     val enumerationTime = toMs(Profiler.getEnumerationTime)
     val complexEvents = Profiler.getNumberOfMatches
     val garbageCollections = Profiler.getCleanUps
     val csv = CSV.toCSV(
-      header = Some(header),
+      header = None,
       values = List(
         List[Any](
           process,
