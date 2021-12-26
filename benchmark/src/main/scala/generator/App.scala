@@ -15,7 +15,7 @@ object App
       header = "Benchmark generator for Distributed CER.",
       main = {
         Opts {
-          val allBenchmarks = List(Benchmark0, Benchmark1)
+          val allBenchmarks = List(Benchmark0, Benchmark1, Benchmark2)
 
           allBenchmarks.foreach { benchmark =>
             Generator.generate(benchmark)
@@ -290,6 +290,72 @@ object Benchmark1 extends Benchmark {
       }
       (1 to n).foreach { i =>
         streamFile << s"A(id=$i)"
+        streamFile << s"B(id=$i)"
+      }
+      streamFile << "C(id=1)"
+    }
+
+    queryDir
+  }
+}
+
+object Benchmark2 extends Benchmark {
+  override val id: Int = 2
+  override val iterations: Int = 4
+
+  override def generateQuery(
+      rootDir: File
+  )(iteration: Int, project: Project): File = {
+    val queryDir =
+      (rootDir / project.path / s"query$iteration").createDirectories()
+
+    val querySubDir = (queryDir / "query").createDirectory()
+    val queryFile = (querySubDir / "queries").createFile()
+    val descriptionFile = (querySubDir / "StreamDescription.txt").createFile()
+
+    val streamDir = (queryDir / "stream").createDirectory()
+    val streamFile = (streamDir / "stream").createFile()
+
+    (queryDir / "query_test.data")
+      .createFile()
+      .writeText(s"""|FILE:${descriptionFile}
+                     |FILE:${queryFile}
+                     |""".stripMargin)
+
+    (queryDir / "stream_test.data")
+      .createFile()
+      .writeText(s"S:FILE:${streamFile}")
+
+    descriptionFile
+      .writeText("""DECLARE EVENT A(id int)
+                   |DECLARE EVENT B(id int)
+                   |DECLARE EVENT C(id int)
+                   |DECLARE STREAM S(A, B, C)
+                   |""".stripMargin)
+
+    queryFile
+      .writeText(s"""SELECT *
+                    |FROM S
+                    |WHERE (A as a1; B as b1 ; C as c1)
+                    |${project match {
+        case Core  => ""
+        case Core2 => "WITHIN 100000000 EVENTS"
+      }}
+                    |""".stripMargin)
+
+    // Stream file with events
+    {
+      val n = iteration match {
+        case 1  => 10
+        case 2  => 15
+        case 3  => 20
+        case 4  => 25
+        case it => throw new RuntimeException(s"Iteration $it not implemented")
+      }
+      (1 to n).foreach { i =>
+        streamFile << s"A(id=$i)"
+      }
+      (1 to n).foreach { i =>
         streamFile << s"B(id=$i)"
       }
       streamFile << "C(id=1)"
