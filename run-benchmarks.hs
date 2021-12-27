@@ -176,7 +176,8 @@ data Scenario = Scenario
     sQuery :: Query,
     sWorkers :: Workers,
     sComplexity :: Complexity,
-    sStrategy :: Strategy
+    sStrategy :: Strategy,
+    sIteration :: Int
   }
   deriving stock (Show, Eq)
 
@@ -196,13 +197,14 @@ scenarioToFilename :: Scenario -> Text
 scenarioToFilename Scenario {..} =
   coerce $
     format
-      (s % "_" % s % "_" % s % "_" % s % "_" % s % "_" % s)
+      (s % "_" % s % "_" % s % "_" % s % "_" % s % "_" % s % "_" % d)
       (project2Text sProject)
       (fpToText $ benchmarkDir sBenchmark)
       (coerce sQuery)
       (coerce sWorkers)
       (coerce sComplexity)
       (coerce sStrategy)
+      sIteration
 
 -----------------------------------------
 
@@ -290,7 +292,8 @@ data ArgsOpts = ArgsOpts
   { mode :: Mode,
     project :: Project,
     isClean :: Bool,
-    outputDir :: FilePath
+    outputDir :: FilePath,
+    iterations :: Int
   }
   deriving stock (Show)
 
@@ -312,6 +315,9 @@ cleanParser = switch "clean" 'c' "Clean run" <|> pure False
 outputParser :: Turtle.Parser FilePath
 outputParser = optPath "output" 'o' "Output folder" <|> pure "./output"
 
+iterationsParser :: Turtle.Parser Int
+iterationsParser = optInt "iterations" 'i' "Iterations per scenario" <|> pure 1
+
 -- | Command-line parsing with description and help.
 parseArgs :: MonadIO m => m ArgsOpts
 parseArgs = Turtle.options "Benchmarks Script" parser
@@ -322,6 +328,7 @@ parseArgs = Turtle.options "Benchmarks Script" parser
         <*> projectParser
         <*> cleanParser
         <*> outputParser
+        <*> iterationsParser
 
 -------------------------------------------
 -- Utils
@@ -372,7 +379,7 @@ main = do
       echo $ "Benchmarks failed: " <> unsafeTextToLine (repr e)
 
 runBenchmarks :: FilePath -> ArgsOpts -> IO NominalDiffTime
-runBenchmarks rootDir args@ArgsOpts {isClean, project, outputDir, ..} = do
+runBenchmarks rootDir args@ArgsOpts {isClean, project, outputDir, iterations, ..} = do
   when isClean $
     runMake "benchmarks"
   deleteDirIfExists outputDir
@@ -381,20 +388,22 @@ runBenchmarks rootDir args@ArgsOpts {isClean, project, outputDir, ..} = do
   (_, elapsedTime) <- time $
     fori_ benchmarks $ \(benchmark, i) -> do
       queries <- getQueries (rootDir </> benchmarkDir benchmark </> fromText (project2Text project))
-      let total = countTotal [toAny benchmarks, toAny queries, toAny workerss, toAny complexities, toAny strategies]
+      let total = countTotal [toAny benchmarks, toAny queries, toAny workerss, toAny complexities, toAny strategies, toAny [1..iterations]]
       fori_ queries $ \(query, j) ->
         fori_ workerss $ \(workers, k) -> do
           fori_ complexities $ \(complexity, l) -> do
             fori_ strategies $ \(strategy, m) -> do
-              let scenario = Scenario project benchmark query workers complexity strategy
-                  current =
-                    i * (length queries * length workerss * length complexities * length strategies)
-                      + j * (length workerss * length complexities * length strategies)
-                      + k * (length complexities * length strategies)
-                      + l * length strategies
-                      + m
-                      + 1
-              printf (s % " (" % d % "/" % d % ")\n") (scenarioToFilename scenario) current total
-              runScenario scenario
-              saveOutput (rootDir </> "target") outputDir scenario
+              fori_ [1..iterations] $ \(iteration, n) -> do
+                let scenario = Scenario project benchmark query workers complexity strategy iteration
+                    current =
+                      i * (length queries * length workerss * length complexities * length strategies * iterations)
+                        + j * (length workerss * length complexities * length strategies * iterations)
+                        + k * (length complexities * length strategies * iterations)
+                        + l * (length strategies * iterations)
+                        + m * iterations
+                        + n
+                        + 1
+                printf (s % " (" % d % "/" % d % ")\n") (scenarioToFilename scenario) current total
+                runScenario scenario
+                saveOutput (rootDir </> "target") outputDir scenario
   return elapsedTime
