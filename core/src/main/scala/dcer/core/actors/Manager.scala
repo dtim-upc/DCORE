@@ -4,6 +4,7 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import cats.implicits._
+import dcer.common.CSV
 import dcer.common.data.{
   ActorAddress,
   Callback,
@@ -170,14 +171,21 @@ object Manager {
             val timeElapsedSinceStart = timer.elapsedTime()
             ctx.log.info(
               TimeFilter.marker,
-              s"All events processed in ${timeElapsedSinceStart.toMillis} milliseconds"
+              CSV.toCSV(
+                header = Some(List("total_execution_time_ms")),
+                values = List(List(timeElapsedSinceStart.toMillis))
+              )
             )
             ctx.log.info(
               StatsFilter.marker,
-              s"""Matches by worker: ${stats.value.values.toList}
-                |Coefficient of variation (CV): ${stats
-                .coefficientOfVariation()}
-                |""".stripMargin
+              CSV.toCSV(
+                header =
+                  Some(List("worker", "matches", "coefficient_variation")),
+                values = stats.value.values.toList.zipWithIndex.map {
+                  case (matches, worker) =>
+                    List[Any](worker, matches, stats.coefficientOfVariation())
+                }
+              )
             )
             ctx.log.info("EngineManager stopped")
             callback match {

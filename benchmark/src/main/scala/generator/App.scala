@@ -15,7 +15,7 @@ object App
       header = "Benchmark generator for Distributed CER.",
       main = {
         Opts {
-          val allBenchmarks = List(Benchmark0, Benchmark1)
+          val allBenchmarks = List(Benchmark0, Benchmark1, Benchmark2)
 
           allBenchmarks.foreach { benchmark =>
             Generator.generate(benchmark)
@@ -162,7 +162,70 @@ trait Benchmark {
 
 object Benchmark0 extends Benchmark {
   override val id: Int = 0
-  override val iterations: Int = 3
+  override val iterations: Int = 1
+
+  override def generateQuery(
+      rootDir: File
+  )(iteration: Int, project: Project): File = {
+    val queryDir =
+      (rootDir / project.path / s"query$iteration").createDirectories()
+
+    val querySubDir = (queryDir / "query").createDirectory()
+    val queryFile = (querySubDir / "queries").createFile()
+    val descriptionFile = (querySubDir / "StreamDescription.txt").createFile()
+
+    val streamDir = (queryDir / "stream").createDirectory()
+    val streamFile = (streamDir / "stream").createFile()
+
+    (queryDir / "query_test.data")
+      .createFile()
+      .writeText(s"""|FILE:${descriptionFile}
+                     |FILE:${queryFile}
+                     |""".stripMargin)
+
+    (queryDir / "stream_test.data")
+      .createFile()
+      .writeText(s"S:FILE:${streamFile}")
+
+    descriptionFile
+      .writeText("""DECLARE EVENT A(id int)
+                   |DECLARE EVENT B(id int)
+                   |DECLARE EVENT C(id int)
+                   |DECLARE STREAM S(A, B, C)
+                   |""".stripMargin)
+
+    queryFile
+      .writeText(s"""SELECT *
+                    |FROM S
+                    |WHERE (A as a1; B as b1 ; C as c1)
+                    |${project match {
+        case Core  => ""
+        case Core2 => "WITHIN 100000000 EVENTS"
+      }}
+                    |""".stripMargin)
+
+    // Stream file with events
+    {
+      val n = iteration match {
+        case 1  => 1500
+        case it => throw new RuntimeException(s"Iteration $it not implemented")
+      }
+      (1 to n).foreach { i =>
+        streamFile << s"A(id=$i)"
+      }
+      (1 to n).foreach { i =>
+        streamFile << s"B(id=$i)"
+      }
+      streamFile << "C(id=1)"
+    }
+
+    queryDir
+  }
+}
+
+object Benchmark1 extends Benchmark {
+  override val id: Int = 1
+  override val iterations: Int = 1
 
   override def generateQuery(
       rootDir: File
@@ -195,25 +258,23 @@ object Benchmark0 extends Benchmark {
 
     queryFile
       .writeText(s"""SELECT *
-                   |FROM S
-                   |WHERE (T as t1 ; H + as hs ; H as h1)
-                   |FILTER
-                   |    (t1[temp < 0] AND
-                   |     hs[hum < 60] AND
-                   |     h1[hum > 60])
-                   |${project match {
+                    |FROM S
+                    |WHERE (T as t1 ; H + as hs ; H as h1)
+                    |FILTER
+                    |    (t1[temp < 0] AND
+                    |     hs[hum < 60] AND
+                    |     h1[hum > 60])
+                    |${project match {
         case Core  => ""
         case Core2 => "WITHIN 100000000 EVENTS"
       }}
-                   |""".stripMargin)
+                    |""".stripMargin)
 
     // Stream file with events
     {
       streamFile << "T(temp=-2, city=barcelona)"
       val n = iteration match {
-        case 1  => 3
-        case 2  => 5
-        case 3  => 7
+        case 1  => 30
         case it => throw new RuntimeException(s"Iteration $it not implemented")
       }
       val r = scala.util.Random
@@ -228,9 +289,9 @@ object Benchmark0 extends Benchmark {
   }
 }
 
-object Benchmark1 extends Benchmark {
-  override val id: Int = 1
-  override val iterations: Int = 11
+object Benchmark2 extends Benchmark {
+  override val id: Int = 2
+  override val iterations: Int = 1
 
   override def generateQuery(
       rootDir: File
@@ -275,17 +336,7 @@ object Benchmark1 extends Benchmark {
     // Stream file with events
     {
       val n = iteration match {
-        case 1  => 10
-        case 2  => 11
-        case 3  => 12
-        case 4  => 13
-        case 5  => 14
-        case 6  => 15
-        case 7  => 16
-        case 8  => 17
-        case 9  => 18
-        case 10 => 19
-        case 11 => 20
+        case 1  => 17
         case it => throw new RuntimeException(s"Iteration $it not implemented")
       }
       (1 to n).foreach { i =>

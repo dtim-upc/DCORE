@@ -1,5 +1,5 @@
 #!/usr/bin/env stack
--- stack --resolver lts-18.13 script --package turtle --package foldl --package text --package containers
+-- stack --resolver lts-18.13 script --package turtle --package foldl --package bytestring --package text --package containers --package cassava --package vector --package attoparsec --package unordered-containers
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -9,6 +9,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE LambdaCase #-}
 
 -----------------------------------------
 
@@ -16,15 +17,28 @@ import Control.Exception
 import qualified Control.Foldl as Fold
 import qualified Data.Char as Char
 import Data.Coerce
-import Data.Foldable (for_)
+import Data.Foldable (for_, traverse_)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (mapMaybe)
 import Data.Semigroup (Product (..))
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
+import qualified Data.Text.Encoding as Text
 import Turtle
 import Prelude hiding (FilePath)
+import Data.Csv (Header, NamedRecord)
+import qualified Data.Csv as Csv
+import qualified Data.Csv.Parser as Csv
+import qualified Data.Vector as Vector
+import qualified Data.Attoparsec.ByteString as Atto
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as LBS
+import Control.Foldl (Vector)
+import GHC.Base (assert)
+import GHC.IO (mkUserError)
+import Control.Exception (throwIO)
+import qualified Data.HashMap.Strict as HashMap
 
 -----------------------------------------
 
@@ -58,7 +72,7 @@ cubic = "cubic"
 
 complexities :: [Complexity]
 --complexities = [none, linear, quadratic, cubic]
-complexities = [linear]
+complexities = [none]
 
 -----------------------------------------
 
@@ -91,7 +105,8 @@ strategiesDict =
   Map.fromList
     -- [ (Core, [sequential, roundRobin, roundRobinWeighted, powerOfTwoChoices, maximalMatchesEnumeration, maximalMatchesDisjointEnumeration]),
     [ (Core, [roundRobin]),
-      (Core2, [sequential, distributed])
+      -- (Core2, [sequential, distributed])
+      (Core2, [distributed])
     ]
 
 -----------------------------------------
@@ -100,8 +115,8 @@ newtype Workers = Workers {unWorkers :: Text}
   deriving newtype (Show, Eq, Read, IsString)
 
 workerss :: [Workers]
--- workerss = ["workers2", "workers4", "workers8"]
-workerss = ["workers4"]
+-- workerss = (Workers . ("workers" <>)) . Text.pack . show <$> [1,2,4,6,8]
+workerss = (Workers . ("workers" <>)) . Text.pack . show <$> [10]
 
 -----------------------------------------
 
@@ -161,7 +176,8 @@ data Scenario = Scenario
     sQuery :: Query,
     sWorkers :: Workers,
     sComplexity :: Complexity,
-    sStrategy :: Strategy
+    sStrategy :: Strategy,
+    sIteration :: Int
   }
   deriving stock (Show, Eq)
 
@@ -181,13 +197,14 @@ scenarioToFilename :: Scenario -> Text
 scenarioToFilename Scenario {..} =
   coerce $
     format
-      (s % "_" % s % "_" % s % "_" % s % "_" % s % "_" % s)
+      (s % "_" % s % "_" % s % "_" % s % "_" % s % "_" % s % "_" % d)
       (project2Text sProject)
       (fpToText $ benchmarkDir sBenchmark)
       (coerce sQuery)
       (coerce sWorkers)
       (coerce sComplexity)
       (coerce sStrategy)
+      sIteration
 
 -----------------------------------------
 
@@ -216,20 +233,47 @@ runMake subCmd = do
   shells cmd empty
 
 saveOutput :: MonadIO m => FilePath -> FilePath -> Scenario -> m ()
-saveOutput rootDir outputDir scenario = do
+saveOutput logsDir outputDir scenario = do
   createDirIfNotExists outputDir
   printf ("Saving output to " % fp % "/ ... \n") outputDir
+  parseStatsLog logsDir >>= writeCsv (outputDir </> "stats.csv") scenario
+  parseTimeLog logsDir >>= writeCsv (outputDir </> "time.csv") scenario
+  rm (logsDir </> "matches.log")
+  rm (logsDir </> "stats.log")
+  rm (logsDir </> "time.log")
 
-  let targetDir = rootDir </> "target"
+parseStatsLog :: MonadIO m => FilePath -> m (Header, Vector.Vector NamedRecord)
+parseStatsLog logsDir = parseCsvFile (logsDir </> "stats.log")
 
-      statsInFilePath = targetDir </> "stats.log"
-      timeInFilePath = targetDir </> "time.log"
+parseTimeLog :: MonadIO m => FilePath -> m (Header, Vector.Vector NamedRecord)
+parseTimeLog logsDir = parseCsvFile (logsDir </> "time.log")
 
-      statsOutFilePath = outputDir </> fromText (scenarioToFilename scenario <> "_stats.log")
-      timeOutFilePath = outputDir </> fromText (scenarioToFilename scenario <> "_time.log")
+parseCsvFile :: MonadIO m => FilePath -> m (Header, Vector.Vector NamedRecord)
+parseCsvFile = liftIO . parseCsvFile'
 
-  mv statsInFilePath statsOutFilePath
-  mv timeInFilePath timeOutFilePath
+parseCsvFile' :: FilePath -> IO (Header, Vector.Vector NamedRecord)
+parseCsvFile' fp = do
+  bs <- BS.readFile (encodeString fp)
+  case Atto.parseOnly (Csv.csvWithHeader Csv.defaultDecodeOptions) bs of
+    Left err -> throwIO (mkUserError err)
+    Right a -> return a
+
+writeCsv :: MonadIO m => FilePath -> Scenario -> (Header, Vector.Vector NamedRecord) -> m ()
+writeCsv fp scenario (newHeader, newRecords) = do
+  previousRecords <- liftIO previousContent
+  let header = Vector.cons "scenario" newHeader
+      scenarioBS = Text.encodeUtf8 (scenarioToFilename scenario)
+      newRecords' = HashMap.insert "scenario" scenarioBS <$> newRecords
+      records = previousRecords <> newRecords'
+      lbs = Csv.encodeByName header (Vector.toList records)
+  liftIO $ LBS.writeFile (encodeString fp) lbs
+  where
+    previousContent :: IO (Vector.Vector NamedRecord)
+    previousContent = do
+      r <- try (parseCsvFile' fp)
+      case r of
+        Left (_ :: IOException) -> return Vector.empty
+        Right (_, records) -> return records
 
 -----------------------------------------
 -- Command-line parsing
@@ -245,11 +289,12 @@ data ArgsOpts = ArgsOpts
   { mode :: Mode,
     project :: Project,
     isClean :: Bool,
-    outputDir :: FilePath
+    outputDir :: FilePath,
+    iterations :: Int
   }
   deriving stock (Show)
 
-modeParser :: Parser Mode
+modeParser :: Turtle.Parser Mode
 modeParser = subcommandAll <|> subcommandOnly
   where
     subcommandAll :: Parser Mode
@@ -258,14 +303,17 @@ modeParser = subcommandAll <|> subcommandOnly
     subcommandOnly :: Parser Mode
     subcommandOnly = Turtle.subcommand "only" "Run only the given benchmark" (Only <$> optInteger "benchmark" 'b' "Benchmark number")
 
-projectParser :: Parser Project
+projectParser :: Turtle.Parser Project
 projectParser = optRead "project" 'p' "Available: core and core2"
 
-cleanParser :: Parser Bool
+cleanParser :: Turtle.Parser Bool
 cleanParser = switch "clean" 'c' "Clean run" <|> pure False
 
-outputParser :: Parser FilePath
+outputParser :: Turtle.Parser FilePath
 outputParser = optPath "output" 'o' "Output folder" <|> pure "./output"
+
+iterationsParser :: Turtle.Parser Int
+iterationsParser = optInt "iterations" 'i' "Iterations per scenario" <|> pure 1
 
 -- | Command-line parsing with description and help.
 parseArgs :: MonadIO m => m ArgsOpts
@@ -277,6 +325,7 @@ parseArgs = Turtle.options "Benchmarks Script" parser
         <*> projectParser
         <*> cleanParser
         <*> outputParser
+        <*> iterationsParser
 
 -------------------------------------------
 -- Utils
@@ -300,6 +349,11 @@ countTotal = getProduct . foldMap (Product . length)
 fori_ :: Applicative f => [a] -> ((a, Int) -> f b) -> f ()
 fori_ xs = for_ (zip xs [0 ..])
 
+deleteDirIfExists :: MonadIO m => FilePath -> m ()
+deleteDirIfExists dir = do
+  b <- testdir dir
+  when b $ rmtree dir
+
 createDirIfNotExists :: MonadIO m => FilePath -> m ()
 createDirIfNotExists fp = do
   dirExists <- testdir fp
@@ -322,28 +376,31 @@ main = do
       echo $ "Benchmarks failed: " <> unsafeTextToLine (repr e)
 
 runBenchmarks :: FilePath -> ArgsOpts -> IO NominalDiffTime
-runBenchmarks rootDir args@ArgsOpts {isClean, project, outputDir, ..} = do
+runBenchmarks rootDir args@ArgsOpts {isClean, project, outputDir, iterations, ..} = do
   when isClean $
     runMake "benchmarks"
+  deleteDirIfExists outputDir
   benchmarks <- getBenchDir args rootDir
   let strategies = strategiesDict Map.! project
   (_, elapsedTime) <- time $
     fori_ benchmarks $ \(benchmark, i) -> do
       queries <- getQueries (rootDir </> benchmarkDir benchmark </> fromText (project2Text project))
-      let total = countTotal [toAny benchmarks, toAny queries, toAny workerss, toAny complexities, toAny strategies]
+      let total = countTotal [toAny benchmarks, toAny queries, toAny workerss, toAny complexities, toAny strategies, toAny [1..iterations]]
       fori_ queries $ \(query, j) ->
         fori_ workerss $ \(workers, k) -> do
           fori_ complexities $ \(complexity, l) -> do
             fori_ strategies $ \(strategy, m) -> do
-              let scenario = Scenario project benchmark query workers complexity strategy
-                  current =
-                    i * (length queries * length workerss * length complexities * length strategies)
-                      + j * (length workerss * length complexities * length strategies)
-                      + k * (length complexities * length strategies)
-                      + l * length strategies
-                      + m
-                      + 1
-              printf (s % " (" % d % "/" % d % ")\n") (scenarioToFilename scenario) current total
-              runScenario scenario
-              saveOutput rootDir outputDir scenario
+              fori_ [1..iterations] $ \(iteration, n) -> do
+                let scenario = Scenario project benchmark query workers complexity strategy iteration
+                    current =
+                      i * (length queries * length workerss * length complexities * length strategies * iterations)
+                        + j * (length workerss * length complexities * length strategies * iterations)
+                        + k * (length complexities * length strategies * iterations)
+                        + l * (length strategies * iterations)
+                        + m * iterations
+                        + n
+                        + 1
+                printf (s % " (" % d % "/" % d % ")\n") (scenarioToFilename scenario) current total
+                runScenario scenario
+                saveOutput (rootDir </> "target") outputDir scenario
   return elapsedTime

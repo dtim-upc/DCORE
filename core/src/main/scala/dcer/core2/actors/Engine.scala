@@ -2,6 +2,7 @@ package dcer.core2.actors
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
+import dcer.common.CSV
 import dcer.common.data.{Predicate, QueryPath}
 import dcer.common.logging.{MatchFilter, StatsFilter}
 import dcer.core2.actors.Worker.EngineFinished
@@ -17,25 +18,15 @@ import org.slf4j.Logger
 import java.util.Optional
 import java.util.function.Consumer
 import java.util.logging.Level
-import scala.collection.immutable.Queue
+import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 
-/*
-  Akka cluster expects the nodes to output a heartbeat every n seconds (couldn't find the parameter).
-If you block the actor with a long sequential task, the node will not be able to send the heartbeat
-and it will be considered down and the manager will remove it. This is not so problematic
-in a real architecture since the node will get up eventually and reconnect but for our project it is.
-
-  In the past, we did the enumeration and the application of the second-order predicates at the same place
-but this blocked the actor for too long so we had to split it complicating the logic of this actor.
- */
 object Engine {
 
   sealed trait Command
   final case class Start(process: Int, processes: Int, predicate: Predicate)
       extends Command
   final case class NextEvent(event: Option[Event]) extends Command
-  final case class NewComplexEvent(sizeComplexEvent: Long) extends Command
   final case object PredicateFinished extends Command
 
   type Ref = ActorRef[Engine.Command]
@@ -92,41 +83,10 @@ object Engine {
 
           case None =>
             ctx.log.info("No more events.\nStopping the engine.")
-            printProfiler(ctx.log, process)
+            logStats(ctx.log, process)
             replyTo ! EngineFinished()
             Behaviors.stopped
         }
-
-      // processNewEvent will trigger a NewComplexEvent per match.
-      // Then it will enqueue NextEvent. The NewComplexEvents will be processed first.
-      // And then the NextEvent. This guarantees that no NewComplexEvent is
-      // left to process when NextEvent is None and we exit.
-      case NewComplexEvent(sizeComplexEvent) =>
-        def waiting(
-            queue: Queue[Engine.Command]
-        ): Behaviors.Receive[Command] = {
-          Behaviors.receiveMessage {
-            case PredicateFinished =>
-              queue.foreach { msg => ctx.self ! msg }
-              running(ctx, replyTo, baseEngine, predicate, process)
-            case e: Command =>
-              waiting(queue.enqueue(e))
-          }
-        }
-        Predicate.predicateSimulationDuration(
-          predicate,
-          sizeComplexEvent
-        ) match {
-          case Some(duration) =>
-            ctx.scheduleOnce(
-              duration,
-              ctx.self,
-              PredicateFinished
-            )
-          case None =>
-            ctx.self ! PredicateFinished
-        }
-        waiting(Queue.empty)
 
       case c: Command =>
         ctx.log.error(
@@ -173,16 +133,25 @@ object Engine {
       engine
     }
 
-  private def printProfiler(logger: Logger, process: Int): Unit = {
+  private def logStats(logger: Logger, process: Int): Unit = {
     val toMs: Long => Double = x => x.toDouble / 1.0e6d
-    val pretty =
-      s"""Process $process:
-         |- Execution time: ${toMs(Profiler.getExecutionTime)} ms.
-         |- Enumeration time: ${toMs(Profiler.getEnumerationTime)} ms.
-         |- Complex events: ${Profiler.getNumberOfMatches}.
-         |- CleanUps: ${Profiler.getCleanUps}.
-         |""".stripMargin
-    logger.info(StatsFilter.marker, pretty)
+    val updateTime = toMs(Profiler.getExecutionTime)
+    val enumerationTime = toMs(Profiler.getEnumerationTime)
+    val complexEvents = Profiler.getNumberOfMatches
+    val garbageCollections = Profiler.getCleanUps
+    val csv = CSV.toCSV(
+      header = None,
+      values = List(
+        List[Any](
+          process,
+          updateTime,
+          enumerationTime,
+          complexEvents,
+          garbageCollections
+        )
+      )
+    )
+    logger.info(StatsFilter.marker, csv)
   }
 
   private def processNewEvent(engine: BaseEngine, event: Event): Unit = {
@@ -196,9 +165,18 @@ object Engine {
       ctx: ActorContext[Engine.Command],
       predicate: Predicate
   ): Consumer[CDSComplexEventGrouping[_]] = {
-
-    val applyPredicate: Boolean = predicate != Predicate.None()
-
+    val (applyPredicate, predicateSimulationPerEvent)
+        : (Boolean, FiniteDuration) =
+      predicate match {
+        case Predicate.None() =>
+          (false, null)
+        case Predicate.Linear() =>
+          (true, Predicate.EventProcessingDuration)
+        case Predicate.Quadratic() =>
+          (true, Predicate.EventProcessingDuration * 2)
+        case Predicate.Cubic() =>
+          (true, Predicate.EventProcessingDuration * 3)
+      }
     // Same as MatchCallback.printCallback but with predicates on ComplexEvents.
     def callback(complexEvents: CDSComplexEventGrouping[_]): Unit = {
       ctx.log.info(
@@ -209,23 +187,20 @@ object Engine {
           Profiler.incrementMatches()
           val builder = new StringBuilder("")
           builder ++= "Interval [" + complexEvent.getStart + ", " + complexEvent.getEnd + "]: "
-          var n: Long = 0
+          // Be careful, complex event is mutated after each iteration of the enumeration.
+          // If you want to store the ComplexEvent you need to clone it.
           complexEvent.forEach { event =>
+            // Thread.sleep(0) is way slower than a conditional instruction.
+            if (applyPredicate) {
+              Thread.sleep(predicateSimulationPerEvent.toMillis)
+            }
             builder ++= event.toString
             builder ++= " "
-            n += 1
           }
           ctx.log.info(
             MatchFilter.marker,
             builder.result()
           )
-          // Why not sending the whole ComplexEvent ?
-          // The problem is that the complex event is mutated after each iteration of the enumeration.
-          // It is totally fine to apply the predicate after each iteration since it will not change until the next iteration.
-          // But if you want to store it in memory, you need to clone it (which is not implemented yet).
-          if (applyPredicate) {
-            ctx.self ! NewComplexEvent(sizeComplexEvent = n)
-          }
         }
       }
       ctx.log.info("")

@@ -3,9 +3,10 @@ package dcer.core2.actors
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
+import dcer.common.CSV
 import dcer.common.data.{ActorAddress, Configuration, Timer}
 import dcer.common.serialization.CborSerializable
-import dcer.common.logging.TimeFilter
+import dcer.common.logging.{StatsFilter, TimeFilter}
 import dcer.core2.distribution.Distributor
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -66,6 +67,17 @@ object Manager {
           ctx.log.error(s"No worker has connected to the cluster.")
           Behaviors.stopped
         } else {
+          // We write the header on the manager to avoid duplicated
+          // headers by the workers.
+          val header = List(
+            "process",
+            "update_time_ms",
+            "enumeration_time_ms",
+            "complex_events",
+            "garbage_collections"
+          )
+          ctx.log.info(StatsFilter.marker, CSV.header2Csv(header))
+
           val config = Configuration(ctx)
           val distributor = Distributor.fromConfig(config)(ctx, workers.toArray)
           distributor.distributeWorkload()
@@ -96,9 +108,13 @@ object Manager {
         val newWorkers = workers - worker
         if (newWorkers.isEmpty) {
           val timeElapsedSinceStart = timer.elapsedTime()
+          val csv = CSV.toCSV(
+            header = Some(List("total_execution_time_ms")),
+            values = List(List(timeElapsedSinceStart.toMillis))
+          )
           ctx.log.info(
             TimeFilter.marker,
-            s"All events processed in ${timeElapsedSinceStart.toMillis} milliseconds"
+            csv
           )
           ctx.log.info("All workers have finished. Stopping manager.")
           Behaviors.stopped
