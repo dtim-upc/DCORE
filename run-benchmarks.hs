@@ -236,11 +236,8 @@ saveOutput :: MonadIO m => FilePath -> FilePath -> Scenario -> m ()
 saveOutput logsDir outputDir scenario = do
   createDirIfNotExists outputDir
   printf ("Saving output to " % fp % "/ ... \n") outputDir
-  case sProject scenario of
-    Core -> error "not implemented"
-    Core2 -> do
-      parseTimeLog logsDir >>= writeCsv (outputDir </> "time.csv") scenario
-      parseStatsLog logsDir >>= writeCsv (outputDir </> "stats.csv") scenario
+  parseStatsLog logsDir >>= writeCsv (outputDir </> "stats.csv") scenario
+  parseTimeLog logsDir >>= writeCsv (outputDir </> "time.csv") scenario
   rm (logsDir </> "matches.log")
   rm (logsDir </> "stats.log")
   rm (logsDir </> "time.log")
