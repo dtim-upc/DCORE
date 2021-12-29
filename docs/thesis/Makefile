@@ -1,4 +1,4 @@
-DOC=report
+DOC=thesis
 BIBFILE=bibliography
 PDF=${DOC}.pdf
 BIB=${BIBFILE}.bib
@@ -27,7 +27,7 @@ cleandist: clean cleanpdf cleantikzcache
 clean:
 	rm -f *.eps
 	rm -f *.aux *.log *.out *.bbl *.blg *~ *.bak *.ps
-	rm -f *.brf *.lof *.lot *.toc *.glo *.ist *.fdb_latexmk *.fls
+	rm -f *.brf *.lof *.lot *.toc *.glo *.ist *.fdb_latexmk *.fls *.lol *.loa
 	rm -rf _minted-* .auctex-auto
 	rm -rf *.auxlock *.synctex.gz
 
