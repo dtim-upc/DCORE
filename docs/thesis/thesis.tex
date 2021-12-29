@@ -1,0 +1,57 @@
+\documentclass[thesis]{thesis}
+\input{preamble.tex}
+
+\title{Lorem ipsum dolor sit amet}
+\setthesistype{Master}
+\author{Arnau Abella}
+\degree{%
+  Master in Innovation and Research in Informatics\\
+  Advanced Computing
+}
+\supervisor{%
+  \\
+  Sergi Nadal, Universitat Politècnica de Catalunya\\
+  Stijn Vansummeren, UHasselt – Hasselt University
+}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\rhead{\thepage}
+\pagestyle{fancy}
+\tableofcontents
+\listoffigures
+\listoftables
+\listofalgorithms
+\addcontentsline{toc}{chapter}{List of Algorithm}
+\listoflistings
+\addcontentsline{toc}{chapter}{List of Source Code}
+\mainmatter
+
+\acknowledgements{%
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+}
+
+\abstract{%
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+}
+
+\input{chapters/chapter_1.tex}
+\input{chapters/chapter_2.tex}
+\input{chapters/chapter_3.tex}
+\input{chapters/chapter_4.tex}
+\input{chapters/chapter_5.tex}
+\input{chapters/chapter_6.tex}
+\input{chapters/chapter_7.tex}
+
+\begin{appendices}
+\input{chapters/appendix_A.tex}
+\end{appendices}
+
+\bibliographystyle{unsrtnat}
+\bibliography{bibliography}
+
+\end{document}
