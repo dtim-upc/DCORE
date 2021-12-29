@@ -1,3 +1,11 @@
 \chapter{Lore Ipsum}\label{chapter:}
 
+% The purpose of constructing $\mathcal{E}$ is to be able to enumerate the set of complex events \enumCEA at every $j$. To achieve that, it will be necessary to enumerate, for a certain node $n$ in $\mathcal{E}$, the set \enumNodeDef i.e. all complex events represented by $n$, closed by event $j$ and within time window $\epsilon$.
+
+% The goal of CORE's evaluation algorithm is to enumerate, at every position $j$ in the stream, the set \enumCEA of complex events produced by accepting runs terminating at $j$ that satisfy the time-bound $\epsilon$.
+
+% \{ ([i, j], D) | (i, D) \in {\llbracket \text{n} \rrbracket}_{\mathcal{E}} \ \land \ j - i \leq \epsilon \}
+
+We want to show that our algorithm: (1) it enumerates the set \enumNode, and (2) it does so in a distributed way, where each process enumerates only $\frac{|{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)|}{|\mathcal{P}|}$ complex events, and (3) with output-linear delay after enumerating the first complex event on each process.
+
 \section{Chapter summary}
