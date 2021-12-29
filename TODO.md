@@ -2,10 +2,6 @@
 
 ## Project
 
-- [ ] Prepare benchmarks for UPC cluster
-  - [ ] Prepare new script
-  - [ ] Run experiments
-  - [ ] Update Excel
 - [ ] Stijn
     - Define an enumeration algorithm on complex events
     - Define a distributed enumeration algorithm
