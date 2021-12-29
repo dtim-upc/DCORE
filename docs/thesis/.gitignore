@@ -3,7 +3,6 @@
 *.aux
 *.bbl
 *.blg
-report.pdf
 *.glo
 *.ist
 *.lof
@@ -13,4 +12,6 @@ _minted-*
 *synctex.gz
 *.auxlock
 *.loa
+*.lol
 *.lot
+thesis.pdf
