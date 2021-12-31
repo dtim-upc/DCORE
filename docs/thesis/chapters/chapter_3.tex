@@ -13,3 +13,8 @@ In order to speed up the matching process, it is common to restrict the set of r
 
 
 A \textbf{distributed program} is composed of an ordered-set of $n$ asynchronous processes $\mathcal{P} = \{ p_{1}, p_{2}, \ldots, p_{i}, \ldots, p_{n}\}$. For a process $p_{i}$, define its \emph{index}, denoted index($p_{i}$), as index($p_{i}$) = $i \in \mathcal{N}$. The processes do not share a global memory and communicate solely by passing messages. Process execution and message transfer are asynchronous. Without loss of generality, we assume that each process is running on a different processor. Let $C_{ij}$ denote the channel from process $p_{i}$ to process $p_{j}$ and let $m_{ij}$ denote a message sent by $p_{i}$ to $p_{j}$. The message transmission delay is finite and unpredictable.
+
+
+
+% Add this line when introducing the nodes.
+We denote the sets of bottom, output and union nodes by $N_{B}$, $N_{O}$ and $N_{U}$, respectively.

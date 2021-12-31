@@ -1,31 +1,5 @@
 \chapter{Lore Ipsum}\label{chapter:}
 
-\begin{definition}\label{definition:paths}
-Recall that $\mathcal{E}$ encodes the \acrshort{dag} $G_{\mathcal{E}} = (N, E)$ where $N$ are the vertices, and $E$ the edges that go from any union node $u$ to left($u$) and right($u$), and from any output node $o$ to next($o$). Let ${paths}_{\ge \tau}(n)$ be all paths of $G_{\mathcal{E}}$ that start at $n$ and end at some bottom node $b$ with $pos(b) \ge \tau$.
-\end{definition}
-
-\begin{theorem}\label{theorem:bijection_paths}
-There exists a bijection between ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ and $paths_{\ge j - \epsilon}(n)$.
-\end{theorem}
-
-\begin{proof}
-For every complex event within a time window of size $\epsilon$ there exists exactly one path, since $n$ is duplicate-free, that reaches a bottom node $b$ with $pos(b) \ge j - \epsilon$.
-
-$\ldots$
-\end{proof}
-
-
-\begin{theorem}\label{theorem:enumeration}
-Let $\mathcal{E}$ be a time-ordered \acrshort{tecs}, $n$ a duplicate-free node of $\mathcal{E}$, $\epsilon$ a time-window, $\mathcal{P}$ the set of all processes. Let $C_{p}$ be the set of complex events enumerated by \aref{algo:enumeration} on $p \in \mathcal{P}$. Then, the size of $C_{p}$ is $\Theta(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)}{|\mathcal{P}|})$ and $\bigcup\limits_{p \in \mathcal{P}} C_{p}$ corresponds to the enumeration of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ without duplicates.
-\end{theorem}
-
-\begin{proof}
-% 1. Show that $p$ traverses the paths \pi_s \pi_{s+a} where a = paths_\tau(n)/|P| and enumerates $C_{p}$ of size O(.../..).
-% Here you need to use Theorem \ref{theorem:bijection_paths}
-
-% 2. Show that $p_{0}$ outputs {pi_0, ..., pi_{paths_\tau(n)/|P| - 1}}, $p_{1}$ outputs ... and finally p_{|P|-1} outputs {pi_0, ..., pi_{paths_\tau(n)/|P| - 1} }. Then, the union of all the outputs {\pi_0, ..., \pi_m} = P that corresponds to the enumeration of ${paths}_{\tau}$ and by theorem \theorem{bijection} corresponds to the enumeration of [n].
-\end{proof}
-
 
 
 

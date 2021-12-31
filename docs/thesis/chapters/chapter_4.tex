@@ -205,26 +205,27 @@ We defined three operations on \tecs: new-bottom($i$), extend(m, $j$) and union(
 
 We are ready to description algorithm \acrshort{dte}. An efficient implementation would be execute \cite[Algorithm 1]{core} on a single process e.g. $p_{0}$, and distribute the \acrshort{tecs} \tecs to the rest of the processes $p_{1}, \ldots, p_{n}$, so $p_{0}$ could keep ingesting events at constant time while the rest of processes could be working on the possibly exponential enumeration of \tecs. However, if done in a na\"ive way, distributing the \acrshort{tecs} on each event that triggers a complex event would take time proportional to its size which is at most linear in the length of the stream breaking the constant update time. Hence, the distribution of the tECS has to be done incrementally per input event to preserve the constant time complexity. An algorithm that that incrementally distributes the tECS would need to send to each process all new node added to the tECS at iteration $j$ and additional information on how to add these nodes to the tECS of iteration $j-1$. Furthermore, each process would need to keep an updated hash table, similar to the one used in the evaluation algorithm, in order to apply the incremental changes instructed by the messages from the centralized evaluation process. We argue that this incremental distribution algorithm is \emph{asymptotically equivalent} to executing the update phase from \cite[Algorithm 1]{core} on each process. Both algorithms needs to incrementally update the tECS and the hash table $T$ but the later needs to iterate over all transitions $\Delta$ in the worst-case, however, this takes constant time under data complexity. Consequently, we choose to replicate the update phase of Algorithm 1 on each process and leave for future work a more sophisticated approach.
 
+\newpage
 
-
-
+We provide \aref{algo:enumeration} and show that: (1) it enumerates a subset of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ of size $\Omega(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$, and (2) it does so with output-linear delay after the first complex event. Furthermore, we will show that the union of the enumeration of \aref{algo:enumeration} on each process $p \in \mathcal{P}$ corresponds to ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
 
 \begin{algorithm}[H]
+  \LinesNumbered
   \DontPrintSemicolon
   \SetAlgoNoEnd % don't print end
   \SetAlgoNoLine % no vertical lines
   \SetKwProg{Procedure}{procedure}{}{}
   \SetKwFunction{Enumerate}{\textsc{Enumerate}}
-  \Procedure{\Enumerate{$\mathcal{E}, n, \epsilon, j, p_{i}$}}{
-    $a \leftarrow \lceil \text{paths(n)} \ / \ {|\mathcal{P}|} \rceil$\;
-    $s \leftarrow \text{index}(p_{i}) \cdot a$\;
+  \Procedure{\Enumerate{$\mathcal{E}, n, \epsilon, j, p$}}{
+    $\delta \leftarrow \lceil \text{paths(n)} \ / \ {|\mathcal{P}|} \rceil$\;
+    $\sigma \leftarrow \text{index}(p) \cdot \delta$\;
     st $\leftarrow$ new-stack()\;
     $\tau \leftarrow j - \epsilon $\;
     \If{$\text{max(n)} \ge \tau$}{
-      push(st,($n$, $\emptyset$, $s$, $a$))\;
+      push(st,($n$, $\emptyset$, $\sigma$, $\delta$))\;
     }
-    \While{$(n', P, s', a') \leftarrow$ pop(st)}{
-      \While{true}{
+    \While{$(n', P, \sigma', \delta') \leftarrow$ pop(st)}{\label{line:enumeration:while:1}
+      \While{true}{\label{line:enumeration:while:2}
         \If{$n' \in N_{B}$}{
           output([pos($n'$), $j$], $P$)\;
           \textbf{break}\;
@@ -235,17 +236,17 @@ We are ready to description algorithm \acrshort{dte}. An efficient implementatio
         }
         \ElseIf{$n' \in N_{U}$}{
           \If{$max(right(n')) \ge \tau$}{
-            \eIf{$paths(left(n')) > s'$}{
-              $a'' \leftarrow a' - max(0, paths(left(n')) - s')$\;
+            \eIf{$paths(left(n')) > \sigma'$}{
+              $\delta'' \leftarrow \delta' - max(0, paths(left(n')) - \sigma')$\;
             }{
-              $a'' \leftarrow a'$\;
+              $\delta'' \leftarrow \delta'$\;
             }
-            $s'' \leftarrow max(0, s' - paths(left(n')))$\;
-            \If{$paths(right(n')) > s'' \land a'' > 0$}{
-              push(st, (right($n'$), $P$, $s''$, $a''$))\;
+            $\sigma'' \leftarrow max(0, \sigma' - paths(left(n')))$\;
+            \If{$paths(right(n')) > \sigma'' \land \delta'' > 0$}{
+              push(st, (right($n'$), $P$, $\sigma''$, $\delta''$))\;
             }
           }
-          \eIf{$paths(left(n')) > s'$}{
+          \eIf{$paths(left(n')) > \sigma'$}{\label{line:enumeration:if}
             $n' \leftarrow left(n')$\;
           }{
             \textbf{break}\;
@@ -254,13 +255,105 @@ We are ready to description algorithm \acrshort{dte}. An efficient implementatio
       }
     }
   }
-\caption{Ranged enumeration of $\InDoubleBrackets{\text{n}}^{\epsilon}_{\mathcal{E}}(j)$}
+\caption{Ranged enumeration of $\InDoubleBrackets{\text{n}}^{\epsilon}_{\mathcal{E}}(j).$}
 \label{algo:enumeration}
 \end{algorithm}
 
-We provide Algorithm \ref{algo:enumeration} and show that: (1) it enumerates the set \enumNode, (2) it does so with output-linear delay, and (3) it statically distributes the workload among the $n$ processes. In the following sections, we denote the sets of bottom, output and union nodes by $N_{B}$, $N_{O}$ and $N_{U}$, respectively.
+\aref{algo:enumeration} uses a stack $st$ with common stack operations: \code{new-stack()} to create an empty stack, \code{push(st, e)} to add an element \code{e} at the top of the stack, and \code{pop(st)} to remove and return the element on the top of the stack. When the stack is empty, we will interpret $e \leftarrow pop(st)$ as \code{false}. We assume that stack operations can be performed in constant time.
 
-% TODO: explain algorithm
+Recall that $\mathcal{E}$ encodes the \acrshort{dag} $G_{\mathcal{E}} = (N, E)$ where $N$ are the vertices, and $E$ the edges that go from any union node $u$ to left($u$) and right($u$), and from any output node $o$ to next($o$). For every node $n' \in N$, let ${paths}_{\ge \tau}(n')$ be all paths of $G_{\mathcal{E}}$ that start at $n'$ and end at some bottom node $b$ with $pos(b) \ge \tau$ and let ${paths}_{\ge \tau, \sigma, \delta}$ be at most $\delta$ paths from ${paths}_{\ge \tau}(n')$ starting after path $\pi_{\sigma}$ i.e. the set of paths $\{ \pi_{\sigma}, \pi_{\sigma+1}, \ldots, \pi_{\sigma+\delta}\}$. Intuitively, for every complex event within a time window of size $\epsilon$ there exists exactly one path (as a consequence of $n$ being duplicate-free) that reaches a bottom node $b$ with $pos(b) \ge j - \epsilon$. Formally,
+
+\begin{theorem}\label{theorem:bijection_paths}
+There exists a bijection between ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ and $paths_{\ge j - \epsilon}(n)$.
+\end{theorem}
+
+\begin{proof}
+$\ldots$
+\end{proof}
+
+\aref{algo:enumeration} receives as an input a \acrshort{tecs}, a node $n$, a time-window $\epsilon$, a position $j$, and a process $p$ and traverses $G_{\mathcal{E}}$ in a DFS way and left-to-right order i.e. for every union node $u$, the paths of $left(u)$ are traversed before the ones of the $right(u)$. First, computes the parameters $\sigma, \delta, \tau$ corresponding to the starting and ending path to enumerate and the time-window threshold, respectively. Each iteration of the \code{while} of line~\ref{line:enumeration:while:1} traverses a new path starting from the point it branches from the previous path, except for the first iteration that starts from node $n$. For this, the stack $st$ is used to store the node and partial complex event of that branching point. Then, the \code{while} of line~\ref{line:enumeration:while:2} traverses through the nodes of the next path, following the left direction whenever a union node is reached and adding the right node to the stack whenever need. The \code{if} of line~\ref{line:enumeration:if} makes sure that only $paths_{\ge j - \epsilon, \sigma, \delta}$ are traversed, otherwise, forcing the next branch with \code{break}. Moreover, by checking for every node $n'$ its value $max(n')$ and $paths(right(n'))$ before adding it to the stack, it makes sure of only going through paths in $paths_{\ge j - \epsilon}(n')$ and $paths_{\ge j - \epsilon, \sigma, \delta}$, respectively.
+
+A simpler recursive algorithm could have been used, however, the constant-delay output might not be guaranteed because the number of backtracking steps after branching might be as long as the longest path of $G_{\mathcal{E}}$. To guarantee constant steps after branching and assure constant-delay output, \aref{algo:enumeration} uses a stack which allows to jump immediately to the next branch. We assume that storing $P$ in the stack takes constant time. We materialize this assumption by modelling $P$ as a linked list of positions, where the list is ordered by the last element added. To update $P$ with position $i$, we only need to create a node $i$ that points to the previous last element of $P$. Then, storing $P$ on the stack is just storing the pointer of the last element added.
+
+
+
+
+
+
+
+% HERE
+First, we prove that \aref{algo:enumeration} enumerates $paths_{\ge \tau, \sigma, \delta}$ with output-linear delay after $\pi_{\sigma}$, provided that $\mathcal{E}$ is $k$-bounded and time-ordered and $n$ is a duplicate-free node.
+
+\begin{lemma}\label{lemma:enumeration:process}
+Fix $k$, $\mathcal{P}$ and $p \in \mathcal{P}$. Let $\mathcal{E}$ be a $k$-bounded and time-ordered \acrshort{tecs}, $n$ a node of $\mathcal{E}$, $\epsilon$ a time-window. Let parameters $\delta, \sigma$ be $\frac{paths_{\ge \tau}(n)}{|\mathcal{P}|}$ and $index(p) \cdot \sigma$, respectively. Then, \aref{algo:enumeration} enumerates $paths_{\ge \tau, \sigma, \delta}$ with output-linear delay after $\pi_{\sigma}$.
+\end{lemma}
+
+\begin{proof}
+Recall that $paths_{\ge \tau, \sigma, \delta}$ corresponds to the subset $\{ \pi_{\sigma}, \pi_{\sigma+1}, \ldots, \pi_{\sigma+\delta}\} \in paths_{\ge \tau}$ of size $\delta$.
+
+\end{proof}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Then, we prove using Lemma~\ref{lemma:enumeration:process} that \aref{algo:enumeration} enumerates a subset of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ of size $\Omega(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$ with output-linear delay after the first complex event, provided that $\mathcal{E}$ is $k$-bounded and time-ordered and $n$ is a duplicate-free node.
+
+\begin{theorem}\label{theorem:enumeration:process}
+Fix $k$, $\mathcal{P}$ and $p \in \mathcal{P}$. Let $\mathcal{E}$ be a $k$-bounded and time-ordered \acrshort{tecs}, $n$ a node of $\mathcal{E}$, $\epsilon$ a time-window. Then, \aref{algo:enumeration} enumerates a subset of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ of size $\Omega(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$ with output-linear delay after the first complex event.
+\end{theorem}
+
+\begin{proof}
+
+\end{proof}
+
+\begin{lemma}\label{lemma:paths_equivalence}
+If $\sigma = 0$ and $\delta = |{paths}_{\ge \tau}(n')|$, then ${paths}_{\ge \tau, \sigma, \delta}(n') = {paths}_{\ge \tau}(n')$.
+\end{lemma}
+
+\begin{proof}
+
+\end{proof}
+
+Let $m = |{paths}_{\ge \tau}(n')| - 1$, $\sigma=0$, and $\delta = |{paths}_{\ge \tau}(n')|$. Then ${paths}_{\ge \tau}(n') = \{\pi_{0}, \pi_{1}, \ldots, \pi_{m}\}$ and by Lemma~\ref{lemma:paths_equivalence} ${paths}_{\ge \tau, \sigma, \delta}(n') = \{\pi_{0}, \pi_{1}, \ldots, \pi_{m}\}$.
+
+Now, we proceed to show that when the enumeration is performed on each process $p \in \mathcal{P}$, the union of the outputs is equivalent to ...
+
+\begin{lemma}
+Let $\mathcal{E}$ be a time-ordered \acrshort{tecs}, $n$ a duplicate-free node of $\mathcal{E}$, $\epsilon$ a time-window, $\mathcal{P}$ the set of all processes. Let $P_{p}$ be the output of \aref{algo:enumeration} on process $p \in \mathcal{P}$. Then, $\bigcup\limits_{p \in \mathcal{P}} P_{p} = paths_{\ge \tau}$.
+\end{lemma}
+
+\begin{proof}
+  We proved by Lemma~\ref{lemma:enumeration:process} that \aref{algo:enumeration} enumerates $paths_{\ge \tau, \sigma, \delta}$ where $\tau$ is fix, and $\sigma and \delta$ are variables that depend on $p$ and $\mathcal{P}$.
+
+  Fix $\delta = \frac{{paths}_{\ge \tau}(n')}{|\mathcal{P}|}$, show that the union of all outputs sets is $\{\pi_{0}, \pi_{1}, \ldots, \pi_{m}\}$. Then, use previous lemmas to show that $\{\pi_{0}, \pi_{1}, \ldots, \pi_{m}\} = {paths}_{\ge \tau, \sigma=0, \delta=|{paths}_{\ge \tau}(n')|}(n')$ and ${paths}_{\ge \tau, \sigma=0, \delta=|{paths}_{\ge \tau}(n')|}(n') = {paths}_{\ge \tau}(n')$.
+\end{proof}
+
+
+Connect with the final theorem...
+
+\begin{theorem}\label{theorem:enumeration}
+Let $\mathcal{E}$ be a time-ordered \acrshort{tecs}, $n$ a duplicate-free node of $\mathcal{E}$, $\epsilon$ a time-window, $\mathcal{P}$ the set of all processes. Let $C_{p}$ be the output of \aref{algo:enumeration} on process $p \in \mathcal{P}$. Then, $\bigcup\limits_{p \in \mathcal{P}} C_{p} = {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
+\end{theorem}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
 
 % CEA AB+
 \begin{figure}[H]
