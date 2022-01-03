@@ -1,4 +1,48 @@
-\chapter{Proofs of Chapter 4}\label{appendix:A}
+\chapter{Proofs of \cref{chapter:algorithm}}\label{appendix:A}
 
-\section{Proof of Theorem 1}
-\label{appendix:A:sec:1}
+\section{Proof of Theorem~\ref{theorem:bijection}}\label{appendix:A:sec:1}
+
+\begin{theorem}[${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longleftrightarrow paths_{\ge j - \epsilon}(n)$]
+For every complex event within a time window of size $\epsilon$ there exists exactly one path that reaches a bottom node $b$ with $pos(b) \ge j - \epsilon$, and vice versa.
+\end{theorem}
+
+\begin{proof}
+
+\begin{lemma}[${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsfrom paths_{\ge j - \epsilon}(n)$]\label{lemma:bijection:1}
+  For every path that reaches a bottom node $b$ with $pos(b) \ge j - \epsilon$ there exist exactly one complex event in ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ within a time window of size $\epsilon$ that starts at event $pos(b)$ and ends at event $j$.
+\end{lemma}
+
+\begin{proof}
+  Recall that $G_{\mathcal{E}}$ compactly represents $paths_{\ge j - \epsilon}$ through the evaluation \aref{algo:update}. We use induction on the construction of $G_{\mathcal{E}}$ on \aref{algo:update}. We assume that the content of the theorem already holds for every node $n' \in N$ reachable from $n$. By definition, the node $n$ in $G_{\mathcal{E}}$ can be constructed by three possible operations: (1) \code{new-bottom($i$)}, or (2) \code{extend($n,j$)}, or \code{union($n_{1}, n_{2}$)}.
+\begin{itemize}
+  \item Case (1): $n$ is the result of \code{new-bottom($i$)}.
+
+    Then, $n \in N_{B}$ is a bottom node, $\pi := n$ is the path with a single node $n$, $paths_{\ge j - \epsilon}(n) = \{ \pi \}$ contains only the path $\pi$ which corresponds to the empty complex events $([i, i], \emptyset)$.
+
+  \item Case (2): $n$ is the result of \code{extend($n,j$)}.
+
+    Then, $n \in N_{O}$ is an output node, $n' = next(n)$ correspond to the node extended by $n$, $paths_{\ge (j - 1) - \epsilon}(n') = \{ \pi'_{1},\pi'_{2},\ldots, \pi'_{m} \}$ are all paths starting at $n'$ and ending at some bottom node $b$ with $pos(b) \ge j - 1 - \epsilon$. Let $paths_{\ge j - \epsilon}(n) = \{ \pi_{1}, \pi_{2},\ldots, \pi_{m} \}$ be all path starting at $n$ and ending at some bottom node $b$ with $pos(b) \ge j - \epsilon$. For every path $\pi_{1 \le k \le m}$, we show that there is exactly one complex event in ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ corresponding to that path. Notice, $\pi_{k} = n \rightarrow \pi'_{k}$. By induction hypothesis, for every path $\pi'_{k}$ there exist a complex event $([i, j-1], D) \in {\llbracket \text{n'} \rrbracket}^{\epsilon}_{\mathcal{E}}(j-1)$. Hence, $\pi_{k}$ corresponds exactly to the complex event $([i, j], D' \cup \{pos(n)\}) \in {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
+
+  \item Case (3): $n$ is the result of \code{union($n_{1}, n_{2}$)}.
+
+        Then, $n \in N_{U}$ is a union node, $paths_{\ge (j - 1) - \epsilon}(n_{1}) = \{ \pi'_{1},\pi'_{2},\ldots, \pi'_{m} \}$ and $paths_{\ge (j - 1) - \epsilon}(n_{2}) = \{ \pi''_{1},\pi''_{2},\ldots, \pi''_{m} \}$ are all paths starting at $n_{1}$ and $n_{2}$, respectively, and ending at some bottom node $b$ with $pos(b) \ge j - 1 - \epsilon$. Let $paths_{\ge j - \epsilon}(n) = \{ \pi_{1}, \pi_{2},\ldots, \pi_{2m} \}$ be all path starting at $n$ and ending at some bottom node $b$ with $pos(b) \ge j - \epsilon$. For every path $\pi_{1 \le k \le 2m}$, we show that there is exactly one complex event in ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ corresponding to that path. Notice,
+
+        \begin{itemize}
+          \item if $1 \leq k \leq m $, then $\pi_{k} = n \rightarrow \pi'_{k}$. By induction hypothesis, for every path $\pi'_{k}$ there exist a complex event $([i, j-1], D) \in {\llbracket \text{n}_{1} \rrbracket}^{\epsilon}_{\mathcal{E}}(j-1)$. Hence, $\pi_{k}$ corresponds to the complex event $([i, j], D) \in {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$
+
+          \item And, if $m+1 \leq k \leq 2m $, then $\pi_{k} = n \rightarrow \pi''_{k \mod m}$. By induction hypothesis, for every path $\pi''_{k \mod m}$ there exist a complex event $([i', j-1], D') \in {\llbracket \text{n}_{2} \rrbracket}^{\epsilon}_{\mathcal{E}}(j-1)$. Hence, $\pi_{k}$ corresponds to the complex event $([i', j], D') \in {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
+        \end{itemize}
+\end{itemize}
+\end{proof}
+
+\begin{lemma}[${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsto paths_{\ge j - \epsilon}(n)$]\label{lemma:bijection:2}
+  For every complex event within a time window of size $\epsilon$ there exists exactly one path that reaches a bottom node $b$ with $pos(b) \ge j - \epsilon$.
+\end{lemma}
+
+\begin{proof}
+  TODO
+\end{proof}
+
+By Lemma~\ref{lemma:bijection:1}~and~\ref{lemma:bijection:2}, Theorem~\ref{theorem:bijection} immediately holds.
+
+\end{proof}
