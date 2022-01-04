@@ -334,48 +334,33 @@ Now, we can finally prove that \aref{algo:enumeration} enumerates a subset of ${
  The output-linear delay follows from the fact that \aref{algo:enumeration} enumerates with output-linear delay after $\pi_{\sigma}$ i.e. the first complex event.
 \end{proof}
 
-There is only left to prove (3). Lemmas~\ref{lemma:paths_equivalence}~and~\ref{lemma:union_of_paths} are necessary in order to prove Theorem~\ref{theorem:enumeration}.
-
-\begin{lemma}\label{lemma:paths_equivalence}
-  Fix node $n$ in $\mathcal{E}$. If $\sigma = 0$ and $\delta = |{paths}_{\ge \tau}(n)|$, then ${paths}_{\ge \tau, \sigma, \delta}(n) = {paths}_{\ge \tau}(n)$.
-\end{lemma}
-
-\begin{proof}
-  Recall that, for every node $n$ in $\mathcal{E}$, ${paths}_{\ge \tau}(n) = \{ \pi_{0}, \pi_{1}, \ldots, \pi_{m} \}$ and ${paths}_{\ge \tau, \sigma, \delta}(n) \subseteq {paths}_{\ge \tau}(n)$ of size at most $\delta$ starting after path $\pi_{\sigma}$ i.e. $\{ \pi_{\sigma}, \pi_{\sigma+1}, \ldots, \pi_{\sigma+\delta}\}$. We assume that $|{paths}_{\ge \tau}(n)| = m$, $\sigma = 0$ and $\delta = m$. Then, ${paths}_{\ge \tau, 0, m}(n) = \{ \pi_{0}, \pi_{1}, \ldots, \pi_{m}\}$, and, by transitivity, ${paths}_{\ge \tau, 0, m}(n) = {paths}_{\ge \tau}(n)$.
-\end{proof}
-
-
-
-
-
-
-
-
-
-
-
-
-% Redo this part
-Now, we proceed to show that when the enumeration is performed on each process $p \in \mathcal{P}$, the union of the outputs is equivalent to ...
+There is only left to prove (3). We start with Lemma~\ref{lemma:union_of_paths} and finish with Theorem~\ref{theorem:enumeration}.
 
 \begin{lemma}\label{lemma:union_of_paths}
-  Let $\mathcal{E}$ be a time-ordered \acrshort{tecs}, $n$ a duplicate-free node of $\mathcal{E}$, $\epsilon$ a time-window, $\mathcal{P}$ the set of all processes. Let $P_{p}$ be the output of \aref{algo:enumeration} on process $p \in \mathcal{P}$. Then, $\bigcup\limits_{p \in \mathcal{P}} P_{p} = paths_{\ge \tau}$.
+  Let $\mathcal{E}$ be a time-ordered \acrshort{tecs}, $n$ a duplicate-free node of $\mathcal{E}$, $\epsilon$ a time-window, $\mathcal{P}$ the set of all processes. Let $P_{p} = paths_{\ge \tau, \sigma, \delta}(n)$ be the output of \aref{algo:enumeration} on process $p \in \mathcal{P}$. Then, $\bigcup\limits_{p \in \mathcal{P}} P_{p} = paths_{\ge \tau}(n)$.
 \end{lemma}
 
 \begin{proof}
-  Let ${paths}_{\ge \tau}(n') = \{\pi_{0}, \pi_{1}, \ldots, \pi_{l}\}$, $\sigma=0$, and $\delta = l$. Then, by Lemma~\ref{lemma:paths_equivalence} ${paths}_{\ge \tau, \sigma, \delta}(n') = \{\pi_{0}, \pi_{1}, \ldots, \pi_{l}\}$.
+  Fix $\tau$ and $\mathcal{P}$.
 
-  We proved by Lemma~\ref{lemma:enumeration:process} that \aref{algo:enumeration} enumerates $paths_{\ge \tau, \sigma, \delta}$ where $\tau$ is fix, and $\sigma and \delta$ are variables that depend on $p$ and $\mathcal{P}$.
+  Recall that, for every node $n$ in $\mathcal{E}$, ${paths}_{\ge \tau}(n) = \{ \pi_{0}, \pi_{1}, \ldots, \pi_{m} \}$ and ${paths}_{\ge \tau, \sigma, \delta}(n) \subseteq {paths}_{\ge \tau}(n)$ of size at most $\delta$ starting after path $\pi_{\sigma}$ i.e. $\{ \pi_{\sigma}, \pi_{\sigma+1}, \ldots, \pi_{\sigma+\delta}\}$.
+  Let $paths_{\ge \tau}(n) = m$, and $\delta = \frac{m}{|\mathcal{P}|}$, $\sigma = index(p) \cdot \delta$ be constants as in \aref{algo:enumeration}.
+  For every process $p \in \mathcal{P}$, Lemma~\ref{lemma:enumeration:process} states that \aref{algo:enumeration} enumerates $paths_{\ge \tau, \sigma, \delta}$ where $\sigma$ and $\delta$ are variables that depend on $p$ and $P$, respectively.
 
-  Fix $\delta = \frac{{paths}_{\ge \tau}(n')}{|\mathcal{P}|}$, show that the union of all outputs sets is $\{\pi_{0}, \pi_{1}, \ldots, \pi_{m}\}$. Then, use previous lemmas to show that $\{\pi_{0}, \pi_{1}, \ldots, \pi_{m}\} = {paths}_{\ge \tau, \sigma=0, \delta=|{paths}_{\ge \tau}(n')|}(n')$ and ${paths}_{\ge \tau, \sigma=0, \delta=|{paths}_{\ge \tau}(n')|}(n') = {paths}_{\ge \tau}(n')$.
+  Let $P_{0} = paths_{\ge \tau, 0, \delta}(n)$ be the output of process $0$, $P_{1} = paths_{\ge \tau, \delta, 2\cdot\delta}(n)$ be the output of process $1$, \ldots, $P_{|\mathcal{P}| - 1} = paths_{\ge \tau, (|\mathcal{P}| - 1) \cdot \delta, |\mathcal{P}| \cdot \delta}(n)$ be the output of process $|\mathcal{P}| - 1$, i.e. process $0$ enumerates $\{ \pi_{0}, \ldots \pi_{\delta-1} \}$ , process $1$ enumerates $\{\pi_{\delta}, \ldots \pi_{2 \cdot \delta-1}\}$, \ldots, process $|\mathcal{P}| - 1|$ enumerates $\{\pi_{(|\mathcal{P}| - 1) \cdot \delta}, \ldots, \pi_{m}\}$.
+  Then, the union of all the outputs corresponds to the set of paths $\{ \pi_{0}, \ldots, \pi_{m} \}$.
+  And so, $\bigcup\limits_{p \in \mathcal{P}} P_{p} = paths_{\ge \tau}(n)$.
 \end{proof}
-
-
-% TODO connect lemma/theorem
 
 \begin{theorem}\label{theorem:enumeration}
   Let $\mathcal{E}$ be a time-ordered \acrshort{tecs}, $n$ a duplicate-free node of $\mathcal{E}$, $\epsilon$ a time-window, $\mathcal{P}$ the set of all processes. Let $C_{p}$ be the output of \aref{algo:enumeration} on process $p \in \mathcal{P}$. Then, $\bigcup\limits_{p \in \mathcal{P}} C_{p} = {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
 \end{theorem}
+
+\begin{proof}
+  TODO
+\end{proof}
+
+This concludes the proves of (1), (2), and (3).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
