@@ -1,6 +1,20 @@
 \chapter{Lore Ipsum}\label{chapter:algorithm}
 
+% TODO this is old, rewrite.
+In this section, we propose \acrfull{dte}, a novel extension of the evaluation algorithm in \cite{core}. In particular, \acrshort{dte} distributes the potentially exponential workload of \textsc{Enumerate} among $n$ asynchronous processes $p_{1}, \ldots, p_{n}$ while preserving the constant time per input event update of the data structure that compactly represents the set of partial matches and the output-linear delay enumeration of the results.
+
+Before giving the formal description of the algorithm, we need to extend the definition of \acrfull{tecs}, as introduced in \cite{core}. A \acrshort{tecs} is a \acrfull{dag} \tecs with two kinds of nodes; union nodes and non-union nodes. Every union node u has exactly two children, the left child left(u) and the right child right(u). Every non-union node n is labelled by a stream position (an element of $\mathcal{N}$) and has at most one child. If non-union node n has no child it is called a \emph{bottom node}, otherwise it is an \emph{output node}. We write pos(n) for the label of non-union node n and next(o) for the unique child of output node o. For a node n, define its \emph{descending-paths}, denoted paths(n), as follows: if n is a bottom node, then paths(n) = 1; if n is an output node, then paths(n) = paths(next(n)); otherwise, paths(n) = paths(left(n)) + paths(right(n)). The descending-paths can be computed in constant.
+
+A \acrshort{tecs} represents sets of \emph{open} complex events. An \emph{open complex event} is a pair $(i, D)$ where $i \in \mathcal{N}$ and $D$ is a finite subset of $\{i, i+1, \ldots\}$. Intuitively, when processing a stream, the open complex events represented by a tECS are partial results that may later become full complex events. Remember that the purpose of constructing \tecs is to be able to enumerate the set \enumCEA at every $j$. To achieve that goal, it will be necessary to enumerate, for certain nodes n in \tecs, the set $\InDoubleBrackets{\text{n}}^{\epsilon}_{\mathcal{E}}(j) := \{ ([i, j], D) | (i, D) \in \InDoubleBrackets{\text{n}}_{\mathcal{E}} \land j - i \leq \epsilon \}$ i.e. all open complex events represented by n that, when closed with j, are within a time window of size $\epsilon$.
+
+Recall that we imposed three restrictions on the structure of a \acrshort{tecs}: (1) it needs to be \emph{time-ordered}, (2) it needs to be \emph{k-bounded}, and (3) its needs to be \emph{duplicate-free}.
+
+We defined three operations on \tecs: new-bottom($i$), extend(m, $j$) and union($\text{n}_{1},\text{n}_{2}$). The first method, new-bottom($i$) adds a new bottom node b labelled $i$ to \tecs. The second method, extend(n, $j$) adds a new output node o to \tecs with pos(o) = $j$ and next(o) = n. The third method, union($\text{n}_{1},\text{n}_{2}$) returns a node u such that $\InDoubleBrackets{u}_{\mathcal{E}} = \InDoubleBrackets{\text{n}_{1}}_{\mathcal{E}} \cup \InDoubleBrackets{\text{n}_{2}}_{\mathcal{E}}$. Any \acrshort{tecs} that is created using only these three methods is time-ordered and $3$-bounded.
+
 \section{The evaluation algorithm}\label{sec:evaluation}
+
+% TODO this is old, rewrite.
+We are ready to description algorithm \acrshort{dte}. An efficient implementation would be execute \cite[Algorithm 1]{core} on a single process e.g. $p_{0}$, and distribute the \acrshort{tecs} \tecs to the rest of the processes $p_{1}, \ldots, p_{n}$, so $p_{0}$ could keep ingesting events at constant time while the rest of processes could be working on the possibly exponential enumeration of \tecs. However, if done in a na\"ive way, distributing the \acrshort{tecs} on each event that triggers a complex event would take time proportional to its size which is at most linear in the length of the stream breaking the constant update time. Hence, the distribution of the tECS has to be done incrementally per input event to preserve the constant time complexity. An algorithm that that incrementally distributes the tECS would need to send to each process all new node added to the tECS at iteration $j$ and additional information on how to add these nodes to the tECS of iteration $j-1$. Furthermore, each process would need to keep an updated hash table, similar to the one used in the evaluation algorithm, in order to apply the incremental changes instructed by the messages from the centralized evaluation process. We argue that this incremental distribution algorithm is \emph{asymptotically equivalent} to executing the update phase from \cite[Algorithm 1]{core} on each process. Both algorithms needs to incrementally update the tECS and the hash table $T$ but the later needs to iterate over all transitions $\Delta$ in the worst-case, however, this takes constant time under data complexity. Consequently, we choose to replicate the update phase of Algorithm 1 on each process and leave for future work a more sophisticated approach.
 
 \begin{algorithm}[H]
   \setstretch{0.9} % space between lines
@@ -69,26 +83,9 @@
 \label{algo:update}
 \end{algorithm}
 
-\section{Distributed enumeration}\label{sec:distributed_enumeration}
+% I am skipping proving Theorem 3 since it is more work added to the already endless amount of work to do.
 
-In this section, we propose \acrfull{dte}, a novel extension of the evaluation algorithm in \cite{core}. In particular, \acrshort{dte} distributes the potentially exponential workload of \textsc{Enumerate} among $n$ asynchronous processes $p_{1}, \ldots, p_{n}$ while preserving the constant time per input event update of the data structure that compactly represents the set of partial matches and the output-linear delay enumeration of the results.
-
-Before giving the formal description of the algorithm, we need to extend the definition of \acrfull{tecs}, as introduced in \cite{core}. A \acrshort{tecs} is a \acrfull{dag} \tecs with two kinds of nodes; union nodes and non-union nodes. Every union node u has exactly two children, the left child left(u) and the right child right(u). Every non-union node n is labelled by a stream position (an element of $\mathcal{N}$) and has at most one child. If non-union node n has no child it is called a \emph{bottom node}, otherwise it is an \emph{output node}. We write pos(n) for the label of non-union node n and next(o) for the unique child of output node o. For a node n, define its \emph{descending-paths}, denoted paths(n), as follows: if n is a bottom node, then paths(n) = 1; if n is an output node, then paths(n) = paths(next(n)); otherwise, paths(n) = paths(left(n)) + paths(right(n)). The descending-paths can be computed in constant.
-
-A \acrshort{tecs} represents sets of \emph{open} complex events. An \emph{open complex event} is a pair $(i, D)$ where $i \in \mathcal{N}$ and $D$ is a finite subset of $\{i, i+1, \ldots\}$. Intuitively, when processing a stream, the open complex events represented by a tECS are partial results that may later become full complex events. Remember that the purpose of constructing \tecs is to be able to enumerate the set \enumCEA at every $j$. To achieve that goal, it will be necessary to enumerate, for certain nodes n in \tecs, the set $\InDoubleBrackets{\text{n}}^{\epsilon}_{\mathcal{E}}(j) := \{ ([i, j], D) | (i, D) \in \InDoubleBrackets{\text{n}}_{\mathcal{E}} \land j - i \leq \epsilon \}$ i.e. all open complex events represented by n that, when closed with j, are within a time window of size $\epsilon$.
-
-Recall that we imposed three restrictions on the structure of a \acrshort{tecs}: (1) it needs to be \emph{time-ordered}, (2) it needs to be \emph{k-bounded}, and (3) its needs to be \emph{duplicate-free}.
-
-We defined three operations on \tecs: new-bottom($i$), extend(m, $j$) and union($\text{n}_{1},\text{n}_{2}$). The first method, new-bottom($i$) adds a new bottom node b labelled $i$ to \tecs. The second method, extend(n, $j$) adds a new output node o to \tecs with pos(o) = $j$ and next(o) = n. The third method, union($\text{n}_{1},\text{n}_{2}$) returns a node u such that $\InDoubleBrackets{u}_{\mathcal{E}} = \InDoubleBrackets{\text{n}_{1}}_{\mathcal{E}} \cup \InDoubleBrackets{\text{n}_{2}}_{\mathcal{E}}$. Any \acrshort{tecs} that is created using only these three methods is time-ordered and $3$-bounded.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-We are ready to description algorithm \acrshort{dte}. An efficient implementation would be execute \cite[Algorithm 1]{core} on a single process e.g. $p_{0}$, and distribute the \acrshort{tecs} \tecs to the rest of the processes $p_{1}, \ldots, p_{n}$, so $p_{0}$ could keep ingesting events at constant time while the rest of processes could be working on the possibly exponential enumeration of \tecs. However, if done in a na\"ive way, distributing the \acrshort{tecs} on each event that triggers a complex event would take time proportional to its size which is at most linear in the length of the stream breaking the constant update time. Hence, the distribution of the tECS has to be done incrementally per input event to preserve the constant time complexity. An algorithm that that incrementally distributes the tECS would need to send to each process all new node added to the tECS at iteration $j$ and additional information on how to add these nodes to the tECS of iteration $j-1$. Furthermore, each process would need to keep an updated hash table, similar to the one used in the evaluation algorithm, in order to apply the incremental changes instructed by the messages from the centralized evaluation process. We argue that this incremental distribution algorithm is \emph{asymptotically equivalent} to executing the update phase from \cite[Algorithm 1]{core} on each process. Both algorithms needs to incrementally update the tECS and the hash table $T$ but the later needs to iterate over all transitions $\Delta$ in the worst-case, however, this takes constant time under data complexity. Consequently, we choose to replicate the update phase of Algorithm 1 on each process and leave for future work a more sophisticated approach.
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
-
-\newpage
+\section{The enumeration algorithm}\label{sec:enumeration}
 
 We provide \aref{algo:enumeration} and show that: (1) it enumerates a subset of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ of size $\Omega(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$, and (2) it does so with output-linear delay after the first complex event. Furthermore, we will show that the union of the enumeration of \aref{algo:enumeration} on each process $p \in \mathcal{P}$ corresponds to ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
 
@@ -150,7 +147,53 @@ Recall that $\mathcal{E}$ encodes the \acrshort{dag} $G_{\mathcal{E}} = (N, E)$ 
 For every complex event within a time window of size $\epsilon$ there exists exactly one path that reaches a bottom node $b$ with $pos(b) \ge j - \epsilon$, and vice versa.
 \end{theorem}
 
-The proof of Theorem~\ref{theorem:bijection} is technical and the reader may find it in the \mbox{\apref{appendix:A}}.
+\begin{proof}
+  Fix a node $n$ in $\mathcal{E}$. The proof follows by the definition of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$, ${\llbracket \text{n} \rrbracket}_{\mathcal{E}}$, ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}}$, and ${paths}_{\ge \tau}(n)$. Recall that
+
+  \begin{itemize}
+    \item ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) = \{ ([i,j], D) | (i,D) \in {\llbracket \text{n} \rrbracket}_{\mathcal{E}} \land j - i \le \epsilon \}$ encodes all open complex events represented by $n$ in $\mathcal{E}$ that, when closed with j, are within a time window of size $\epsilon$,
+    \item ${\llbracket \text{n} \rrbracket}_{\mathcal{E}} = \bigcup\limits_{\bar{p};\\ start(\bar{p}) = n} {\llbracket \bar{p} \rrbracket}_{\mathcal{E}}$ encodes all open complex events ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}}$ with $\bar{p}$ a full-path in $\mathcal{E}$ starting at $n$, and
+    \item ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}} = (i, D)$ where $\bar{p} = n_{1},n_{2}, \ldots, n_{k}$ be a \emph{full-path} in $\mathcal{E}$ such that $n_{k}$ is a bottom node, $i = pos(n_{k})$ is the label of the bottom node $n_{k}$, and $D$ is the set of labels of the other non-union nodes in $\bar{p}$.
+  \end{itemize}
+
+  First, we prove ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsto paths_{\ge j - \epsilon}(n)$. Given a complex event $([i, j], D) \in {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$, there is an open complex event $(i, D) \in {\llbracket \text{n} \rrbracket}_{\mathcal{E}}$ that is represented as the full-path $\bar{p} = n_{1},n_{2}, \ldots, n_{k}$ in $\mathcal{E}$ such that $n_{k}$ is a bottom node and $i = pos(n_{k})$ is the label of the bottom node $n_{k}$. Notice, $n_{1} = n$ is the starting node, $j = pos(n_{1})$ is the label of the starting node $n_{1}$ and closing event $j$ and $j - i \le \epsilon$. By definition, $\bar{p} \in {paths}_{\ge \tau}(n)$.
+
+  Secondly, we prove that ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsfrom paths_{\ge j - \epsilon}(n)$. The proof follows by expanding the definition of ${paths}_{\ge \tau}(n)$ and following the steps of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsto paths_{\ge j - \epsilon}(n)$'s proof in reverse order.
+
+  Finally, by ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsto paths_{\ge j - \epsilon}(n)$ and ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsfrom paths_{\ge j - \epsilon}(n)$ proofs, ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longleftrightarrow paths_{\ge j - \epsilon}(n)$ immediately holds.
+
+\end{proof}
+
+% \begin{lemma}[${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsto paths_{\ge j - \epsilon}(n)$]\label{lemma:bijection:1}
+%   For every complex event within a time window of size $\epsilon$ there exists exactly one path that reaches a bottom node $b$ with $pos(b) \ge j - \epsilon$.
+% \end{lemma}
+
+% \begin{lemma}[${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsfrom paths_{\ge j - \epsilon}(n)$]\label{lemma:bijection:2}
+%   For every path that reaches a bottom node $b$ with $pos(b) \ge j - \epsilon$ there exist exactly one complex event in ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ within a time window of size $\epsilon$ that starts at event $pos(b)$ and ends at event $j$.
+% \end{lemma}
+
+% \begin{proof}
+%   Recall that $G_{\mathcal{E}}$ compactly represents $paths_{\ge j - \epsilon}$ through the evaluation \aref{algo:update}. We use induction on the construction of $G_{\mathcal{E}}$ on \aref{algo:update}. We assume that the content of the lemma already holds for every node $n' \in N$ reachable from $n$. By definition, the node $n$ in $G_{\mathcal{E}}$ can be constructed by three possible operations: (1) \code{new-bottom($i$)}, or (2) \code{extend($n,j$)}, or \code{union($n_{1}, n_{2}$)}.
+% \begin{itemize}
+%   \item Case (1): $n$ is the result of \code{new-bottom($i$)}.
+
+%     Then, $n \in N_{B}$ is a bottom node, $\pi := n$ is the path with a single node $n$, $paths_{\ge j - \epsilon}(n) = \{ \pi \}$ contains only the path $\pi$ which corresponds to the empty complex events $([i, i], \emptyset)$.
+
+%   \item Case (2): $n$ is the result of \code{extend($n,j$)}.
+
+%     Then, $n \in N_{O}$ is an output node, $n' = next(n)$ correspond to the node extended by $n$, $paths_{\ge (j - 1) - \epsilon}(n') = \{ \pi'_{1},\pi'_{2},\ldots, \pi'_{m} \}$ are all paths starting at $n'$ and ending at some bottom node $b$ with $pos(b) \ge j - 1 - \epsilon$. Let $paths_{\ge j - \epsilon}(n) = \{ \pi_{1}, \pi_{2},\ldots, \pi_{m} \}$ be all path starting at $n$ and ending at some bottom node $b$ with $pos(b) \ge j - \epsilon$. For every path $\pi_{1 \le k \le m}$, we show that there is exactly one complex event in ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ corresponding to that path. Notice, $\pi_{k} = n \rightarrow \pi'_{k}$. By induction hypothesis, for every path $\pi'_{k}$ there exist a complex event $([i, j-1], D) \in {\llbracket \text{n'} \rrbracket}^{\epsilon}_{\mathcal{E}}(j-1)$. Hence, $\pi_{k}$ corresponds exactly to the complex event $([i, j], D' \cup \{pos(n)\}) \in {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
+
+%   \item Case (3): $n$ is the result of \code{union($n_{1}, n_{2}$)}.
+
+%         Then, $n \in N_{U}$ is a union node, $paths_{\ge (j - 1) - \epsilon}(n_{1}) = \{ \pi'_{1},\pi'_{2},\ldots, \pi'_{m} \}$ and $paths_{\ge (j - 1) - \epsilon}(n_{2}) = \{ \pi''_{1},\pi''_{2},\ldots, \pi''_{m} \}$ are all paths starting at $n_{1}$ and $n_{2}$, respectively, and ending at some bottom node $b$ with $pos(b) \ge j - 1 - \epsilon$. Let $paths_{\ge j - \epsilon}(n) = \{ \pi_{1}, \pi_{2},\ldots, \pi_{2m} \}$ be all path starting at $n$ and ending at some bottom node $b$ with $pos(b) \ge j - \epsilon$. For every path $\pi_{1 \le k \le 2m}$, we show that there is exactly one complex event in ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ corresponding to that path. Notice,
+
+%         \begin{itemize}
+%           \item if $1 \leq k \leq m $, then $\pi_{k} = n \rightarrow \pi'_{k}$. By induction hypothesis, for every path $\pi'_{k}$ there exist a complex event $([i, j-1], D) \in {\llbracket \text{n}_{1} \rrbracket}^{\epsilon}_{\mathcal{E}}(j-1)$. Hence, $\pi_{k}$ corresponds to the complex event $([i, j], D) \in {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$
+
+%           \item And, if $m+1 \leq k \leq 2m $, then $\pi_{k} = n \rightarrow \pi''_{k \mod m}$. By induction hypothesis, for every path $\pi''_{k \mod m}$ there exist a complex event $([i', j-1], D') \in {\llbracket \text{n}_{2} \rrbracket}^{\epsilon}_{\mathcal{E}}(j-1)$. Hence, $\pi_{k}$ corresponds to the complex event $([i', j], D') \in {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
+%         \end{itemize}
+% \end{itemize}
+% \end{proof}
 
 \aref{algo:enumeration} receives as an input a \acrshort{tecs}, a node $n$, a time-window $\epsilon$, a position $j$, and a process $p$ and traverses $G_{\mathcal{E}}$ in a DFS way and left-to-right order i.e. for every union node $u$, the paths of $left(u)$ are traversed before the ones of the $right(u)$. First, computes the parameters $\sigma, \delta, \tau$ corresponding to the starting and ending path to enumerate and the time-window threshold, respectively. Each iteration of the \code{while} of line~\ref{line:enumeration:while:1} traverses a new path starting from the point it branches from the previous path, except for the first iteration that starts from node $n$. For this, the stack $st$ is used to store the node and partial complex event of that branching point. Then, the \code{while} of line~\ref{line:enumeration:while:2} traverses through the nodes of the next path, following the left direction whenever a union node is reached and adding the right node to the stack whenever need. The \code{if} of line~\ref{line:enumeration:if} makes sure that only $paths_{\ge j - \epsilon, \sigma, \delta}$ are traversed, otherwise, forcing the next branch with \code{break}. Moreover, by checking for every node $n'$ its value $max(n')$ and $paths(right(n'))$ before adding it to the stack, it makes sure of only going through paths in $paths_{\ge j - \epsilon}(n')$ and $paths_{\ge j - \epsilon, \sigma, \delta}$, respectively.
 
@@ -175,25 +218,6 @@ First, we prove that \aref{algo:enumeration} enumerates $paths_{\ge \tau, \sigma
 
   % This is not actually true..$\pi_{\sigma} = \pi_{↙}(n)$ you need an alternative definition
 \end{proof}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 Then, we prove using Lemma~\ref{lemma:enumeration:process} that \aref{algo:enumeration} enumerates a subset of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ of size $\Omega(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$ with output-linear delay after the first complex event, provided that $\mathcal{E}$ is $k$-bounded and time-ordered and $n$ is a duplicate-free node.
 
