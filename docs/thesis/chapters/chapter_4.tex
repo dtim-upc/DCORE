@@ -197,7 +197,7 @@ We are ready to description algorithm \acrshort{dte}. An efficient implementatio
 
 \section{The enumeration algorithm}\label{sec:enumeration}
 
-We provide \aref{algo:enumeration} and show that: (1) it enumerates a subset of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ of size $\Omega(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$, and (2) it does so with output-linear delay after the first complex event. Furthermore, we will show that the union of the enumeration of \aref{algo:enumeration} on each process $p \in \mathcal{P}$ corresponds to ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
+We provide \aref{algo:enumeration} and show that: (1) it enumerates a subset of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ of size $\Omega(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$, and (2) it does so with output-linear delay after the first complex event. Furthermore, we will show that (3) the union of the enumeration of \aref{algo:enumeration} on each process $p \in \mathcal{P}$ corresponds to ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
 
 \begin{algorithm}[H]
   \setstretch{1.0} % space between lines
@@ -317,17 +317,24 @@ Then, we present Lemma~\ref{lemma:bijection_subpath} that follows from Theorem~\
   By definition ${paths}_{\ge j-\epsilon, \sigma, \delta} \subseteq {paths}_{\ge j-\epsilon}$ and Theorem~\ref{theorem:bijection}, ${paths}_{\ge j-\epsilon, \sigma, \delta} \longleftrightarrow S$ where $S \subseteq {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$. Hence, ${paths}_{\ge j-\epsilon, \sigma, \delta} \rightarrow {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
 \end{proof}
 
-Finally, we can prove that \aref{algo:enumeration} enumerates a subset of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ of size $\Omega(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$ with output-linear delay after the first complex event, provided that $\mathcal{E}$ is $k$-bounded and time-ordered and $n$ is a duplicate-free node.
+Now, we can finally prove that \aref{algo:enumeration} enumerates a subset of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ of size $\Omega(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$ with output-linear delay after the first complex event, provided that $\mathcal{E}$ is $k$-bounded and time-ordered and $n$ is a duplicate-free node.
 
 \begin{theorem}\label{theorem:enumeration:process}
   Fix $k$, $\mathcal{P}$ and $p \in \mathcal{P}$. Let $\mathcal{E}$ be a $k$-bounded and time-ordered \acrshort{tecs}, $n$ a node of $\mathcal{E}$, $\epsilon$ a time-window. Then, \aref{algo:enumeration} enumerates a subset of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ of size $\Omega(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$ with output-linear delay after the first complex event.
 \end{theorem}
 
 \begin{proof}
-  % Let $\delta = \frac{paths_{\ge \tau}(n)}{|\mathcal{P}|}$ and $\sigma = index(p) \cdot \delta$ be constants as in \aref{algo:enumeration}.
+  Fix $\tau$. Let $\delta = \frac{paths_{\ge \tau}(n)}{|\mathcal{P}|}$ and $\sigma = index(p) \cdot \delta$ be constants as in \aref{algo:enumeration}. By Lemma~\ref{lemma:enumeration:process}, \aref{algo:enumeration} enumerates $paths_{\ge \tau, \sigma, \delta}$ with output-linear delay after $\pi_{\sigma}$. We need to prove that: (1) $paths_{\ge \tau, \sigma, \delta}$ corresponds to a subset $S$ of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ and (2) $|S| = \Omega(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$.
+
+ \begin{itemize}
+   \item (1) By Lemma~\ref{lemma:bijection_subpath}, immediately follows that $paths_{\ge \tau, \sigma, \delta}$ corresponds to a subset $S \subseteq {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
+   \item (2) $S$ is of size at most $\frac{paths_{\ge \tau}(n)}{|\mathcal{P}|}$ because \aref{algo:enumeration} enumerates the set $paths_{\ge \tau, \sigma, \delta}$ of size at most $\delta$ (recall that $\delta = \frac{paths_{\ge \tau}(n)}{|\mathcal{P}|}$), and by Theorem~\ref{theorem:bijection}, $|S|$ is at most of size $\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|}$.
+ \end{itemize}
+
+ The output-linear delay follows from the fact that \aref{algo:enumeration} enumerates with output-linear delay after $\pi_{\sigma}$ i.e. the first complex event.
 \end{proof}
 
-Now, there is only left to prove (3). We start with Lemma~\ref{lemma:paths_equivalence} and Lemma~\ref{lemma:union_of_paths} that will be essential in order to prove Theorem~\ref{theorem:enumeration}.
+There is only left to prove (3). We start with Lemma~\ref{lemma:paths_equivalence} and Lemma~\ref{lemma:union_of_paths} that will be essential in order to prove Theorem~\ref{theorem:enumeration}.
 
 \begin{lemma}\label{lemma:paths_equivalence}
   If $\sigma = 0$ and $\delta = |{paths}_{\ge \tau}(n')|$, then ${paths}_{\ge \tau, \sigma, \delta}(n') = {paths}_{\ge \tau}(n')$.
@@ -338,13 +345,15 @@ Now, there is only left to prove (3). We start with Lemma~\ref{lemma:paths_equiv
 \end{proof}
 
 % Redo this part
-Let $m = |{paths}_{\ge \tau}(n')| - 1$, $\sigma=0$, and $\delta = |{paths}_{\ge \tau}(n')|$. Then ${paths}_{\ge \tau}(n') = \{\pi_{0}, \pi_{1}, \ldots, \pi_{m}\}$ and by Lemma~\ref{lemma:paths_equivalence} ${paths}_{\ge \tau, \sigma, \delta}(n') = \{\pi_{0}, \pi_{1}, \ldots, \pi_{m}\}$. Now, we proceed to show that when the enumeration is performed on each process $p \in \mathcal{P}$, the union of the outputs is equivalent to ...
+Now, we proceed to show that when the enumeration is performed on each process $p \in \mathcal{P}$, the union of the outputs is equivalent to ...
 
 \begin{lemma}\label{lemma:union_of_paths}
   Let $\mathcal{E}$ be a time-ordered \acrshort{tecs}, $n$ a duplicate-free node of $\mathcal{E}$, $\epsilon$ a time-window, $\mathcal{P}$ the set of all processes. Let $P_{p}$ be the output of \aref{algo:enumeration} on process $p \in \mathcal{P}$. Then, $\bigcup\limits_{p \in \mathcal{P}} P_{p} = paths_{\ge \tau}$.
 \end{lemma}
 
 \begin{proof}
+  Let ${paths}_{\ge \tau}(n') = \{\pi_{0}, \pi_{1}, \ldots, \pi_{l}\}$, $\sigma=0$, and $\delta = l$. Then, by Lemma~\ref{lemma:paths_equivalence} ${paths}_{\ge \tau, \sigma, \delta}(n') = \{\pi_{0}, \pi_{1}, \ldots, \pi_{l}\}$.
+
   We proved by Lemma~\ref{lemma:enumeration:process} that \aref{algo:enumeration} enumerates $paths_{\ge \tau, \sigma, \delta}$ where $\tau$ is fix, and $\sigma and \delta$ are variables that depend on $p$ and $\mathcal{P}$.
 
   Fix $\delta = \frac{{paths}_{\ge \tau}(n')}{|\mathcal{P}|}$, show that the union of all outputs sets is $\{\pi_{0}, \pi_{1}, \ldots, \pi_{m}\}$. Then, use previous lemmas to show that $\{\pi_{0}, \pi_{1}, \ldots, \pi_{m}\} = {paths}_{\ge \tau, \sigma=0, \delta=|{paths}_{\ge \tau}(n')|}(n')$ and ${paths}_{\ge \tau, \sigma=0, \delta=|{paths}_{\ge \tau}(n')|}(n') = {paths}_{\ge \tau}(n')$.
