@@ -1,4 +1,6 @@
-\chapter{Lore Ipsum}\label{chapter:algorithm}
+\chapter{Distributed COmplex event Recognition Engine}\label{chapter:algorithm}
+
+% Here we should start by CORE 5.Evaluation algorithm
 
 % TODO this is old, rewrite.
 In this section, we propose \acrfull{dte}, a novel extension of the evaluation algorithm in \cite{core}. In particular, \acrshort{dte} distributes the potentially exponential workload of \textsc{Enumerate} among $n$ asynchronous processes $p_{1}, \ldots, p_{n}$ while preserving the constant time per input event update of the data structure that compactly represents the set of partial matches and the output-linear delay enumeration of the results.
@@ -10,261 +12,6 @@ A \acrshort{tecs} represents sets of \emph{open} complex events. An \emph{open c
 Recall that we imposed three restrictions on the structure of a \acrshort{tecs}: (1) it needs to be \emph{time-ordered}, (2) it needs to be \emph{k-bounded}, and (3) its needs to be \emph{duplicate-free}.
 
 We defined three operations on \tecs: new-bottom($i$), extend(m, $j$) and union($\text{n}_{1},\text{n}_{2}$). The first method, new-bottom($i$) adds a new bottom node b labelled $i$ to \tecs. The second method, extend(n, $j$) adds a new output node o to \tecs with pos(o) = $j$ and next(o) = n. The third method, union($\text{n}_{1},\text{n}_{2}$) returns a node u such that $\InDoubleBrackets{u}_{\mathcal{E}} = \InDoubleBrackets{\text{n}_{1}}_{\mathcal{E}} \cup \InDoubleBrackets{\text{n}_{2}}_{\mathcal{E}}$. Any \acrshort{tecs} that is created using only these three methods is time-ordered and $3$-bounded.
-
-\section{The evaluation algorithm}\label{sec:evaluation}
-
-% TODO this is old, rewrite.
-We are ready to description algorithm \acrshort{dte}. An efficient implementation would be execute \cite[Algorithm 1]{core} on a single process e.g. $p_{0}$, and distribute the \acrshort{tecs} \tecs to the rest of the processes $p_{1}, \ldots, p_{n}$, so $p_{0}$ could keep ingesting events at constant time while the rest of processes could be working on the possibly exponential enumeration of \tecs. However, if done in a na\"ive way, distributing the \acrshort{tecs} on each event that triggers a complex event would take time proportional to its size which is at most linear in the length of the stream breaking the constant update time. Hence, the distribution of the tECS has to be done incrementally per input event to preserve the constant time complexity. An algorithm that that incrementally distributes the tECS would need to send to each process all new node added to the tECS at iteration $j$ and additional information on how to add these nodes to the tECS of iteration $j-1$. Furthermore, each process would need to keep an updated hash table, similar to the one used in the evaluation algorithm, in order to apply the incremental changes instructed by the messages from the centralized evaluation process. We argue that this incremental distribution algorithm is \emph{asymptotically equivalent} to executing the update phase from \cite[Algorithm 1]{core} on each process. Both algorithms needs to incrementally update the tECS and the hash table $T$ but the later needs to iterate over all transitions $\Delta$ in the worst-case, however, this takes constant time under data complexity. Consequently, we choose to replicate the update phase of Algorithm 1 on each process and leave for future work a more sophisticated approach.
-
-\begin{algorithm}[H]
-  \setstretch{0.9} % space between lines
-  \DontPrintSemicolon
-  \SetAlgoNoEnd % don't print end
-  \SetAlgoNoLine % no vertical lines
-  \SetKwProg{Procedure}{procedure}{}{}
-  \SetKwFunction{Evaluation}{\textsc{Evaluation}}
-  \SetKwFunction{ExecTrans}{\textsc{ExecTrans}}
-  \SetKwFunction{Add}{\textsc{Add}}
-  \SetKwFunction{Output}{\textsc{Output}}
-  \SetKwFunction{Enumerate}{\textsc{Enumerate}}
-  \SetKwFunction{Yield}{yield}
-  \SetKwFunction{NewUlist}{new-ulist}
-  \SetKwFunction{NewBottom}{new-bottom}
-  \SetKwFunction{OrderedKeys}{ordered-keys}
-  \SetKwFunction{Merge}{merge}
-  \SetKwFunction{Extend}{extend}
-  \SetKwFunction{Keys}{keys}
-  \SetKwFunction{Insert}{insert}
-  \Procedure{\Evaluation{$\mathcal{A}, S, \epsilon, p$}}{
-    $j \leftarrow -1$\;
-    $T \leftarrow \emptyset$\;
-    \While{$t \leftarrow $ \Yield{$S$}}{
-      $j \leftarrow j + 1$\;
-      $T' \leftarrow \emptyset$\;
-      $ul \leftarrow $\NewUlist{\NewBottom{$j$}}\;
-      \ExecTrans{$q_{0}, ul, t, j$}\;
-      \For{$p \in$ \OrderedKeys{$T$}}{
-        \ExecTrans{$p, T[p], t, j$}\;
-      }
-      $T \leftarrow T'$\;
-      \Output{$j, \epsilon, p$}\;
-    }
-  }
-  \;
-  \Procedure{\ExecTrans{$p, ul, t, j$}}{
-    $n \leftarrow$ \Merge{$ul$}\;
-    \If{$q \leftarrow \Delta(p, t, \bullet)$}{
-      $n' \leftarrow$ \Extend{$n, j$}\;
-      $ul' \leftarrow$ \NewUlist{$n'$}\;
-      \Add{$q, n', ul'$}\;
-    }
-    \If{$q \leftarrow \Delta(p, t, \circ)$}{
-      \Add{$q, n, ul$}\;
-    }
-  }
-  \;
-  \Procedure{\Add{$q, n, ul$}}{
-    \eIf{$q \in$ \Keys{$T'$}}{
-      $T'[q] \leftarrow$ \Insert{$T'[q], n$}\;
-    }{
-      $T'[q] \leftarrow ul$\;
-    }
-  }
-  \;
-  \Procedure{\Output{$j, \epsilon, p$}}{
-    \For{$p \in$ \Keys{$T$}}{
-      \If{$p \in F$}{
-        $n \leftarrow$ \Merge{$T[p]$}\;
-        \Enumerate{$n, j$}\;
-      }
-    }
-  }
-\caption{Evaluation of an I/O-deterministic \mbox{CEA ${\mathcal{A} = (Q, \Delta, q_{0}, F)}$} over a stream $S$ given a time-bound $\epsilon$ on a process $p$.}
-\label{algo:update}
-\end{algorithm}
-
-% I am skipping proving Theorem 3 since it is more work added to the already endless amount of work to do.
-
-\section{The enumeration algorithm}\label{sec:enumeration}
-
-We provide \aref{algo:enumeration} and show that: (1) it enumerates a subset of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ of size $\Omega(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$, and (2) it does so with output-linear delay after the first complex event. Furthermore, we will show that the union of the enumeration of \aref{algo:enumeration} on each process $p \in \mathcal{P}$ corresponds to ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
-
-\begin{algorithm}[H]
-  \setstretch{1.0} % space between lines
-  \DontPrintSemicolon
-  \SetAlgoNoEnd % don't print end
-  \SetAlgoNoLine % no vertical lines
-  \SetKwProg{Procedure}{procedure}{}{}
-  \SetKwFunction{Enumerate}{\textsc{Enumerate}}
-  \Procedure{\Enumerate{$\mathcal{E}, n, \epsilon, j, p$}}{
-    $\delta \leftarrow \lceil \text{paths(n)} \ / \ {|\mathcal{P}|} \rceil$\;
-    $\sigma \leftarrow \text{index}(p) \cdot \delta$\;
-    st $\leftarrow$ new-stack()\;
-    $\tau \leftarrow j - \epsilon $\;
-    \If{$\text{max(n)} \ge \tau$}{
-      push(st,($n$, $\emptyset$, $\sigma$, $\delta$))\;
-    }
-    \While{$(n', P, \sigma', \delta') \leftarrow$ pop(st)}{\label{line:enumeration:while:1}
-      \While{true}{\label{line:enumeration:while:2}
-        \If{$n' \in N_{B}$}{
-          output([pos($n'$), $j$], $P$)\;
-          \textbf{break}\;
-        }
-        \ElseIf{$\text{n}' \in N_{O}$}{
-          $P \leftarrow P \ \cup $ {pos($n'$)}\;
-          $n' \leftarrow $ next($n'$)\;
-        }
-        \ElseIf{$n' \in N_{U}$}{
-          \If{$max(right(n')) \ge \tau$}{
-            \eIf{$paths(left(n')) > \sigma'$}{
-              $\delta'' \leftarrow \delta' - max(0, paths(left(n')) - \sigma')$\;
-            }{
-              $\delta'' \leftarrow \delta'$\;
-            }
-            $\sigma'' \leftarrow max(0, \sigma' - paths(left(n')))$\;
-            \If{$paths(right(n')) > \sigma'' \land \delta'' > 0$}{
-              push(st, (right($n'$), $P$, $\sigma''$, $\delta''$))\;
-            }
-          }
-          \eIf{$paths(left(n')) > \sigma'$}{\label{line:enumeration:if}
-            $n' \leftarrow left(n')$\;
-          }{
-            \textbf{break}\;
-          }
-        }
-      }
-    }
-  }
-\caption{Enumeration of ${paths}_{\ge \tau, \sigma, \delta}$.}
-\label{algo:enumeration}
-\end{algorithm}
-
-\aref{algo:enumeration} uses a stack $st$ with common stack operations: \code{new-stack()} to create an empty stack, \code{push(st, e)} to add an element \code{e} at the top of the stack, and \code{pop(st)} to remove and return the element on the top of the stack. When the stack is empty, we will interpret $e \leftarrow pop(st)$ as \code{false}. We assume that stack operations can be performed in constant time.
-
-Recall that $\mathcal{E}$ encodes the \acrshort{dag} $G_{\mathcal{E}} = (N, E)$ where $N$ are the vertices, and $E$ the edges that go from any union node $u$ to left($u$) and right($u$), and from any output node $o$ to next($o$). For every node $n' \in N$, let ${paths}_{\ge \tau}(n')$ be all paths of $G_{\mathcal{E}}$ that start at $n'$ and end at some bottom node $b$ with $pos(b) \ge \tau$ and let ${paths}_{\ge \tau, \sigma, \delta}$ be at most $\delta$ paths from ${paths}_{\ge \tau}(n')$ starting after path $\pi_{\sigma}$ i.e. the set of paths $\{ \pi_{\sigma}, \pi_{\sigma+1}, \ldots, \pi_{\sigma+\delta}\}$. It is clear that there exists a bijection between ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ and $paths_{\ge j - \epsilon}(n)$ i.e. for every complex event within a time window of size $\epsilon$ there exists exactly one path that reaches a bottom node $b$ with $pos(b) \ge j - \epsilon$, and vice versa. Formally,
-
-\begin{theorem}[${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longleftrightarrow paths_{\ge j - \epsilon}(n)$]\label{theorem:bijection}
-For every complex event within a time window of size $\epsilon$ there exists exactly one path that reaches a bottom node $b$ with $pos(b) \ge j - \epsilon$, and vice versa.
-\end{theorem}
-
-\begin{proof}
-  Fix a node $n$ in $\mathcal{E}$. The proof follows by the definition of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$, ${\llbracket \text{n} \rrbracket}_{\mathcal{E}}$, ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}}$, and ${paths}_{\ge \tau}(n)$. Recall that
-
-  \begin{itemize}
-    \item ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) = \{ ([i,j], D) | (i,D) \in {\llbracket \text{n} \rrbracket}_{\mathcal{E}} \land j - i \le \epsilon \}$ encodes all open complex events represented by $n$ in $\mathcal{E}$ that, when closed with j, are within a time window of size $\epsilon$,
-    \item ${\llbracket \text{n} \rrbracket}_{\mathcal{E}} = \bigcup\limits_{\bar{p};\\ start(\bar{p}) = n} {\llbracket \bar{p} \rrbracket}_{\mathcal{E}}$ encodes all open complex events ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}}$ with $\bar{p}$ a full-path in $\mathcal{E}$ starting at $n$, and
-    \item ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}} = (i, D)$ where $\bar{p} = n_{1},n_{2}, \ldots, n_{k}$ be a \emph{full-path} in $\mathcal{E}$ such that $n_{k}$ is a bottom node, $i = pos(n_{k})$ is the label of the bottom node $n_{k}$, and $D$ is the set of labels of the other non-union nodes in $\bar{p}$.
-  \end{itemize}
-
-  First, we prove ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsto paths_{\ge j - \epsilon}(n)$. Given a complex event $([i, j], D) \in {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$, there is an open complex event $(i, D) \in {\llbracket \text{n} \rrbracket}_{\mathcal{E}}$ that is represented as the full-path $\bar{p} = n_{1},n_{2}, \ldots, n_{k}$ in $\mathcal{E}$ such that $n_{k}$ is a bottom node and $i = pos(n_{k})$ is the label of the bottom node $n_{k}$. Notice, $n_{1} = n$ is the starting node, $j = pos(n_{1})$ is the label of the starting node $n_{1}$ and closing event $j$ and $j - i \le \epsilon$. By definition, $\bar{p} \in {paths}_{\ge \tau}(n)$.
-
-  Secondly, we prove that ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsfrom paths_{\ge j - \epsilon}(n)$. The proof follows by expanding the definition of ${paths}_{\ge \tau}(n)$ and following the steps of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsto paths_{\ge j - \epsilon}(n)$'s proof in reverse order.
-
-  Finally, by ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsto paths_{\ge j - \epsilon}(n)$ and ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsfrom paths_{\ge j - \epsilon}(n)$ proofs, ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longleftrightarrow paths_{\ge j - \epsilon}(n)$ immediately holds.
-
-\end{proof}
-
-% \begin{lemma}[${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsto paths_{\ge j - \epsilon}(n)$]\label{lemma:bijection:1}
-%   For every complex event within a time window of size $\epsilon$ there exists exactly one path that reaches a bottom node $b$ with $pos(b) \ge j - \epsilon$.
-% \end{lemma}
-
-% \begin{lemma}[${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsfrom paths_{\ge j - \epsilon}(n)$]\label{lemma:bijection:2}
-%   For every path that reaches a bottom node $b$ with $pos(b) \ge j - \epsilon$ there exist exactly one complex event in ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ within a time window of size $\epsilon$ that starts at event $pos(b)$ and ends at event $j$.
-% \end{lemma}
-
-% \begin{proof}
-%   Recall that $G_{\mathcal{E}}$ compactly represents $paths_{\ge j - \epsilon}$ through the evaluation \aref{algo:update}. We use induction on the construction of $G_{\mathcal{E}}$ on \aref{algo:update}. We assume that the content of the lemma already holds for every node $n' \in N$ reachable from $n$. By definition, the node $n$ in $G_{\mathcal{E}}$ can be constructed by three possible operations: (1) \code{new-bottom($i$)}, or (2) \code{extend($n,j$)}, or \code{union($n_{1}, n_{2}$)}.
-% \begin{itemize}
-%   \item Case (1): $n$ is the result of \code{new-bottom($i$)}.
-
-%     Then, $n \in N_{B}$ is a bottom node, $\pi := n$ is the path with a single node $n$, $paths_{\ge j - \epsilon}(n) = \{ \pi \}$ contains only the path $\pi$ which corresponds to the empty complex events $([i, i], \emptyset)$.
-
-%   \item Case (2): $n$ is the result of \code{extend($n,j$)}.
-
-%     Then, $n \in N_{O}$ is an output node, $n' = next(n)$ correspond to the node extended by $n$, $paths_{\ge (j - 1) - \epsilon}(n') = \{ \pi'_{1},\pi'_{2},\ldots, \pi'_{m} \}$ are all paths starting at $n'$ and ending at some bottom node $b$ with $pos(b) \ge j - 1 - \epsilon$. Let $paths_{\ge j - \epsilon}(n) = \{ \pi_{1}, \pi_{2},\ldots, \pi_{m} \}$ be all path starting at $n$ and ending at some bottom node $b$ with $pos(b) \ge j - \epsilon$. For every path $\pi_{1 \le k \le m}$, we show that there is exactly one complex event in ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ corresponding to that path. Notice, $\pi_{k} = n \rightarrow \pi'_{k}$. By induction hypothesis, for every path $\pi'_{k}$ there exist a complex event $([i, j-1], D) \in {\llbracket \text{n'} \rrbracket}^{\epsilon}_{\mathcal{E}}(j-1)$. Hence, $\pi_{k}$ corresponds exactly to the complex event $([i, j], D' \cup \{pos(n)\}) \in {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
-
-%   \item Case (3): $n$ is the result of \code{union($n_{1}, n_{2}$)}.
-
-%         Then, $n \in N_{U}$ is a union node, $paths_{\ge (j - 1) - \epsilon}(n_{1}) = \{ \pi'_{1},\pi'_{2},\ldots, \pi'_{m} \}$ and $paths_{\ge (j - 1) - \epsilon}(n_{2}) = \{ \pi''_{1},\pi''_{2},\ldots, \pi''_{m} \}$ are all paths starting at $n_{1}$ and $n_{2}$, respectively, and ending at some bottom node $b$ with $pos(b) \ge j - 1 - \epsilon$. Let $paths_{\ge j - \epsilon}(n) = \{ \pi_{1}, \pi_{2},\ldots, \pi_{2m} \}$ be all path starting at $n$ and ending at some bottom node $b$ with $pos(b) \ge j - \epsilon$. For every path $\pi_{1 \le k \le 2m}$, we show that there is exactly one complex event in ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ corresponding to that path. Notice,
-
-%         \begin{itemize}
-%           \item if $1 \leq k \leq m $, then $\pi_{k} = n \rightarrow \pi'_{k}$. By induction hypothesis, for every path $\pi'_{k}$ there exist a complex event $([i, j-1], D) \in {\llbracket \text{n}_{1} \rrbracket}^{\epsilon}_{\mathcal{E}}(j-1)$. Hence, $\pi_{k}$ corresponds to the complex event $([i, j], D) \in {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$
-
-%           \item And, if $m+1 \leq k \leq 2m $, then $\pi_{k} = n \rightarrow \pi''_{k \mod m}$. By induction hypothesis, for every path $\pi''_{k \mod m}$ there exist a complex event $([i', j-1], D') \in {\llbracket \text{n}_{2} \rrbracket}^{\epsilon}_{\mathcal{E}}(j-1)$. Hence, $\pi_{k}$ corresponds to the complex event $([i', j], D') \in {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
-%         \end{itemize}
-% \end{itemize}
-% \end{proof}
-
-\aref{algo:enumeration} receives as an input a \acrshort{tecs}, a node $n$, a time-window $\epsilon$, a position $j$, and a process $p$ and traverses $G_{\mathcal{E}}$ in a DFS way and left-to-right order i.e. for every union node $u$, the paths of $left(u)$ are traversed before the ones of the $right(u)$. First, computes the parameters $\sigma, \delta, \tau$ corresponding to the starting and ending path to enumerate and the time-window threshold, respectively. Each iteration of the \code{while} of line~\ref{line:enumeration:while:1} traverses a new path starting from the point it branches from the previous path, except for the first iteration that starts from node $n$. For this, the stack $st$ is used to store the node and partial complex event of that branching point. Then, the \code{while} of line~\ref{line:enumeration:while:2} traverses through the nodes of the next path, following the left direction whenever a union node is reached and adding the right node to the stack whenever need. The \code{if} of line~\ref{line:enumeration:if} makes sure that only $paths_{\ge j - \epsilon, \sigma, \delta}$ are traversed, otherwise, forcing the next branch with \code{break}. Moreover, by checking for every node $n'$ its value $max(n')$ and $paths(right(n'))$ before adding it to the stack, it makes sure of only going through paths in $paths_{\ge j - \epsilon}(n')$ and $paths_{\ge j - \epsilon, \sigma, \delta}$, respectively.
-
-A simpler recursive algorithm could have been used, however, the constant-delay output might not be guaranteed because the number of backtracking steps after branching might be as long as the longest path of $G_{\mathcal{E}}$. To guarantee constant steps after branching and assure constant-delay output, \aref{algo:enumeration} uses a stack which allows to jump immediately to the next branch. We assume that storing $P$ in the stack takes constant time. We materialize this assumption by modelling $P$ as a linked list of positions, where the list is ordered by the last element added. To update $P$ with position $i$, we only need to create a node $i$ that points to the previous last element of $P$. Then, storing $P$ on the stack is just storing the pointer of the last element added.
-
-First, we prove that \aref{algo:enumeration} enumerates $paths_{\ge \tau, \sigma, \delta}$ with output-linear delay after $\pi_{\sigma}$, provided that $\mathcal{E}$ is $k$-bounded and time-ordered and $n$ is a duplicate-free node.
-
-\begin{lemma}\label{lemma:enumeration:process}
-  Fix $k$, $\mathcal{P}$ and $p \in \mathcal{P}$. Let $\mathcal{E}$ be a $k$-bounded and time-ordered \acrshort{tecs}, $n$ a node of $\mathcal{E}$, $\epsilon$ a time-window. Let parameters $\delta, \sigma$ be $\frac{paths_{\ge \tau}(n)}{|\mathcal{P}|}$ and $index(p) \cdot \sigma$, respectively. Then, \aref{algo:enumeration} enumerates $paths_{\ge \tau, \sigma, \delta}$ with output-linear delay after $\pi_{\sigma}$.
-\end{lemma}
-
-\begin{proof}
-  Fix $\mathcal{E}$, $\tau$, $\sigma$ and $delta$. We showed that \aref{algo:enumeration} traverses all paths of $paths_{\ge \tau, \sigma, \delta}(n)$. Furthermore, the order in which paths are traversed is completely determined by the order of the union nodes: for each union node $u$, the paths to its left are traversed first, and the the ones to its right. Formally, for every node $n'$ define the leftmost path from $n'$ as $\pi_{\swarrow}(n') := n_{0} \rightarrow n_{1} \rightarrow \ldots \rightarrow n_{l}$ such that $n_{0} = n'$ and, for every $i \le l$:
-  \begin{itemize}
-      \item if $n_{i} \in N_{B}$, then $i = l$,
-      \item if $n_{i} \in N_{O}$, then $n_{i+1} = next(n_{i})$, and
-      \item if $n_{i} \in N_{U}$, then $n_{i+1} = left(n_{i})$.
-  \end{itemize}
-  Consider a path $\pi := n_{0} \rightarrow n_{1} \rightarrow \ldots \rightarrow n_{l}$, and let $j \leq l$ be the last position such that $n_{j}$ is a union node. Then, let $\pi^{u}$ be the path $\pi$ up to position $j$ i.e. that stops at such union node.
-
-  Let $P = \{\pi_{\sigma}, \pi_{\sigma+1}, \ldots, \pi_{\sigma+\delta}\}$ be the set of paths enumerated by \aref{algo:enumeration} in that order. Then, by analysing \aref{algo:enumeration}, one can see that $\pi_{\sigma} = \pi_{\swarrow}(n)$
-
-  % This is not actually true..$\pi_{\sigma} = \pi_{↙}(n)$ you need an alternative definition
-\end{proof}
-
-Then, we prove using Lemma~\ref{lemma:enumeration:process} that \aref{algo:enumeration} enumerates a subset of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ of size $\Omega(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$ with output-linear delay after the first complex event, provided that $\mathcal{E}$ is $k$-bounded and time-ordered and $n$ is a duplicate-free node.
-
-\begin{theorem}\label{theorem:enumeration:process}
-  Fix $k$, $\mathcal{P}$ and $p \in \mathcal{P}$. Let $\mathcal{E}$ be a $k$-bounded and time-ordered \acrshort{tecs}, $n$ a node of $\mathcal{E}$, $\epsilon$ a time-window. Then, \aref{algo:enumeration} enumerates a subset of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ of size $\Omega(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$ with output-linear delay after the first complex event.
-\end{theorem}
-
-\begin{proof}
-
-\end{proof}
-
-
-% You need to add a connecting paragraph here.
-
-
-\begin{lemma}\label{lemma:paths_equivalence}
-  If $\sigma = 0$ and $\delta = |{paths}_{\ge \tau}(n')|$, then ${paths}_{\ge \tau, \sigma, \delta}(n') = {paths}_{\ge \tau}(n')$.
-\end{lemma}
-
-\begin{proof}
-
-\end{proof}
-
-Let $m = |{paths}_{\ge \tau}(n')| - 1$, $\sigma=0$, and $\delta = |{paths}_{\ge \tau}(n')|$. Then ${paths}_{\ge \tau}(n') = \{\pi_{0}, \pi_{1}, \ldots, \pi_{m}\}$ and by Lemma~\ref{lemma:paths_equivalence} ${paths}_{\ge \tau, \sigma, \delta}(n') = \{\pi_{0}, \pi_{1}, \ldots, \pi_{m}\}$.
-
-Now, we proceed to show that when the enumeration is performed on each process $p \in \mathcal{P}$, the union of the outputs is equivalent to ...
-
-\begin{lemma}
-  Let $\mathcal{E}$ be a time-ordered \acrshort{tecs}, $n$ a duplicate-free node of $\mathcal{E}$, $\epsilon$ a time-window, $\mathcal{P}$ the set of all processes. Let $P_{p}$ be the output of \aref{algo:enumeration} on process $p \in \mathcal{P}$. Then, $\bigcup\limits_{p \in \mathcal{P}} P_{p} = paths_{\ge \tau}$.
-\end{lemma}
-
-\begin{proof}
-  We proved by Lemma~\ref{lemma:enumeration:process} that \aref{algo:enumeration} enumerates $paths_{\ge \tau, \sigma, \delta}$ where $\tau$ is fix, and $\sigma and \delta$ are variables that depend on $p$ and $\mathcal{P}$.
-
-  Fix $\delta = \frac{{paths}_{\ge \tau}(n')}{|\mathcal{P}|}$, show that the union of all outputs sets is $\{\pi_{0}, \pi_{1}, \ldots, \pi_{m}\}$. Then, use previous lemmas to show that $\{\pi_{0}, \pi_{1}, \ldots, \pi_{m}\} = {paths}_{\ge \tau, \sigma=0, \delta=|{paths}_{\ge \tau}(n')|}(n')$ and ${paths}_{\ge \tau, \sigma=0, \delta=|{paths}_{\ge \tau}(n')|}(n') = {paths}_{\ge \tau}(n')$.
-\end{proof}
-
-
-Connect with the final theorem...
-
-\begin{theorem}\label{theorem:enumeration}
-  Let $\mathcal{E}$ be a time-ordered \acrshort{tecs}, $n$ a duplicate-free node of $\mathcal{E}$, $\epsilon$ a time-window, $\mathcal{P}$ the set of all processes. Let $C_{p}$ be the output of \aref{algo:enumeration} on process $p \in \mathcal{P}$. Then, $\bigcup\limits_{p \in \mathcal{P}} C_{p} = {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
-\end{theorem}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\newpage
 
 % CEA AB+
 \begin{figure}[H]
@@ -372,6 +119,243 @@ Connect with the final theorem...
 %   \caption{Illustration of Algorithm 1 on the CEA $\mathcal{A}$ and stream $S$ of Figure ???.}
 %   \label{fig:label}
 % \end{figure}
+
+
+\section{The evaluation algorithm}\label{sec:evaluation}
+
+% TODO this is old, rewrite.
+We are ready to description algorithm \acrshort{dte}. An efficient implementation would be execute \cite[Algorithm 1]{core} on a single process e.g. $p_{0}$, and distribute the \acrshort{tecs} \tecs to the rest of the processes $p_{1}, \ldots, p_{n}$, so $p_{0}$ could keep ingesting events at constant time while the rest of processes could be working on the possibly exponential enumeration of \tecs. However, if done in a na\"ive way, distributing the \acrshort{tecs} on each event that triggers a complex event would take time proportional to its size which is at most linear in the length of the stream breaking the constant update time. Hence, the distribution of the tECS has to be done incrementally per input event to preserve the constant time complexity. An algorithm that that incrementally distributes the tECS would need to send to each process all new node added to the tECS at iteration $j$ and additional information on how to add these nodes to the tECS of iteration $j-1$. Furthermore, each process would need to keep an updated hash table, similar to the one used in the evaluation algorithm, in order to apply the incremental changes instructed by the messages from the centralized evaluation process. We argue that this incremental distribution algorithm is \emph{asymptotically equivalent} to executing the update phase from \cite[Algorithm 1]{core} on each process. Both algorithms needs to incrementally update the tECS and the hash table $T$ but the later needs to iterate over all transitions $\Delta$ in the worst-case, however, this takes constant time under data complexity. Consequently, we choose to replicate the update phase of Algorithm 1 on each process and leave for future work a more sophisticated approach.
+
+\begin{algorithm}[H]
+  \setstretch{0.9} % space between lines
+  \DontPrintSemicolon
+  \SetAlgoNoEnd % don't print end
+  \SetAlgoNoLine % no vertical lines
+  \SetKwProg{Procedure}{procedure}{}{}
+  \SetKwFunction{Evaluation}{\textsc{Evaluation}}
+  \SetKwFunction{ExecTrans}{\textsc{ExecTrans}}
+  \SetKwFunction{Add}{\textsc{Add}}
+  \SetKwFunction{Output}{\textsc{Output}}
+  \SetKwFunction{Enumerate}{\textsc{Enumerate}}
+  \SetKwFunction{Yield}{yield}
+  \SetKwFunction{NewUlist}{new-ulist}
+  \SetKwFunction{NewBottom}{new-bottom}
+  \SetKwFunction{OrderedKeys}{ordered-keys}
+  \SetKwFunction{Merge}{merge}
+  \SetKwFunction{Extend}{extend}
+  \SetKwFunction{Keys}{keys}
+  \SetKwFunction{Insert}{insert}
+  \Procedure{\Evaluation{$\mathcal{A}, S, \epsilon, p$}}{
+    $j \leftarrow -1$\;
+    $T \leftarrow \emptyset$\;
+    \While{$t \leftarrow $ \Yield{$S$}}{
+      $j \leftarrow j + 1$\;
+      $T' \leftarrow \emptyset$\;
+      $ul \leftarrow $\NewUlist{\NewBottom{$j$}}\;
+      \ExecTrans{$q_{0}, ul, t, j$}\;
+      \For{$p \in$ \OrderedKeys{$T$}}{
+        \ExecTrans{$p, T[p], t, j$}\;
+      }
+      $T \leftarrow T'$\;
+      \Output{$j, \epsilon, p$}\;
+    }
+  }
+  \;
+  \Procedure{\ExecTrans{$p, ul, t, j$}}{
+    $n \leftarrow$ \Merge{$ul$}\;
+    \If{$q \leftarrow \Delta(p, t, \bullet)$}{
+      $n' \leftarrow$ \Extend{$n, j$}\;
+      $ul' \leftarrow$ \NewUlist{$n'$}\;
+      \Add{$q, n', ul'$}\;
+    }
+    \If{$q \leftarrow \Delta(p, t, \circ)$}{
+      \Add{$q, n, ul$}\;
+    }
+  }
+  \;
+  \Procedure{\Add{$q, n, ul$}}{
+    \eIf{$q \in$ \Keys{$T'$}}{
+      $T'[q] \leftarrow$ \Insert{$T'[q], n$}\;
+    }{
+      $T'[q] \leftarrow ul$\;
+    }
+  }
+  \;
+  \Procedure{\Output{$j, \epsilon, p$}}{
+    \For{$p \in$ \Keys{$T$}}{
+      \If{$p \in F$}{
+        $n \leftarrow$ \Merge{$T[p]$}\;
+        \Enumerate{$n, j$}\;
+      }
+    }
+  }
+\caption{Evaluation of an I/O-deterministic \mbox{CEA ${\mathcal{A} = (Q, \Delta, q_{0}, F)}$} over a stream $S$ given a time-bound $\epsilon$ on a process $p$.}
+\label{algo:update}
+\end{algorithm}
+
+% I am skipping proving Theorem 3 since it is more work added to the already endless amount of work to do.
+
+\section{The enumeration algorithm}\label{sec:enumeration}
+
+We provide \aref{algo:enumeration} and show that: (1) it enumerates a subset of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ of size $\Omega(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$, and (2) it does so with output-linear delay after the first complex event. Furthermore, we will show that the union of the enumeration of \aref{algo:enumeration} on each process $p \in \mathcal{P}$ corresponds to ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
+
+\begin{algorithm}[H]
+  \setstretch{1.0} % space between lines
+  \DontPrintSemicolon
+  \SetAlgoNoEnd % don't print end
+  \SetAlgoNoLine % no vertical lines
+  \SetKwProg{Procedure}{procedure}{}{}
+  \SetKwFunction{Enumerate}{\textsc{Enumerate}}
+  \Procedure{\Enumerate{$\mathcal{E}, n, \epsilon, j, p$}}{
+    $\delta \leftarrow \lceil \text{paths(n)} \ / \ {|\mathcal{P}|} \rceil$\;
+    $\sigma \leftarrow \text{index}(p) \cdot \delta$\;
+    st $\leftarrow$ new-stack()\;
+    $\tau \leftarrow j - \epsilon $\;
+    \If{$\text{max(n)} \ge \tau$}{
+      push(st,($n$, $\emptyset$, $\sigma$, $\delta$))\;
+    }
+    \While{$(n', P, \sigma', \delta') \leftarrow$ pop(st)}{\label{line:enumeration:while:1}
+      \While{true}{\label{line:enumeration:while:2}
+        \If{$n' \in N_{B}$}{
+          output([pos($n'$), $j$], $P$)\;\label{line:enumeration:output}
+          \textbf{break}\;\label{line:enumeration:break}
+        }
+        \ElseIf{$\text{n}' \in N_{O}$}{
+          $P \leftarrow P \ \cup $ {pos($n'$)}\;
+          $n' \leftarrow $ next($n'$)\;
+        }
+        \ElseIf{$n' \in N_{U}$}{
+          \If{$max(right(n')) \ge \tau$}{
+            \eIf{$paths(left(n')) > \sigma'$}{
+              $\delta'' \leftarrow \delta' - max(0, paths(left(n')) - \sigma')$\;
+            }{
+              $\delta'' \leftarrow \delta'$\;
+            }
+            $\sigma'' \leftarrow max(0, \sigma' - paths(left(n')))$\;
+            \If{$paths(right(n')) > \sigma'' \land \delta'' > 0$}{\label{line:enumeration:if:1}
+              push(st, (right($n'$), $P$, $\sigma''$, $\delta''$))\;
+            }
+          }
+          \eIf{$paths(left(n')) > \sigma'$}{\label{line:enumeration:if:2}
+            $n' \leftarrow left(n')$\;
+          }{
+            \textbf{break}\;
+          }
+        }
+      }
+    }
+  }
+\caption{Enumeration of ${paths}_{\ge \tau, \sigma, \delta}$.}
+\label{algo:enumeration}
+\end{algorithm}
+
+\aref{algo:enumeration} uses a stack $st$ with common stack operations: \code{new-stack()} to create an empty stack, \code{push(st, e)} to add an element \code{e} at the top of the stack, and \code{pop(st)} to remove and return the element on the top of the stack. When the stack is empty, we will interpret $e \leftarrow pop(st)$ as \code{false}. We assume that stack operations can be performed in constant time.
+
+Recall that $\mathcal{E}$ encodes the \acrshort{dag} $G_{\mathcal{E}} = (N, E)$ where $N$ are the vertices, and $E$ the edges that go from any union node $u$ to left($u$) and right($u$), and from any output node $o$ to next($o$). For every node $n' \in N$, let ${paths}_{\ge \tau}(n')$ be all paths of $G_{\mathcal{E}}$ that start at $n'$ and end at some bottom node $b$ with $pos(b) \ge \tau$ and let ${paths}_{\ge \tau, \sigma, \delta} := \{ \pi_{\sigma}, \pi_{\sigma+1}, \ldots, \pi_{\sigma+\delta}\}$ be a subset of ${paths}_{\ge \tau}(n')$ of size at most $\delta$ starting after path $\pi_{\sigma}$. It is clear that there exists a bijection between ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ and $paths_{\ge j - \epsilon}(n)$ i.e. for every complex event within a time window of size $\epsilon$ there exists exactly one path that reaches a bottom node $b$ with $pos(b) \ge j - \epsilon$, and vice versa. Formally,
+
+\begin{theorem}[${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longleftrightarrow paths_{\ge j - \epsilon}(n)$]\label{theorem:bijection}
+For every complex event within a time window of size $\epsilon$ there exists exactly one path that reaches a bottom node $b$ with $pos(b) \ge j - \epsilon$, and vice versa.
+\end{theorem}
+
+\begin{proof}
+  Fix a node $n$ in $\mathcal{E}$. The proof follows by the definition of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$, ${\llbracket \text{n} \rrbracket}_{\mathcal{E}}$, ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}}$, and ${paths}_{\ge \tau}(n)$. Recall that
+
+  \begin{itemize}
+    \item ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) = \{ ([i,j], D) | (i,D) \in {\llbracket \text{n} \rrbracket}_{\mathcal{E}} \land j - i \le \epsilon \}$ encodes all open complex events represented by $n$ in $\mathcal{E}$ that, when closed with j, are within a time window of size $\epsilon$,
+    \item ${\llbracket \text{n} \rrbracket}_{\mathcal{E}} = \bigcup\limits_{\bar{p};\\ start(\bar{p}) = n} {\llbracket \bar{p} \rrbracket}_{\mathcal{E}}$ encodes all open complex events ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}}$ with $\bar{p}$ a full-path in $\mathcal{E}$ starting at $n$, and
+    \item ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}} = (i, D)$ where $\bar{p} = n_{1},n_{2}, \ldots, n_{k}$ be a \emph{full-path} in $\mathcal{E}$ such that $n_{k}$ is a bottom node, $i = pos(n_{k})$ is the label of the bottom node $n_{k}$, and $D$ is the set of labels of the other non-union nodes in $\bar{p}$.
+  \end{itemize}
+
+  First, we prove ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsto paths_{\ge j - \epsilon}(n)$. Given a complex event $([i, j], D) \in {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$, there is an open complex event $(i, D) \in {\llbracket \text{n} \rrbracket}_{\mathcal{E}}$ that is represented as the full-path $\bar{p} = n_{1},n_{2}, \ldots, n_{k}$ in $\mathcal{E}$ such that $n_{k}$ is a bottom node and $i = pos(n_{k})$ is the label of the bottom node $n_{k}$. Notice, $n_{1} = n$ is the starting node, $j = pos(n_{1})$ is the label of the starting node $n_{1}$ and closing event $j$ and $j - i \le \epsilon$. By definition, $\bar{p} \in {paths}_{\ge \tau}(n)$.
+
+  Secondly, we prove that ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsfrom paths_{\ge j - \epsilon}(n)$. The proof follows by expanding the definition of ${paths}_{\ge \tau}(n)$ and following the steps of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsto paths_{\ge j - \epsilon}(n)$'s proof in reverse order.
+
+  Finally, by ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsto paths_{\ge j - \epsilon}(n)$ and ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsfrom paths_{\ge j - \epsilon}(n)$ proofs, ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longleftrightarrow paths_{\ge j - \epsilon}(n)$ immediately holds.
+
+\end{proof}
+
+\aref{algo:enumeration} receives as an input a \acrshort{tecs}, a node $n$, a time-window $\epsilon$, a position $j$, and a process $p$ and traverses $G_{\mathcal{E}}$ in a DFS way and left-to-right order i.e. for every union node $u$, the paths of $left(u)$ are traversed before the ones of the $right(u)$. First, computes the parameters $\sigma, \delta, \tau$ corresponding to the starting and ending path to enumerate and the time-window threshold, respectively. Each iteration of the \code{while} of line~\ref{line:enumeration:while:1} traverses a new path starting from the point it branches from the previous path, except for the first iteration that starts from node $n$. For this, the stack $st$ is used to store the node and partial complex event of that branching point. Then, the \code{while} of line~\ref{line:enumeration:while:2} traverses through the nodes of the next path, following the left direction whenever a union node is reached and adding the right node to the stack whenever need. The \code{if}s of line~\ref{line:enumeration:if:1}~and~line~\ref{line:enumeration:if:2} make sure that enumeration starts on path $\pi_{\sigma}$ so only $paths_{\ge j - \epsilon, \sigma, \delta}$ are traversed, otherwise, forcing the next branch with \code{break}. Moreover, by checking for every node $n'$ its value $max(n')$ before adding it to the stack, it makes sure of only going through paths in $paths_{\ge j - \epsilon, \sigma, \delta}$.
+
+A simpler recursive algorithm could have been used, however, the constant-delay output might not be guaranteed because the number of backtracking steps after branching might be as long as the longest path of $G_{\mathcal{E}}$. To guarantee constant steps after branching and assure constant-delay output, \aref{algo:enumeration} uses a stack which allows to jump immediately to the next branch. We assume that storing $P$ in the stack takes constant time. We materialize this assumption by modelling $P$ as a linked list of positions, where the list is ordered by the last element added. To update $P$ with position $i$, we only need to create a node $i$ that points to the previous last element of $P$. Then, storing $P$ on the stack is just storing the pointer of the last element added.
+
+In the reminding of this section, we prove (1), (2) and (3). We start by proving \aref{algo:enumeration} enumerates $paths_{\ge \tau, \sigma, \delta}$ with output-linear delay after $\pi_{\sigma}$, provided that $\mathcal{E}$ is $k$-bounded and time-ordered and $n$ is a duplicate-free node.
+
+\begin{lemma}\label{lemma:enumeration:process}
+  Fix $k$, $\mathcal{P}$ and $p \in \mathcal{P}$. Let $\mathcal{E}$ be a $k$-bounded and time-ordered \acrshort{tecs}, $n$ a node of $\mathcal{E}$, and $\epsilon$ a time-window. Then, \aref{algo:enumeration} enumerates $paths_{\ge \tau, \sigma, \delta}$ with output-linear delay after $\pi_{\sigma}$.
+\end{lemma}
+
+\begin{proof}
+  Fix $\mathcal{E}$, $\tau$, $\sigma$ and $\delta$. We showed that \aref{algo:enumeration} traverses all paths of $paths_{\ge \tau, \sigma, \delta}(n)$. Furthermore, the order in which the paths are traversed is completely determined by the order of the union nodes: for each union node $u$, the paths to its left are traversed first, and then the ones to its right. Formally, for every node $n'$ define the leftmost path from $n'$ as ${\pi_{\swarrow}(n') := n_{0} \rightarrow n_{1} \rightarrow \ldots \rightarrow n_{l}}$ such that $n_{0} = n'$ and, for every $i \le l$:
+
+  \begin{itemize}
+      \item if $n_{i} \in N_{B}$, then $i = l$,
+      \item if $n_{i} \in N_{O}$, then $n_{i+1} = next(n_{i})$, and
+      \item if $n_{i} \in N_{U}$, then $n_{i+1} = left(n_{i})$.
+  \end{itemize}
+
+  For the first path, though, the order is different because the algorithm needs to skip all path before $\pi_{\sigma}$. Formally, for every node $n'$ define the leftmost path from $n'$ after $\pi_{\sigma}$ as ${\pi_{\swarrow > \sigma}(n') := n_{0} \rightarrow n_{1} \rightarrow \ldots \rightarrow n_{l}}$ such that $n_{0} = n'$ and, for every $i \le l$:
+  \begin{itemize}
+      \item if $n_{i} \in N_{B}$, then $i = l$,
+      \item if $n_{i} \in N_{O}$, then $n_{i+1} = next(n_{i})$, and
+      \item if $n_{i} \in N_{U}$ and $paths(n_{i}) > \sigma$, then ${n_{i+1} = left(n_{i})}$, otherwise, ${n_{i+1} = right(n_{i})}$.
+  \end{itemize}
+
+  Consider a path $\pi := n_{0} \rightarrow n_{1} \rightarrow \ldots \rightarrow n_{l}$, and let $j \leq l$ be the last position such that $n_{j}$ is a union node, $n_{j+1} = left(n_{j})$, $max(right(n_{j})) \ge \tau$, and $paths(n_{j}) > \sigma$. Then, let $\pi^{u}_{j}$ be the path $\pi$ up to position $j$ i.e. that stops at such union node.
+
+  Let $P = \{\pi_{1}, \pi_{2}, \ldots, \pi_{\delta}\}$ be the set of paths enumerated by \aref{algo:enumeration} in that order. Then, by analysing \aref{algo:enumeration}, one can see that $\pi_{1} = \pi_{\swarrow > \sigma}(n)$ and, for every $i \le \delta$, $\pi_{i} = \pi^{u}_{i-1} \cdot \pi_{\swarrow}(right(u))$. To put it another way, after reaching the starting path $\pi_{\sigma}$, it performs a greedy DFS from left to right: the first path to enumerate is $\pi_{1} = \pi_{\swarrow > \sigma}(n)$, then each $\pi_{i}$ is the path in ${paths}_{\ge \tau, \sigma, \delta}(n)$ that branches from $\pi_{i-1}$ to the right at the deepest level $u$ and from there follows the leftmost path. Moreover, to jump from $\pi_{i-1}$ to $\pi_{i}$, the node popped by the stack is exactly $u$, that is, the last node of $\pi^{u}_{i-1}$.
+
+  To show that the enumeration is done with output-linear delay after enumerating the first path, we study how long it takes between enumerating the complex events of $\pi_{i-1}$ and $\pi_{i}$. Consider that $\pi_{i-1}$ was just traversed and its complex event was output by line~\ref{line:enumeration:output}. Then, the \code{break} of line~\ref{line:enumeration:break} is executed, breaking the \code{while} of line~\ref{line:enumeration:while:2}. Afterwards, either the stack is empty and the algorithm ends, or a pair $(n', P)$ is popped from the stack, where $n'$ corresponds to the last node of $\pi^{u}_{i-1}$. From that point, it is straightforward to see that the number of iterations of the while of line~\ref{line:enumeration:while:2} (each taking constant time) is equal to the number of nodes $l$ in $\pi_{\swarrow}(n')$, so those nodes are traversed and the complex event of the path $\pi_{i}$ is output. But, because $\mathcal{E}$ is $k$-bounded, then $l \le k \cdot |C|$, where $C$ is the complex event of $\pi_{i}$. Finally, the time taken is bounded by the size of the output, and the enumeration is performed with output-linear delay after reaching the first path.
+\end{proof}
+
+Then, we present Lemma~\ref{lemma:bijection_subpath} that follows from Theorem~\ref{theorem:bijection} which will be necessary in the following proof of Theorem~\ref{theorem:enumeration:process}.
+
+\begin{lemma}[${paths}_{\ge j-\epsilon, \sigma, \delta} \rightarrow {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$]\label{lemma:bijection_subpath}
+  For every path in ${paths}_{\ge j-\epsilon, \sigma, \delta}$ there exist exactly one complex event in ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ within a time window of size $\epsilon$ that starts at event $pos(b)$ and ends at event $j$.
+\end{lemma}
+
+\begin{proof}
+  By definition ${paths}_{\ge j-\epsilon, \sigma, \delta} \subseteq {paths}_{\ge j-\epsilon}$ and Theorem~\ref{theorem:bijection}, ${paths}_{\ge j-\epsilon, \sigma, \delta} \longleftrightarrow S$ where $S \subseteq {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$. Hence, ${paths}_{\ge j-\epsilon, \sigma, \delta} \rightarrow {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
+\end{proof}
+
+Finally, we can prove that \aref{algo:enumeration} enumerates a subset of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ of size $\Omega(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$ with output-linear delay after the first complex event, provided that $\mathcal{E}$ is $k$-bounded and time-ordered and $n$ is a duplicate-free node.
+
+\begin{theorem}\label{theorem:enumeration:process}
+  Fix $k$, $\mathcal{P}$ and $p \in \mathcal{P}$. Let $\mathcal{E}$ be a $k$-bounded and time-ordered \acrshort{tecs}, $n$ a node of $\mathcal{E}$, $\epsilon$ a time-window. Then, \aref{algo:enumeration} enumerates a subset of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ of size $\Omega(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$ with output-linear delay after the first complex event.
+\end{theorem}
+
+\begin{proof}
+  % Let $\delta = \frac{paths_{\ge \tau}(n)}{|\mathcal{P}|}$ and $\sigma = index(p) \cdot \delta$ be constants as in \aref{algo:enumeration}.
+\end{proof}
+
+Now, there is only left to prove (3). We start with Lemma~\ref{lemma:paths_equivalence} and Lemma~\ref{lemma:union_of_paths} that will be essential in order to prove Theorem~\ref{theorem:enumeration}.
+
+\begin{lemma}\label{lemma:paths_equivalence}
+  If $\sigma = 0$ and $\delta = |{paths}_{\ge \tau}(n')|$, then ${paths}_{\ge \tau, \sigma, \delta}(n') = {paths}_{\ge \tau}(n')$.
+\end{lemma}
+
+\begin{proof}
+
+\end{proof}
+
+% Redo this part
+Let $m = |{paths}_{\ge \tau}(n')| - 1$, $\sigma=0$, and $\delta = |{paths}_{\ge \tau}(n')|$. Then ${paths}_{\ge \tau}(n') = \{\pi_{0}, \pi_{1}, \ldots, \pi_{m}\}$ and by Lemma~\ref{lemma:paths_equivalence} ${paths}_{\ge \tau, \sigma, \delta}(n') = \{\pi_{0}, \pi_{1}, \ldots, \pi_{m}\}$. Now, we proceed to show that when the enumeration is performed on each process $p \in \mathcal{P}$, the union of the outputs is equivalent to ...
+
+\begin{lemma}\label{lemma:union_of_paths}
+  Let $\mathcal{E}$ be a time-ordered \acrshort{tecs}, $n$ a duplicate-free node of $\mathcal{E}$, $\epsilon$ a time-window, $\mathcal{P}$ the set of all processes. Let $P_{p}$ be the output of \aref{algo:enumeration} on process $p \in \mathcal{P}$. Then, $\bigcup\limits_{p \in \mathcal{P}} P_{p} = paths_{\ge \tau}$.
+\end{lemma}
+
+\begin{proof}
+  We proved by Lemma~\ref{lemma:enumeration:process} that \aref{algo:enumeration} enumerates $paths_{\ge \tau, \sigma, \delta}$ where $\tau$ is fix, and $\sigma and \delta$ are variables that depend on $p$ and $\mathcal{P}$.
+
+  Fix $\delta = \frac{{paths}_{\ge \tau}(n')}{|\mathcal{P}|}$, show that the union of all outputs sets is $\{\pi_{0}, \pi_{1}, \ldots, \pi_{m}\}$. Then, use previous lemmas to show that $\{\pi_{0}, \pi_{1}, \ldots, \pi_{m}\} = {paths}_{\ge \tau, \sigma=0, \delta=|{paths}_{\ge \tau}(n')|}(n')$ and ${paths}_{\ge \tau, \sigma=0, \delta=|{paths}_{\ge \tau}(n')|}(n') = {paths}_{\ge \tau}(n')$.
+\end{proof}
+
+
+% TODO connect lemma/theorem
+
+\begin{theorem}\label{theorem:enumeration}
+  Let $\mathcal{E}$ be a time-ordered \acrshort{tecs}, $n$ a duplicate-free node of $\mathcal{E}$, $\epsilon$ a time-window, $\mathcal{P}$ the set of all processes. Let $C_{p}$ be the output of \aref{algo:enumeration} on process $p \in \mathcal{P}$. Then, $\bigcup\limits_{p \in \mathcal{P}} C_{p} = {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
+\end{theorem}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
