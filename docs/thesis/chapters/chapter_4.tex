@@ -357,7 +357,7 @@ There is only left to prove (3). We start with Lemma~\ref{lemma:union_of_paths} 
 \end{theorem}
 
 \begin{proof}
-  TODO
+  Fix $\tau$ and $\mathcal{P}$. For every node $n$ in $\mathcal{E}$, Lemma~\ref{lemma:union_of_paths} states that the union of the output of each process corresponds to ${paths}_{\ge \tau}(n)$. Then, we apply Theorem~\ref{theorem:bijection}, which states that there is a bijection between ${paths}_{\ge \tau}(n)$ and ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$, to the output of Lemma~\ref{lemma:union_of_paths}. And so, the union of the output of each process in $\mathcal{P}$ corresponds to ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ i.e. $\bigcup\limits_{p \in \mathcal{P}} C_{p} = {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
 \end{proof}
 
 This concludes the proves of (1), (2), and (3).
