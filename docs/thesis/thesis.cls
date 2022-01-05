@@ -61,10 +61,7 @@
   \let\footnotesize\small
   \let\footnoterule\relax
   \let \footnote \thanks
-  % \begin{center}
-  %   \includegraphics[width=0.7\textwidth]{figures/upc_logo.png}
-  % \end{center}
-  \null\vfil  
+  \null\vfil
   \begin{center}%
     \smallskip
     \hrule % Horizontal line
@@ -82,6 +79,9 @@
     \vskip 1em%
     {\large \@@date \par}%       % Set date in \large size.
   \vfil
+  % \begin{center}
+  %   \includegraphics[width=0.7\textwidth]{figures/upc_logo.png}
+  % \end{center}
   {\normalsize FACULTAT D’INFORMÀTICA DE BARCELONA (FIB)\\}
   {\normalsize UNIVERSITAT POLITÈCNICA DE CATALUNYA (UPC) – BarcelonaTech}
   \vskip 0.1em%
