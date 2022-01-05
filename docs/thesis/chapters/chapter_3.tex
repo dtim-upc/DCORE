@@ -29,19 +29,6 @@ A \textbf{distributed program} is composed of an ordered-set of $n$ asynchronous
 
 
 
-% Add this line when introducing the nodes.
-We denote the sets of bottom, output and union nodes by $N_{B}$, $N_{O}$ and $N_{U}$, respectively.
-
-
-% Reuse part of this :-)
-Before giving the formal description of the algorithm, we need to extend the definition of \acrfull{tecs}, as introduced in \cite{core}. A \acrshort{tecs} is a \acrfull{dag} \tecs with two kinds of nodes; union nodes and non-union nodes. Every union node u has exactly two children, the left child left(u) and the right child right(u). Every non-union node n is labelled by a stream position (an element of $\mathcal{N}$) and has at most one child. If non-union node n has no child it is called a \emph{bottom node}, otherwise it is an \emph{output node}. We write pos(n) for the label of non-union node n and next(o) for the unique child of output node o. For a node n, define its \emph{descending-paths}, denoted paths(n), as follows: if n is a bottom node, then paths(n) = 1; if n is an output node, then paths(n) = paths(next(n)); otherwise, paths(n) = paths(left(n)) + paths(right(n)). The descending-paths can be computed in constant.
-
-A \acrshort{tecs} represents sets of \emph{open} complex events. An \emph{open complex event} is a pair $(i, D)$ where $i \in \mathcal{N}$ and $D$ is a finite subset of $\{i, i+1, \ldots\}$. Intuitively, when processing a stream, the open complex events represented by a tECS are partial results that may later become full complex events. Remember that the purpose of constructing \tecs is to be able to enumerate the set \enumCEA at every $j$. To achieve that goal, it will be necessary to enumerate, for certain nodes n in \tecs, the set $\InDoubleBrackets{\text{n}}^{\epsilon}_{\mathcal{E}}(j) := \{ ([i, j], D) | (i, D) \in \InDoubleBrackets{\text{n}}_{\mathcal{E}} \land j - i \leq \epsilon \}$ i.e. all open complex events represented by n that, when closed with j, are within a time window of size $\epsilon$.
-
-Recall that we imposed three restrictions on the structure of a \acrshort{tecs}: (1) it needs to be \emph{time-ordered}, (2) it needs to be \emph{k-bounded}, and (3) its needs to be \emph{duplicate-free}.
-
-We defined three operations on \tecs: new-bottom($i$), extend(m, $j$) and union($\text{n}_{1},\text{n}_{2}$). The first method, new-bottom($i$) adds a new bottom node b labelled $i$ to \tecs. The second method, extend(n, $j$) adds a new output node o to \tecs with pos(o) = $j$ and next(o) = n. The third method, union($\text{n}_{1},\text{n}_{2}$) returns a node u such that $\InDoubleBrackets{u}_{\mathcal{E}} = \InDoubleBrackets{\text{n}_{1}}_{\mathcal{E}} \cup \InDoubleBrackets{\text{n}_{2}}_{\mathcal{E}}$. Any \acrshort{tecs} that is created using only these three methods is time-ordered and $3$-bounded.
-
 % Place it in CEA section
 \begin{figure}[H]
   \centering

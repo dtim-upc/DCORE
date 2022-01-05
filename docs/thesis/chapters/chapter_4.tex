@@ -12,28 +12,66 @@ where $\mathcal{A}$ is a CEA, $\epsilon$ a time window, and $S$ a stream. Actual
   {\llbracket \mathcal{A} \rrbracket}^{\epsilon}(S) := \{ C \ | \ C \in {\llbracket \mathcal{A} \rrbracket}(S) \land C(end) - C(start) \le \epsilon\}.
 \end{equation*}
 
-The algorithm is executed on a \emph{distributed system} composed by $\mathcal{P}$ processes. The processes do not share a global memory and communicate solely by passing messages. Each asynchronous process incrementally updates a data structure that \emph{compactly} represents partials outputs. Whenever a new tuple arrives, it takes \emph{constant time} (in data complexity \cite{data-complexity}) to update the compact data structure. Moreover, the distributed system may enumerate \emph{cooperatively} without message passing, at each position $j$, the complex events of ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$, one by one, and without duplicates. During the enumeration, each process enumerates at most $\frac{|{\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)|}{\mathcal{P}}$ complex events with \emph{output-linear delay} after printing the first complex event of the subset of $\frac{|{\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)|}{\mathcal{P}}$ from the data structure. This means that the time required to print the following complex events is linear in the size of the complex event being printed. We want to emphasise that the data complexity our algorithm is asymptotically optimal: any evaluation algorithm needs to inspect every input event and enumerate the query's answers.
+The algorithm is executed on a \emph{distributed system} composed by independent processes $\mathcal{P}$. The processes do not share a global memory and communicate solely by passing messages. Each asynchronous process incrementally updates a data structure that \emph{compactly} represents partials outputs. Whenever a new tuple arrives, it takes \emph{constant time} (in data complexity \cite{data-complexity}) to update the compact data structure. Moreover, the distributed system may enumerate \emph{cooperatively} without message passing, at each position $j$, the complex events of ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$, one by one, and without duplicates. During the enumeration, each process enumerates at most $\frac{|{\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)|}{|\mathcal{P}|}$ complex events with \emph{output-linear delay} after printing the first complex event. This means that the time required to print the following complex events is linear in the size of the complex event being printed. We want to emphasise that the data complexity our algorithm is asymptotically optimal: any evaluation algorithm needs to inspect every input event and enumerate the query's answers.
 
 The rest of the chapter is structured as follows. In Section~\ref{sec:data_structure} we define the data structure structure and its operations. In Section~\ref{sec:auxiliary_data_structure} we define auxiliary data structures used by the evaluation algorithm. In Section~\ref{sec:evaluation}~and~\ref{sec:enumeration} we describe the evaluation algorithm and discuss its complexity. We conclude with a summary of the main points discussed in this chapter.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{The data structure}\label{sec:data_structure}
 
-\section{The compact data structure}\label{sec:data_structure}
+The data structure is called \acrfull{tecs}. A tECS is a \acrfull{dag} $\mathcal{E}$ with two kinds of nodes: \emph{union nodes} and \emph{non-union nodes}. Every union node \textrm{u} has exactly two children, the left child \code{left(\textrm{u})} and the right child \code{right(\textrm{u})}. Every non-union node \textrm{n} is labelled by a stream position (an element of $\mathcal{N}$) and has at most one child. If non-union node \textrm{n} has no child it is called a \emph{bottom node}, otherwise it is an \emph{output node}. We write \code{pos(\textrm{n})} for the label of non-union node \textrm{n} and \code{next(\textrm{o})} for the unique child of output node \textrm{o}. For a node \textrm{n}, define its \emph{descending-paths}, denoted \code{paths(\textrm{n})}, as follows: if n is a bottom node, then \code{paths(\textrm{n})} = 1; if n is an output node, then \code{paths(\textrm{n}) = paths(next(\textrm{n}))}; otherwise, \code{paths(\textrm{n}) = paths(left(\textrm{n})) + paths(right(\textrm{n}))}. Note, the descending-paths can be computed in constant time. To simplify presentation in what follows, we write nodes of any kind as \textrm{n}, bottom, output and union nodes as \textrm{b, o, u}, respectively, and we denote the sets of bottom, output and union nodes by $N_{B}$, $N_{O}$ and $N_{U}$, respectively.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+A \acrshort{tecs} represents sets of open complex events. An \emph{open complex event} is a pair $(i, D)$ where $i \in \mathcal{N}$ is the starting position and $D$ is a finite subset of $\{i, i+1, \ldots\}$ positions. An open complex event is almost a complex event, but the end time is missing: if we choose $j \ge max(D)$, then $([i, j], D)$ is a complex event. Intuitively, when processing a stream, the open complex events represented by a tECS are partial results that may later become complex events.
+
+Let $\bar{p} = n_{1}, n_{2}, \ldots, n_{k}$ be a \emph{full-path} in $\mathcal{E}$ such that $n_{k}$ is a bottom node. Then $\bar{p}$ represents the open complex event ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}} = (i, D)$ where $i = pos(n_{k})$ is the label of bottom node $n_{K}$ and $D$ are the labels of the non-union nodes in $\bar{p}$.
+
+Given a node $n$, ${\llbracket \textrm{n} \rrbracket}_{\mathcal{E}}$ is the set of open complex events represented by \textrm{n} and consists of all open complex events ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}}$ with $\bar{p}$ a full-path in $\mathcal{E}$ starting at \textrm{n}.
+
+To enumerate, at every position $j$, the set of complex events ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$, we will need to enumerate, for some nodes $n$ in $\mathcal{E}$, the set ${\llbracket \textrm{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) := \{ ([i, j], D) \ | \ (i, D) \in {\llbracket \textrm{n} \rrbracket}_{\mathcal{E}}(j) \land j - i \leq \epsilon \}$ i.e. all open complex events represented by \textrm{n} that, when closed with $j$, are within a time window of size $\epsilon$.
+
+In order to enumerate the set of complex events ${\llbracket \textrm{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$, one by one, without duplicates, and with output-linear delay, it will be necessary to impose three restrictions on the structure of the tECS $\mathcal{E}$:
+
+\textbf{Time-ordered}. For a node \textrm{n} define its \emph{maximum-start}, denoted max(\textrm{n}), as max(\textrm{n}) = max(${ i \ | \ (i, D) \in {\llbracket \textrm{n} \rrbracket}_{\mathcal{E}}}$). Then, a tECS is \emph{time-ordered} if (1) every node \textrm{n} includes max(\textrm{n}) as an attribute that can be access in constant time, and (2) for every union node \textrm{u} it holds that max(left(\textrm{u})) $\ge$ max(right(\textrm{u})). Needless path traversals are avoided on a time-ordered tECS: we always check first that $j - \text{max({\textrm{n}})} \le \epsilon$, and when we traverse a union node \textrm{u}, we always visit left(\textrm{u}) before right(\textrm{u}) and we only visit right(\textrm{u}) if $j - \text{max(right(\textrm{u}))} \le \epsilon$.
+
+\textbf{$K$-bounded}. For a node \textrm{n} define its \emph{output-depth}, denoted odepth(\textrm{n}), recursively as: if \textrm{n} is a non-union node, then odepth(\textrm{n}) = 0; otherwise, $\text{odepth(\textrm{n})} = \text{odepth(left(\textrm(n)))} + 1$. Then, a $\mathcal{E}$ is \emph{k-bounded} if odepth(\textrm{n}) $\leq k$ for every node \textrm{n}. The $k$-boundedness restriction is necessary to preserve output-linear delay; otherwise the corresponding full-path $\bar{p}$ of a node \textrm{n} in $\mathcal{E}$ may contain an unbounded number of union nodes to visit before reaching the bottom node violating the output-linear delay.
+
+\textbf{Duplicate-free}. A tECS $\mathcal{E}$ is \emph{duplicate-free} if all of its nodes are duplicate-free, and a node \textrm{n} is duplicate-free if for every pair of distinct full-paths $\bar{p}$ and $\bar{q}$ that start at \textrm{n} holds that ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}} \ne {\llbracket \bar{q} \rrbracket}_{\mathcal{E}}$.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 \section{Auxiliary data structures}\label{sec:auxiliary_data_structure}
 
 % Move operations to the previous section
 % Talk about union list and Hash tables
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{The evaluation algorithm}\label{sec:evaluation}
 
@@ -136,11 +174,6 @@ The rest of the chapter is structured as follows. In Section~\ref{sec:data_struc
 \end{figure}
 
 We next describe how \aref{algo:update} works. During the description, the reader may find it helpful to refer to Figure~\ref{fig:tecs:update}, which illustrates how \aref{algo:update} evaluates the CEA $\mathcal{A}$ of Figure~\ref{fig:cea:ab+} over the stream $S$ of Figure~\ref{fig:cea:ab+}. Each subfigure corresponds to the state after processing $S[j]$. The tECS is denoted in black, the attribute $paths$ of each node is coloured red, and the hash table $T$ that links the active states to union-lists is illustrated in blue. For each position, the set \code{ordered-keys($T$)} will be ordered top down.
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newpage
 \section{The enumeration algorithm}\label{sec:enumeration}
@@ -331,10 +364,6 @@ There is only left to prove (3). We start with Lemma~\ref{lemma:union_of_paths} 
 \end{proof}
 
 This concludes the proofs of properties (1), (2), and (3).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Chapter summary}
 
