@@ -1,124 +1,33 @@
-\chapter{Distributed COmplex event Recognition Engine}\label{chapter:algorithm}
+\chapter{Evaluation Algorithm}\label{chapter:algorithm}
 
-% Here we should start by CORE 5.Evaluation algorithm
+In this section, we propose an efficient evaluation algorithm that computes the set
 
-% TODO this is old, rewrite.
-In this section, we propose \acrfull{dte}, a novel extension of the evaluation algorithm in \cite{core}. In particular, \acrshort{dte} distributes the potentially exponential workload of \textsc{Enumerate} among $n$ asynchronous processes $p_{1}, \ldots, p_{n}$ while preserving the constant time per input event update of the data structure that compactly represents the set of partial matches and the output-linear delay enumeration of the results.
+\begin{equation*}\label{eq:cea:window}
+  {\llbracket \mathcal{A} \rrbracket}^{\epsilon}(S) := \{ C \ | \ C \in {\llbracket \mathcal{A} \rrbracket}(S) \land C(end) - C(start) \le \epsilon\}
+\end{equation*}
 
-Before giving the formal description of the algorithm, we need to extend the definition of \acrfull{tecs}, as introduced in \cite{core}. A \acrshort{tecs} is a \acrfull{dag} \tecs with two kinds of nodes; union nodes and non-union nodes. Every union node u has exactly two children, the left child left(u) and the right child right(u). Every non-union node n is labelled by a stream position (an element of $\mathcal{N}$) and has at most one child. If non-union node n has no child it is called a \emph{bottom node}, otherwise it is an \emph{output node}. We write pos(n) for the label of non-union node n and next(o) for the unique child of output node o. For a node n, define its \emph{descending-paths}, denoted paths(n), as follows: if n is a bottom node, then paths(n) = 1; if n is an output node, then paths(n) = paths(next(n)); otherwise, paths(n) = paths(left(n)) + paths(right(n)). The descending-paths can be computed in constant.
+where $\mathcal{A}$ is a CEA, $\epsilon$ a time window, and $S$ a stream. Actually, it will compute this set incrementally: at every position $j$ in the stream, it outputs the set
 
-A \acrshort{tecs} represents sets of \emph{open} complex events. An \emph{open complex event} is a pair $(i, D)$ where $i \in \mathcal{N}$ and $D$ is a finite subset of $\{i, i+1, \ldots\}$. Intuitively, when processing a stream, the open complex events represented by a tECS are partial results that may later become full complex events. Remember that the purpose of constructing \tecs is to be able to enumerate the set \enumCEA at every $j$. To achieve that goal, it will be necessary to enumerate, for certain nodes n in \tecs, the set $\InDoubleBrackets{\text{n}}^{\epsilon}_{\mathcal{E}}(j) := \{ ([i, j], D) | (i, D) \in \InDoubleBrackets{\text{n}}_{\mathcal{E}} \land j - i \leq \epsilon \}$ i.e. all open complex events represented by n that, when closed with j, are within a time window of size $\epsilon$.
+\begin{equation*}\label{eq:cea:windows:incremental}
+  {\llbracket \mathcal{A} \rrbracket}^{\epsilon}(S) := \{ C \ | \ C \in {\llbracket \mathcal{A} \rrbracket}(S) \land C(end) - C(start) \le \epsilon\}.
+\end{equation*}
 
-Recall that we imposed three restrictions on the structure of a \acrshort{tecs}: (1) it needs to be \emph{time-ordered}, (2) it needs to be \emph{k-bounded}, and (3) its needs to be \emph{duplicate-free}.
+% distributes the potentially exponential workload of \textsc{Enumerate} among $n$ asynchronous processes $p_{1}, \ldots, p_{n}$ while preserving the constant time per input event update of the data structure that compactly represents the set of partial matches and the output-linear delay enumeration of the results.
 
-We defined three operations on \tecs: new-bottom($i$), extend(m, $j$) and union($\text{n}_{1},\text{n}_{2}$). The first method, new-bottom($i$) adds a new bottom node b labelled $i$ to \tecs. The second method, extend(n, $j$) adds a new output node o to \tecs with pos(o) = $j$ and next(o) = n. The third method, union($\text{n}_{1},\text{n}_{2}$) returns a node u such that $\InDoubleBrackets{u}_{\mathcal{E}} = \InDoubleBrackets{\text{n}_{1}}_{\mathcal{E}} \cup \InDoubleBrackets{\text{n}_{2}}_{\mathcal{E}}$. Any \acrshort{tecs} that is created using only these three methods is time-ordered and $3$-bounded.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% CEA AB+
-\begin{figure}[H]
-  \centering
-  \begin{subfigure}[t]{\textwidth}
-    \centering
-    \inputtikz{streamAB+}
-  \end{subfigure}
-  \\
-  \begin{subfigure}[b]{\textwidth}
-    \begin{minted}[xleftmargin=40pt, linenos=false]{text}
-      SELECT *
-      FROM S
-      WHERE A as a; B + as bb
-    \end{minted}
-  \end{subfigure}
-  \\
-  \begin{subfigure}[b]{\textwidth}
-    \centering
-    \inputtikz{ceaAB+}
-  \end{subfigure}
-  \caption{A CEA representing $Q_{1}$ from Figure 1 and some of its runs on an example stream.}
-  \label{fig:label}
-\end{figure}
+\section{The compact data structure}\label{sec:data_structure}
 
-\begin{figure}[H]
-  \centering
-  \begin{subfigure}[t]{0.1\linewidth}
-    \inputtikz{AB+_0}
-  \end{subfigure}
-  \begin{subfigure}[t]{0.1\linewidth}
-    \inputtikz{AB+_1}
-  \end{subfigure}
-  \begin{subfigure}[t]{0.24\linewidth}
-    \inputtikz{AB+_2}
-  \end{subfigure}
-  \begin{subfigure}[t]{0.24\linewidth}
-    \inputtikz{AB+_3}
-  \end{subfigure}
-  \begin{subfigure}[t]{0.28\linewidth}
-    \inputtikz{AB+_4}
-  \end{subfigure}
-  \caption{Illustration of Algorithm TODO on the CEA $\mathcal{A}$ and stream $S$ of Figure ???.}
-  \label{fig:label}
-\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{figure}[H]
-  \centering
-  \begin{subfigure}[t]{0.24\linewidth}
-    \inputtikz{AB+_enumeration_0}
-  \end{subfigure}
-  \begin{subfigure}[t]{0.24\linewidth}
-    \inputtikz{AB+_enumeration_1}
-  \end{subfigure}
-  \begin{subfigure}[t]{0.24\linewidth}
-    \inputtikz{AB+_enumeration_2}
-  \end{subfigure}
-  \begin{subfigure}[t]{0.24\linewidth}
-    \inputtikz{AB+_enumeration_3}
-  \end{subfigure}
-  \caption{Illustration of Algorithm \ref{algo:enumeration} on the CEA $\mathcal{A}$ and stream $S$ of Figure ???.}
-  \label{fig:label}
-\end{figure}
+\section{Auxiliary data structures}\label{sec:auxiliary_data_structure}
 
-% CEA A+B+
-% \begin{figure}[H]
-%   \centering
-%   \begin{subfigure}[t]{\textwidth}
-%     \centering
-%     \inputtikz{streamA+B+}
-%   \end{subfigure}
-%   \\
-%   \begin{subfigure}[b]{\textwidth}
-%     \begin{minted}[xleftmargin=40pt, linenos=false]{text}
-%       SELECT *
-%       FROM S
-%       WHERE A + as aa; B + as bb
-%     \end{minted}
-%   \end{subfigure}
-%   \\
-%   \begin{subfigure}[b]{\textwidth}
-%     \centering
-%     \inputtikz{ceaA+B+}
-%   \end{subfigure}
-%   \caption{A CEA representing $Q_{1}$ from Figure 1 and some of its runs on an example stream.}
-%   \label{fig:label}
-% \end{figure}
-
-% \begin{figure}[H]
-%   \begin{subfigure}[t]{0.1\linewidth}
-%     \inputtikz{A+B+_0}
-%   \end{subfigure}
-%   \begin{subfigure}[t]{0.1\linewidth}
-%     \inputtikz{A+B+_1}
-%   \end{subfigure}
-%   \begin{subfigure}[t]{0.24\linewidth}
-%     \inputtikz{A+B+_2}
-%   \end{subfigure}
-%   \begin{subfigure}[t]{0.24\linewidth}
-%     \inputtikz{A+B+_3}
-%   \end{subfigure}
-%   \begin{subfigure}[t]{0.28\linewidth}
-%     \inputtikz{A+B+_4}
-%   \end{subfigure}
-%   \caption{Illustration of Algorithm 1 on the CEA $\mathcal{A}$ and stream $S$ of Figure ???.}
-%   \label{fig:label}
-% \end{figure}
+% Move operations to the previous section
+% Talk about union list and Hash tables
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -197,10 +106,40 @@ We are ready to description algorithm \acrshort{dte}. An efficient implementatio
 \end{algorithm}
 
 
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.1\linewidth}
+    \inputtikz{AB+_0}
+    \caption*{$S[$0$]$}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.1\linewidth}
+    \inputtikz{AB+_1}
+    \caption*{$S[$1$]$}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.24\linewidth}
+    \inputtikz{AB+_2}
+    \caption*{$S[$2$]$}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.24\linewidth}
+    \inputtikz{AB+_3}
+    \caption*{$S[$3$]$}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.28\linewidth}
+    \inputtikz{AB+_4}
+    \caption*{$S[$4$]$}
+  \end{subfigure}
+  \caption{Illustration of Algorithm~\ref{algo:update} on the CEA $\mathcal{A}$ and stream $S$ of Figure~\ref{fig:cea:ab+}.}
+  \label{fig:tecs:update}
+\end{figure}
+
+We next describe how \aref{algo:update} works. During the description, the reader may find it helpful to refer to Figure~\ref{fig:tecs:update}, which illustrates how \aref{algo:update} evaluates the CEA $\mathcal{A}$ of Figure~\ref{fig:cea:ab+} over the stream $S$ of Figure~\ref{fig:cea:ab+}. Each subfigure corresponds to the state after processing $S[j]$. The tECS is denoted in black, the attribute $paths$ of each node is coloured red, and the hash table $T$ that links the active states to union-lists is illustrated in blue. For each position, the set \code{ordered-keys($T$)} will be ordered top down.
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\newpage
 \section{The enumeration algorithm}\label{sec:enumeration}
 
 % TODO you need to introduce what this algorithm is for somewhere.
@@ -209,7 +148,7 @@ We are ready to description algorithm \acrshort{dte}. An efficient implementatio
 
 We provide \aref{algo:enumeration} and show that: (1) it enumerates a subset of complex events $S \subseteq {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ where $|S| = \Omega(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$, and (2) it does so with output-linear delay after reaching the first complex event. Furthermore, we will show that (3) the union of the enumeration of \aref{algo:enumeration} on each process $p \in \mathcal{P}$ corresponds to ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
 
-\begin{algorithm}[H]
+\begin{algorithm}[h]
   \setstretch{1.0} % space between lines
   \DontPrintSemicolon
   \SetAlgoNoEnd % don't print end
@@ -258,6 +197,33 @@ We provide \aref{algo:enumeration} and show that: (1) it enumerates a subset of 
 \caption{Enumeration of ${paths}_{\ge \tau, \sigma, \delta}(\text{n})$.}
 \label{algo:enumeration}
 \end{algorithm}
+
+We next describe how \aref{algo:enumeration} works. During the description, the reader may find it helpful to refer to Figure~\ref{fig:tecs:enumeration}, which illustrates how \aref{algo:enumeration} enumerates the tECS $\mathcal{E}$ of Figure~\ref{fig:tecs:update}. In particular, how complex events ${\llbracket \text{4} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ are enumerated by distributing the workload on each process. Assuming $\mathcal{P} = 3$, each subfigure depicts the enumeration of the paths assigned to each process. The tECS is denoted in black, the attribute $paths$ of each node in red, and the traversed paths in green. Notice, each process traverses different paths but all paths are traversed at the end.
+
+\begin{figure}[h]
+  \centering
+  \begin{subfigure}[b]{0.3\linewidth}
+    \centering
+    \inputtikz{AB+_enumeration_0}
+    \caption{Process $0$}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.3\linewidth}
+    \centering
+    \inputtikz{AB+_enumeration_1}
+    \inputtikz{AB+_enumeration_2}
+    \caption{Process $1$}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.3\linewidth}
+    \centering
+    \inputtikz{AB+_enumeration_3}
+    \caption{Process $2$}
+  \end{subfigure}
+
+  \caption{Illustration of Algorithm \ref{algo:enumeration} on the tECS $\mathcal{E}$ of Figure~\ref{fig:tecs:update}.}
+  \label{fig:tecs:enumeration}
+\end{figure}
 
 \aref{algo:enumeration} uses a stack $st$ with common stack operations: \code{new-stack()} to create an empty stack, \code{push(st, e)} to add an element \code{e} at the top of the stack, and \code{pop(st)} to remove and return the element on the top of the stack. When the stack is empty, we will interpret $e \leftarrow pop(st)$ as \code{false}. We assume that stack operations can be performed in constant time.
 
