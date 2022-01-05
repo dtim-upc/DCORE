@@ -1,1 +1,24 @@
-\chapter{TODO}
+\chapter{Proofs of \cref{chapter:algorithm}}\label{appendix:A}
+
+\section{Proof of Theorem~\ref{theorem:isomorphism}}\label{appendix:A:sec:1}
+
+\begin{theorem}[${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longleftrightarrow paths_{\ge j - \epsilon}(n)$]
+  For every complex event within a time window of size $\epsilon$ there exists exactly one path that reaches a bottom node $b$ with $pos(b) \ge j - \epsilon$, and vice versa.
+\end{theorem}
+
+\begin{proof}
+  Fix $j$, $\epsilon$, and $\mathcal{E}$. Let $n$ be a node in $\mathcal{E}$. The proof follows by the definition of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$, ${\llbracket \text{n} \rrbracket}_{\mathcal{E}}$, ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}}$, and ${paths}_{\ge \tau}(n)$. Recall that
+
+  \begin{itemize}
+    \item ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) = \{ ([i,j], D) \ | \ (i,D) \in {\llbracket \text{n} \rrbracket}_{\mathcal{E}} \land j - i \le \epsilon \}$ encodes all open complex events represented by $n$ in $\mathcal{E}$ that, when closed with j, are within a time window of size $\epsilon$,
+    \item ${\llbracket \text{n} \rrbracket}_{\mathcal{E}} = \bigcup\limits_{\bar{p};\\ start(\bar{p}) = n} {\llbracket \bar{p} \rrbracket}_{\mathcal{E}}$ encodes all open complex events ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}}$ with $\bar{p}$ a full-path in $\mathcal{E}$ starting at $n$, and
+    \item ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}} = (i, D)$ where $\bar{p} = n_{1},n_{2}, \ldots, n_{k}$ be a \emph{full-path} in $\mathcal{E}$ such that $n_{k}$ is a bottom node, $i = pos(n_{k})$ is the label of the bottom node $n_{k}$, and $D$ is the set of labels of the other non-union nodes in $\bar{p}$.
+  \end{itemize}
+
+  First, we prove ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsto paths_{\ge j - \epsilon}(n)$. Given a complex event $([i, j], D) \in {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$, there is an open complex event $(i, D) \in {\llbracket \text{n} \rrbracket}_{\mathcal{E}}$ that is represented as the full-path $\bar{p} = n_{1},n_{2}, \ldots, n_{k}$ in $\mathcal{E}$ such that $n_{k}$ is a bottom node and $i = pos(n_{k})$ is the label of the bottom node $n_{k}$. Notice, $n_{1} = n$ is the starting node, $j = pos(n_{1})$ is the label of the starting node $n_{1}$, and $j - i \le \epsilon$. By definition, $\bar{p} \in {paths}_{\ge \tau}(n)$.
+
+  Secondly, we prove that $paths_{\ge j - \epsilon}(n) \longmapsto {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$. The proof follows by expanding the definition of ${paths}_{\ge \tau}(n)$ and following the steps of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsto paths_{\ge j - \epsilon}(n)$'s proof in reverse order.
+
+  Finally, by ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsto paths_{\ge j - \epsilon}(n)$ and $paths_{\ge j - \epsilon}(n) \longmapsto {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ proofs, ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longleftrightarrow paths_{\ge j - \epsilon}(n)$ immediately holds.
+
+\end{proof}
