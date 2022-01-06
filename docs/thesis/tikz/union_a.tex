@@ -1,0 +1,23 @@
+% \documentclass[border=0.2cm]{standalone}
+
+% \usepackage{tikz}
+% \usetikzlibrary{automata, arrows.meta, positioning, shapes}
+
+% \begin{document}
+\begin{tikzpicture}[node distance = 1cm,
+  on grid,
+  auto,
+]
+\tikzstyle{every state}=[inner sep=0pt, minimum size=10pt, draw=none]
+
+\node (u) [state] {$\textrm{u}$};
+\node (n1) [state, below left = of u] {$\textrm{n}_{1}$};
+\node (n2) [state, below right = of u] {$\textrm{n}_{2}$};
+
+\path [-stealth, thick, color=black]
+  (u) edge [dashed] node {} (n1)
+  (u) edge [] node {} (n2)
+  ;
+
+\end{tikzpicture}
+% \end{document}
