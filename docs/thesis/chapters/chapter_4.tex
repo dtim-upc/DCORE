@@ -1,16 +1,10 @@
 \chapter{Evaluation Algorithm}\label{chapter:algorithm}
 
-In this section, we propose an \emph{efficient} and \emph{distributed} evaluation algorithm that computes the set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}(S) := \{ C \ | \ C \in {\llbracket \mathcal{A} \rrbracket}(S) \land C(end) - C(start) \le \epsilon\}$ where $\mathcal{A}$ is a CEA, $\epsilon$ a time window, and $S$ a stream. Actually, it will compute this set \emph{incrementally}: at every position $j$ in the stream, it outputs the set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S) := \{ C \ | \ C \in {\llbracket \mathcal{A} \rrbracket}^{\epsilon}(S) \land C(end) = j \}$.
+In this section, we propose an \emph{efficient} and \emph{distributed} evaluation algorithm, inspired by \cite{core}, that computes the set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}(S) := \{ C \ | \ C \in {\llbracket \mathcal{A} \rrbracket}(S) \land C(end) - C(start) \le \epsilon\}$ where $\mathcal{A}$ is a CEA, $\epsilon$ a time window, and $S$ a stream. Actually, it will compute this set \emph{incrementally}: at every position $j$ in the stream, it outputs the set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S) := \{ C \ | \ C \in {\llbracket \mathcal{A} \rrbracket}^{\epsilon}(S) \land C(end) = j \}$.
 
-The algorithm is executed on a \emph{distributed system} composed by independent processes $\mathcal{P}$. The processes do not share a global memory and communicate solely by passing messages. Each asynchronous process incrementally updates a data structure that \emph{compactly} represents partials outputs. Whenever a new tuple arrives, it takes \emph{constant time} (in data complexity \cite{data-complexity}) to update the compact data structure. Moreover, the distributed system may enumerate \emph{cooperatively} without message passing, at each position $j$, the complex events of ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$, one by one, and without duplicates. During the enumeration, each process enumerates at most $\frac{|{\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)|}{|\mathcal{P}|}$ complex events with \emph{output-linear delay} after printing the first complex event. This means that the time required to print the following complex events is linear in the size of the complex event being printed. We want to emphasise that the data complexity our algorithm is asymptotically optimal: any evaluation algorithm needs to inspect every input event and enumerate the query's answers.
+The evaluation algorithm is executed on a \emph{distributed system} composed by independent processes $\mathcal{P}$. The processes do not share a global memory and communicate solely by passing messages. Each asynchronous process incrementally updates a data structure that \emph{compactly} represents partials outputs. Whenever a new tuple arrives, it takes \emph{constant time} (in data complexity \cite{data-complexity}) to update the compact data structure. Moreover, the distributed system may enumerate \emph{cooperatively} without message passing, at each position $j$, the complex events of ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$, one by one, and without duplicates. During the enumeration, each process enumerates at most $\frac{|{\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)|}{|\mathcal{P}|}$ complex events with \emph{output-linear delay} after printing the first complex event. This means that the time required to print the following complex events is linear in the size of the complex event being printed. We remark that the evaluation the CEA is intrinsically sequential and the data complexity our algorithm is asymptotically optimal: any evaluation algorithm needs to inspect every input event and enumerate the query's answers.
 
-
-% % TOD
-% We are ready to description algorithm \acrshort{dte}. An efficient implementation would be execute \cite[Algorithm 1]{core} on a single process e.g. $p_{0}$, and distribute the \acrshort{tecs} \tecs to the rest of the processes $p_{1}, \ldots, p_{n}$, so $p_{0}$ could keep ingesting events at constant time while the rest of processes could be working on the possibly exponential enumeration of \tecs. However, if done in a na\"ive way, distributing the \acrshort{tecs} on each event that triggers a complex event would take time proportional to its size which is at most linear in the length of the stream breaking the constant update time. Hence, the distribution of the tECS has to be done incrementally per input event to preserve the constant time complexity. An algorithm that that incrementally distributes the tECS would need to send to each process all new node added to the tECS at iteration $j$ and additional information on how to add these nodes to the tECS of iteration $j-1$. Furthermore, each process would need to keep an updated hash table, similar to the one used in the evaluation algorithm, in order to apply the incremental changes instructed by the messages from the centralized evaluation process. We argue that this incremental distribution algorithm is \emph{asymptotically equivalent} to executing the update phase from \cite[Algorithm 1]{core} on each process. Both algorithms needs to incrementally update the tECS and the hash table $T$ but the later needs to iterate over all transitions $\Delta$ in the worst-case, however, this takes constant time under data complexity. Consequently, we choose to replicate the update phase of Algorithm 1 on each process and leave for future work a more sophisticated approach.
-
-
-
-
+We describe an alternative implementation, based on the observation that updating the same data structure on each process seems suboptimal, and argue that our implementation is asymptotically equivalent. The algorithm is as follows: we assign a process (e.g. $p_{0}$) to ingesting events and updating the data structure representing the partials outputs. Once a complex event is found, we distribute the data structure among the rest of the processes and enumerate the complex events on each. If implemented in a na\"ive way, the update algorithm may take linear time (instead of constant time), because distributing the tECS takes time proportional to its size which is linear in the size of the stream. However, if the distribution of the tECS is done incrementally on each input tuple, then each process will need to keep a copy that has to be incrementally updated and it would take, at least, constant time to update this copy. Furthermore, each process will need to keep all the auxiliary data structures used in the evaluation of the CEA. We emphasise that this alternative algorithm is equivalent, under time and data complexity, to our  algorithm. In fact, our algorithm performs better in practise because it requires no communication among the processes.
 
 The rest of the chapter is structured as follows. In Section~\ref{sec:data_structure} we define the data structure structure and its operations. In Section~\ref{sec:auxiliary_data_structure} we define auxiliary data structures used by the evaluation algorithm. In Section~\ref{sec:evaluation}~and~\ref{sec:enumeration} we describe the evaluation algorithm and discuss its complexity. We conclude with a summary of the main points discussed in this chapter.
 
@@ -35,6 +29,19 @@ In order to enumerate the set of complex events ${\llbracket \textrm{n} \rrbrack
 \textbf{Duplicate-free}. A tECS $\mathcal{E}$ is \emph{duplicate-free} if all of its nodes are duplicate-free, and a node \textrm{n} is duplicate-free if for every pair of distinct full-paths $\bar{p}$ and $\bar{q}$ that start at \textrm{n} holds that ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}} \ne {\llbracket \bar{q} \rrbracket}_{\mathcal{E}}$.
 
 Remember that the purpose of constructing tECS $\mathcal{E}$ is to be able to enumerate the set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$ at every position $j$. If $\mathcal{E}$ is time-ordered, $k$-bounded for $k = 3$, and duplicate-free, then Theorem~\ref{theorem:enumeration} ensures that we enumerate set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$.
+\begin{theorem}\label{theorem:enumeration}
+  Let $\mathcal{E}$ be a time-ordered \acrshort{tecs}, \textrm{n} a duplicate-free node of $\mathcal{E}$, $\epsilon$ a time-window, $\mathcal{P}$ the set of all processes. Let $C_{p}$ be the output of \aref{algo:enumeration} on process $p \in \mathcal{P}$. Then, $\bigcup\limits_{p \in \mathcal{P}} C_{p} = {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
+\end{theorem}
+
+In Section~\ref{sec:enumeration}, we will give the pseudocode of the enumeration algorithm executed on each process, and show its correctness.
+
+\textbf{Operations on tECS}. We define three operations on $\mathcal{E}$. In order to ensure that newly created nodes are $3$-bounded, we require that the argument nodes of these operations are safe. A node is \emph{safe} if it is a non-union node or if both $\text{odepth(\textrm{n})} = 1$ and $\text{odepth(right(\textrm{n}))} \le 2$. All three operations on tECS return safe nodes.
+
+\code{$\text{b} \leftarrow \text{new-botom}(i)$}. The first method adds a new bottom node \textrm{b} labelled by $i \in \mathbb{N}$ to $\mathcal{E}$.
+
+\code{$o \leftarrow \text{extend}(\textrm{n}, j)$}. The second method adds a new output node \textrm{o} to $\mathcal{E}$ with $\text{pos(\textrm{o})} = j$ and $\text{next(\textrm{o})} = n$.
+
+\code{$\textrm{u} \leftarrow \text{union}(\text{n}_{1},\text{n}_{2})$}. The third method returns a union node \textrm{u} such that ${\llbracket u \rrbracket}_{\mathcal{E}} = {\llbracket \textrm{n}_{1} \rrbracket}_{\mathcal{E}} \cup {\llbracket \textrm{n}_{2} \rrbracket}_{\mathcal{E}}$. Both $\textrm{n}_{1}$ and $\textrm{n}_{2}$ are required to be safe and max($\textrm{n}_{1}$) $=$ max($\textrm{n}_{2}$). If $\textrm{n}_{1}$ is a non-union then a new union node \textrm{u} is created which is connected to $\textrm{n}_{1}$ and $\textrm{n}_{2}$ as shown in Figure~\ref{fig:union:a}. If $\textrm{n}_{2}$ is a non-union node, then \textrm{u} is created as shown in Figure~\ref{fig:union:b}. When $\textrm{n}_{1}$ and $\textrm{n}_{2}$ are union nodes: if max(right($\textrm{n}_{1}$)) $\ge$ max(right($\textrm{n}_{2}$)), three new union nodes, \textrm{u}, $\textrm{u}_{1}$, $\textrm{u}_{2}$ are added and connected as show in Figure~\ref{fig:union:c}; otherwise, as in Figure~\ref{fig:union:d}. Notice, the output-depth  of the created union nodes is at most 3.
 
 \begin{figure}[t]
   \centering
@@ -69,30 +76,9 @@ Remember that the purpose of constructing tECS $\mathcal{E}$ is to be able to en
   \label{fig:union}
 \end{figure}
 
-\begin{theorem}\label{theorem:enumeration}
-  Let $\mathcal{E}$ be a time-ordered \acrshort{tecs}, \textrm{n} a duplicate-free node of $\mathcal{E}$, $\epsilon$ a time-window, $\mathcal{P}$ the set of all processes. Let $C_{p}$ be the output of \aref{algo:enumeration} on process $p \in \mathcal{P}$. Then, $\bigcup\limits_{p \in \mathcal{P}} C_{p} = {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
-\end{theorem}
-
-In Section~\ref{sec:enumeration}, we will give the pseudocode of the enumeration algorithm executed on each process, and show its correctness.
-
-\textbf{Operations on tECS}. We define three operations on $\mathcal{E}$. In order to ensure that newly created nodes are $3$-bounded, we require that the argument nodes of these operations are safe. A node is \emph{safe} if it is a non-union node or if both $\text{odepth(\textrm{n})} = 1$ and $\text{odepth(right(\textrm{n}))} \le 2$. All three operations on tECS return safe nodes.
-
-\code{$\text{b} \leftarrow \text{new-botom}(i)$}. The first method adds a new bottom node \textrm{b} labelled by $i \in \mathbb{N}$ to $\mathcal{E}$.
-
-\code{$o \leftarrow \text{extend}(\textrm{n}, j)$}. The second method adds a new output node \textrm{o} to $\mathcal{E}$ with $\text{pos(\textrm{o})} = j$ and $\text{next(\textrm{o})} = n$.
-
-\code{$\textrm{u} \leftarrow \text{union}(\text{n}_{1},\text{n}_{2})$}. The third method returns a union node \textrm{u} such that ${\llbracket u \rrbracket}_{\mathcal{E}} = {\llbracket \textrm{n}_{1} \rrbracket}_{\mathcal{E}} \cup {\llbracket \textrm{n}_{2} \rrbracket}_{\mathcal{E}}$. Both $\textrm{n}_{1}$ and $\textrm{n}_{2}$ are required to be safe and max($\textrm{n}_{1}$) $=$ max($\textrm{n}_{2}$). If $\textrm{n}_{1}$ is a non-union then a new union node \textrm{u} is created which is connected to $\textrm{n}_{1}$ and $\textrm{n}_{2}$ as shown in Figure~\ref{fig:union:a}. If $\textrm{n}_{2}$ is a non-union node, then \textrm{u} is created as shown in Figure~\ref{fig:union:b}. When $\textrm{n}_{1}$ and $\textrm{n}_{2}$ are union nodes: if max(right($\textrm{n}_{1}$)) $\ge$ max(right($\textrm{n}_{2}$)), three new union nodes, \textrm{u}, $\textrm{u}_{1}$, $\textrm{u}_{2}$ are added and connected as show in Figure~\ref{fig:union:c}; otherwise, as in Figure~\ref{fig:union:d}. Notice, the output-depth  of the created union nodes is at most 3.
-
 Because nodes created by new-bottom, extend and union are time-ordered, and have output-depth at most 3, it follows that any tECS created using only these three methods is time-ordered and 3-bounded. Moreover, all these methods take constant time.
 
 \section{Auxiliary data structures}\label{sec:auxiliary_data_structure}
-
-\begin{figure}[t]
-  \centering
-  \inputtikz{merge}
-  \caption{Visualisation of method merge(\textrm{ul}). The \textrm{u} are union nodes, where the dashed and bold arrows point to the left and right node, respectively.}
-  \label{fig:merge}
-\end{figure}
 
 In this section, we introduce two auxiliary data structures that are going to be used to incrementally maintain $\mathcal{E}$ during the evaluation of the algorithm.
 
@@ -103,6 +89,13 @@ In this section, we introduce two auxiliary data structures that are going to be
 \code{$\text{insert(\textrm{ul, n})}$}. The second method mutates, in situ, the union-list $\textrm{ul} = \textrm{n}_{0}, \ldots, \textrm{n}_{k}$ by inserting a safe node \textrm{n} such that max($\textrm{n}$) $\le$ max($\textrm{n}_{0}$). If there is a $i > 0$ such that max($\textrm{n}_{i}$) $=$ max($\textrm{n}$), then it replaces $\textrm{n}_{i}$ in \textrm{ul} by the result of union($\textrm{n}_{i}, \textrm{n}$). Otherwise, we consider two cases: if max($\textrm{n}$) $=$ max($\textrm{n}_{0}$), then \textrm{n} is inserted after $\textrm{n}_{0}$; otherwise,  \textrm{n} is inserted between $\textrm{n}_{i}$ and $\textrm{n}_{i+1}$ with $i > 0$ such that max($\textrm{n}_{i}$) $>$ max($\textrm{n}$) $>$ max($\textrm{n}_{i+1}$).
 
 \code{$\textrm{u} \leftarrow \text{merge(\textrm{ul})}$}. The third method takes a union-list \textrm{ul} and returns a node \textrm{u} such that ${\llbracket \textrm{u} \rrbracket}_{\mathcal{E}} = {\llbracket \textrm{n}_{0} \rrbracket}_{\mathcal{E}} \cup \ldots \cup {\llbracket \textrm{n}_{k} \rrbracket}_{\mathcal{E}} $. If $k = 0$, then $\textrm{u} = \textrm{n}_{0}$, or else, we add $k$ union nodes to $\mathcal{E}$, and connect them as shown in Figure~\ref{fig:merge}. Since $\textrm{n}_{0}$ is a non-union node, $\text{odepth(\textrm{u})} \le 1$. And, because all $\textrm{n}_{i}$ are safe, odepth($\textrm{u}_i$) $\le 2$. As a result, it is easy to note that \textrm{u} is safe. Furthermore, all of the new union nodes are time-ordered and $3$-bounded.
+
+\begin{figure}[t]
+  \centering
+  \inputtikz{merge}
+  \caption{Visualisation of method merge(\textrm{ul}). The \textrm{u} are union nodes, where the dashed and bold arrows point to the left and right node, respectively.}
+  \label{fig:merge}
+\end{figure}
 
 We remark that all operations on union-lists take time linear in the length of \textrm{ul}.
 
@@ -116,7 +109,7 @@ We assume that hash table lookups and insertions take constant time, and iterati
 
 \section{The evaluation algorithm}\label{sec:evaluation}
 
-\begin{algorithm}[t]
+\begin{algorithm}[H]
   \setstretch{0.9} % space between lines
   \DontPrintSemicolon
   \SetAlgoNoEnd % don't print end
