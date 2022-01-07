@@ -1,5 +1,12 @@
 \chapter{Introduction}\label{chapter:introduction}
 
+\emph{Complex Event Recognition (CER)}, also called Complex Event Processing, refers to the activity of identifying, in streams of high-velocity continuously arriving primitive event data, collections of events that collectively satisfy some pattern.
+These collections of events that satisfy some pattern are referred as \emph{complex events}. To that purpose, CER systems allow expressing patterns that match incoming events not only on the basis of their content, but also on where they occur in the input stream, and how this order relates to other events in the stream, in addition to other constraints between events. CER queries distinguish themselves from streaming queries supported by engines such as Flink \cite{flink}, or Spark \cite{spark} in that CER queries include \emph{regular expressions operators} like sequencing, disjunction and iteration to express spatio-temporal constraints that are not supported by stream processing engines.
+
+CER has emerged as a prominent technology and has been successfully applied in scenarios like maritime monitoring \cite{maritime-monitoring}, network intrusion detection \cite{network-intrusion}, industrial control systems \cite{industrial-control}, and real-time analytics \cite{real-time-analytics}. Prominent examples of CERT systems from academia and industry are Cayuga \cite{cayuga}, EsperTech \cite{espertech}, SASE \cite{sase}, and TESLA \cite{tesla}, among others (see surveys \cite{survey-systems-1,survey-systems-2}).
+
+CER systems aim to detect situations of interest, in the form of complex events, thereby giving timely insights for implementing reactive responses to them when necessary. As such, they strive for low latency query evaluation. CER query evaluation, however, is known to be computationally challenging. In practise, evaluating a CER query requires maintaining a set of partial matches, and this set quickly grows super-linearly in the number of events processed.
+
 \section{Problem statement}
 \label{sec:problem_statement}
 
