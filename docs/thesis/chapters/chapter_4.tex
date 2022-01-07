@@ -1,6 +1,6 @@
 \chapter{Evaluation Algorithm}\label{chapter:algorithm}
 
-In this section, we propose an \emph{efficient} and \emph{distributed} evaluation algorithm, inspired by \cite{core}, that computes the set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}(S) := \{ C \ | \ C \in {\llbracket \mathcal{A} \rrbracket}(S) \land C(end) - C(start) \le \epsilon\}$ where $\mathcal{A}$ is a CEA, $\epsilon$ a time window, and $S$ a stream. Actually, it will compute this set \emph{incrementally}: at every position $j$ in the stream, it outputs the set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S) := \{ C \ | \ C \in {\llbracket \mathcal{A} \rrbracket}^{\epsilon}(S) \land C(end) = j \}$.
+In this section, we propose DCORE's main evaluation algorithm, an \emph{efficient} and \emph{distributed} algorithm, heavily inspired by CORE \cite{core}, that computes the set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}(S) := \{ C \ | \ C \in {\llbracket \mathcal{A} \rrbracket}(S) \land C(end) - C(start) \le \epsilon\}$ where $\mathcal{A}$ is a CEA, $\epsilon$ a time window, and $S$ a stream. Actually, it will compute this set \emph{incrementally}: at every position $j$ in the stream, it outputs the set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S) := \{ C \ | \ C \in {\llbracket \mathcal{A} \rrbracket}^{\epsilon}(S) \land C(end) = j \}$.
 
 The evaluation algorithm is executed on a \emph{distributed system} composed by independent processes $\mathcal{P}$. The processes do not share a global memory and communicate solely by passing messages. Each asynchronous process incrementally updates a data structure that \emph{compactly} represents partials outputs. Whenever a new tuple arrives, it takes \emph{constant time} (in data complexity \cite{data-complexity}) to update the compact data structure. Moreover, the distributed system may enumerate \emph{cooperatively} without message passing, at each position $j$, the complex events of ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$, one by one, and without duplicates. During the enumeration, each process enumerates at most $\frac{|{\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)|}{|\mathcal{P}|}$ complex events with \emph{output-linear delay} after printing the first complex event. This means that the time required to print the following complex events is linear in the size of the complex event being printed. We remark that the evaluation the CEA is intrinsically sequential and the data complexity our algorithm is asymptotically optimal: any evaluation algorithm needs to inspect every input event and enumerate the query's answers.
 
@@ -109,72 +109,9 @@ We assume that hash table lookups and insertions take constant time, and iterati
 
 \section{The evaluation algorithm}\label{sec:evaluation}
 
-\begin{algorithm}[H]
-  \setstretch{0.9} % space between lines
-  \DontPrintSemicolon
-  \SetAlgoNoEnd % don't print end
-  \SetAlgoNoLine % no vertical lines
-  \SetKwProg{Procedure}{procedure}{}{}
-  \SetKwFunction{Evaluation}{\textsc{Evaluation}}
-  \SetKwFunction{ExecTrans}{\textsc{ExecTrans}}
-  \SetKwFunction{Add}{\textsc{Add}}
-  \SetKwFunction{Output}{\textsc{Output}}
-  \SetKwFunction{Enumerate}{\textsc{Enumerate}}
-  \SetKwFunction{Yield}{yield}
-  \SetKwFunction{NewUlist}{new-ulist}
-  \SetKwFunction{NewBottom}{new-bottom}
-  \SetKwFunction{OrderedKeys}{ordered-keys}
-  \SetKwFunction{Merge}{merge}
-  \SetKwFunction{Extend}{extend}
-  \SetKwFunction{Keys}{keys}
-  \SetKwFunction{Insert}{insert}
-  \Procedure{\Evaluation{$\mathcal{A}, S, \epsilon, p$}}{
-    $j \leftarrow -1$\;
-    $T \leftarrow \emptyset$\;
-    \While{$t \leftarrow $ \Yield{$S$}}{
-      $j \leftarrow j + 1$\;
-      $T' \leftarrow \emptyset$\;
-      $ul \leftarrow $\NewUlist{\NewBottom{$j$}}\;
-      \ExecTrans{$q_{0}, ul, t, j$}\;
-      \For{$p \in$ \OrderedKeys{$T$}}{
-        \ExecTrans{$p, T[p], t, j$}\;
-      }
-      $T \leftarrow T'$\;
-      \Output{$j, \epsilon, p$}\;
-    }
-  }
-  \;
-  \Procedure{\ExecTrans{$p, ul, t, j$}}{
-    $n \leftarrow$ \Merge{$ul$}\;
-    \If{$q \leftarrow \Delta(p, t, \bullet)$}{
-      $n' \leftarrow$ \Extend{$n, j$}\;
-      $ul' \leftarrow$ \NewUlist{$n'$}\;
-      \Add{$q, n', ul'$}\;
-    }
-    \If{$q \leftarrow \Delta(p, t, \circ)$}{
-      \Add{$q, n, ul$}\;
-    }
-  }
-  \;
-  \Procedure{\Add{$q, n, ul$}}{
-    \eIf{$q \in$ \Keys{$T'$}}{
-      $T'[q] \leftarrow$ \Insert{$T'[q], n$}\;
-    }{
-      $T'[q] \leftarrow ul$\;
-    }
-  }
-  \;
-  \Procedure{\Output{$j, \epsilon, p$}}{
-    \For{$p \in$ \Keys{$T$}}{
-      \If{$p \in F$}{
-        $n \leftarrow$ \Merge{$T[p]$}\;
-        \Enumerate{$n, j$}\;
-      }
-    }
-  }
-\caption{Evaluation of an I/O-deterministic \mbox{CEA ${\mathcal{A} = (Q, \Delta, q_{0}, F)}$} over a stream $S$ given a time-bound $\epsilon$ on a process $p$.}
-\label{algo:update}
-\end{algorithm}
+In this section, we present DCORE's main evaluation algorithm. It receives as input a I/O deterministic CEA ${\mathcal{A} = (Q, \Delta, q_{0}, F)}$, a stream $S$, and time-window $\epsilon$ and may enumerate, on process $p$, a subset of ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$ at every position $j$. We remark that when the evaluation Algorithm~\ref{algo:update} is executed simultaneously on each process $p \in \mathcal{P}$, it may enumerate the set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$ at every position $j$. We next describe the algorithm and analyse its complexity.
+
+Algorithm~\ref{algo:update} incrementally maintains (1) a tECS $\mathcal{E}$ that represents the set of open complex events and (2) a set of \emph{active states} of $\mathcal{A}$. A state $q \in \mathcal{Q}$ is \emph{active} at a stream position $j$ if there is some run of $\mathcal{A}$ which is in state $q$ at position $j$. The algorithm uses a hash table $T$ that links active states of $Q$ to union-list nodes to incrementally maintain the $\mathcal{E}$.
 
 \begin{figure}[H]
   \centering
@@ -202,18 +139,135 @@ We assume that hash table lookups and insertions take constant time, and iterati
   \label{fig:tecs:update}
 \end{figure}
 
-We next describe how \aref{algo:update} works. During the description, the reader may find it helpful to refer to Figure~\ref{fig:tecs:update}, which illustrates how \aref{algo:update} evaluates the CEA $\mathcal{A}$ of Figure~\ref{fig:cea:ab+} over the stream $S$ of Figure~\ref{fig:cea:ab+}. Each subfigure corresponds to the state after processing $S[j]$. The tECS is denoted in black, the attribute $paths$ of each node is coloured red, and the hash table $T$ that links the active states to union-lists is illustrated in blue. For each position, the set \code{ordered-keys($T$)} will be ordered top down.
+During the description, the reader may find it helpful to refer to Figure~\ref{fig:tecs:update}, which illustrates how \aref{algo:update} evaluates the CEA $\mathcal{A}$ of Figure~\ref{fig:cea:ab+} over the stream $S$ of Figure~\ref{fig:cea:ab+}. Each subfigure corresponds to the state after processing $S[j]$. The tECS is denoted in black, the attribute $paths$ of each node is coloured red, and the hash table $T$ that links the active states to union-lists is illustrated in blue. For each position, the set \code{ordered-keys($T$)} will be ordered top down.
 
-\newpage
-\section{The enumeration algorithm}\label{sec:enumeration}
+\begin{algorithm}[t]
+  \setstretch{0.9} % space between lines
+  \DontPrintSemicolon
+  \SetAlgoNoEnd % don't print end
+  \SetAlgoNoLine % no vertical lines
+  \SetKwProg{Procedure}{procedure}{}{}
+  \SetKwFunction{Evaluation}{\textsc{Evaluation}}
+  \SetKwFunction{ExecTrans}{\textsc{ExecTrans}}
+  \SetKwFunction{Add}{\textsc{Add}}
+  \SetKwFunction{Output}{\textsc{Output}}
+  \SetKwFunction{Enumerate}{\textsc{Enumerate}}
+  \SetKwFunction{Yield}{yield}
+  \SetKwFunction{NewUlist}{new-ulist}
+  \SetKwFunction{NewBottom}{new-bottom}
+  \SetKwFunction{OrderedKeys}{ordered-keys}
+  \SetKwFunction{Merge}{merge}
+  \SetKwFunction{Extend}{extend}
+  \SetKwFunction{Keys}{keys}
+  \SetKwFunction{Insert}{insert}
+  \Procedure{\Evaluation{$\mathcal{A}, S, \epsilon, p$}}{
+    $j \leftarrow -1$\;
+    $T \leftarrow \emptyset$\;
+    \While{$t \leftarrow $ \Yield{$S$}}{
+      $j \leftarrow j + 1$\;
+      $T' \leftarrow \emptyset$\;
+      $\textrm{ul} \leftarrow $\NewUlist{\NewBottom{$j$}}\;
+      \ExecTrans{$q_{0}, \textrm{ul}, t, j$}\;
+      \For{$p \in$ \OrderedKeys{$T$}}{
+        \ExecTrans{$p, T[p], t, j$}\;
+      }
+      $T \leftarrow T'$\;
+      \Output{$j, \epsilon, p$}\;
+    }
+  }
+  \;
+  \Procedure{\ExecTrans{$p, \textrm{ul}, t, j$}}{
+    $\textrm{n} \leftarrow$ \Merge{$\textrm{ul}$}\;
+    \If{$q \leftarrow \Delta(p, t, \bullet)$}{
+      $\textrm{n'} \leftarrow$ \Extend{$\textrm{n}, j$}\;
+      $\textrm{ul'} \leftarrow$ \NewUlist{$\textrm{n'}$}\;
+      \Add{$q, \textrm{n'}, \textrm{ul'}$}\;
+    }
+    \If{$q \leftarrow \Delta(p, t, \circ)$}{
+      \Add{$q, \textrm{n}, \textrm{ul}$}\;
+    }
+  }
+  \;
+  \Procedure{\Add{$q, \textrm{n}, \textrm{ul}$}}{
+    \eIf{$q \in$ \Keys{$T'$}}{
+      $T'[q] \leftarrow$ \Insert{$T'[q], \textrm{n}$}\;
+    }{
+      $T'[q] \leftarrow \textrm{ul}$\;
+    }
+  }
+  \;
+  \Procedure{\Output{$j, \epsilon, p$}}{
+    \For{$p \in$ \Keys{$T$}}{
+      \If{$p \in F$}{
+        $n \leftarrow$ \Merge{$T[p]$}\;
+        \Enumerate{$\textrm{n}, \epsilon, j, p$}\;
+      }
+    }
+  }
+\caption{Evaluation of an I/O-deterministic \mbox{CEA ${\mathcal{A} = (Q, \Delta, q_{0}, F)}$} over a stream $S$ given a time-window $\epsilon$ on a process $p$.}
+\label{algo:update}
+\end{algorithm}
 
-% TODO you need to introduce what this algorithm is for somewhere.
-%
-% We provide \aref{algo:enumeration} an algorithm for enumerating the set ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$. It distributes the possibly exponential work of enumerating $G_{\mathcal{E}}$ among all processes in $\mathcal{P}$ without duplicating work.
+Algorithm~\ref{algo:update} consist of four procedures: \textsc{Evaluation}, \textsc{ExecTrans}, \textsc{Add}, and \textsc{Output}. The main procedure \textsc{Evaluation} starts by initialising the current stream position $j$ and the hash table $T$ (lines~2~and~3). We assume that yield($S$) returns the next tuple in the stream $S$. We execute the \code{while} (lines~4-12): for every tuple $t$, we update $j$ and initialise the hash table $T'$. The hash tables $T$ and $T'$ will hold the actives states at position $j-1$ and $j$, respectively. Lines~7-8 take into account that a new run may start at any position in the stream. For this, the algorithm creates a new union-list starting at position $j$ and executes all transitions of initial state $q_{0}$ by calling \textsc{ExecTrans}. The \code{for} of lines~9-10 consider runs active at position $j-1$. For this case, we iterate over all active states at position $j-1$, and execute all transitions by calling \textsc{ExecTrans}. Then, we replace $T$ by $T'$ to prepare for the next iteration and call \textsc{Output} in case we need to enumerate any complex event closed at position $j$.
+
+Procedure \textsc{ExecTrans} receives an active state $p$, a union list \textrm{ul}, the current tuple $t$, and the current position $j$. The union-list \textrm{ul} encodes all open complex events of active runs that reached $p$. At line~15, it merges \textrm{ul} into a single node \textrm{n}. At line~16, we check if there is a marking transition $p \xrightarrow[]{P/\bullet} q$ in $\Delta$ such that $t \vDash P$. Recall that because CEA $\mathcal{A}$ is I/O deterministic there is at most one such transition. If there is such a transition, at lines~17-19, we extend all open complex events represented by \textrm{n} with the new position $j$ and add them to $T[q]$. At line~20, we repeat the same but for non-marking transition $p \xrightarrow[]{P/\circ} q$. Note, this time we do not extend open complex events represented by node \textrm{n} because the transition is non-marking.
+
+The procedure \textsc{Add} adds open complex events represented by node \textrm{n} to $T'[q]$. If $q \in \text{keys}(T')$ we have already reached $q$ on iteration $j$ (line~24), then we insert \textrm{n} at union list $T'[q]$ (line~25). Otherwise,  we initialise the entry $q$ of $T'$ with the union-list representation of \textrm{n} (line~27)
+
+The procedure \textsc{Output} enumerates a subset of all complex events in ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$ at process $p$. The method is called at line~12, when $T$ contains all active states at position $j$. We iterate over all active states $p \in \text{keys}(T)$ (line~30) and check if $p$ is a final state (line~31). If the state is final, we merge the union list $T[p]$ into a node \textrm{n} in $\mathcal{E}$ and call $\textsc{Enumerate}(\mathcal{E}, \textrm{n}, \epsilon, j, p)$ where \textsc{Enumerate} is the algorithm of Theorem~\ref{theorem:enumeration} described in Section~\ref{sec:enumeration}.
+
+This concludes the presentation of Algorithm~\ref{algo:update}. Now, we analyse its complexity. When a new tuple arrives, Algorithm~\ref{algo:update} updates $T$, $T'$, and $\mathcal{E}$ by means of methods in Section~\ref{sec:data_structure}~and~\ref{sec:auxiliary_data_structure} which either take constant time or linear time with respect to the size of the union-list. For every position $j$, the length of every union list is bounded by the number of active states (see Appendix~B.3~\cite{core}). Then, because we iterate over all transitions in the worst case (line~9), and executing a transition takes time proportional to the length of the union-list, which is at most the number of states, we may conclude that the time for processing a new tuple is $\mathcal{O}(|\mathcal{Q}| \cdot |\Delta|)$. This is constant under data complexity.
+
+Finally, we analyse its correctness. Because Algorithm~\ref{algo:update} builds $\mathcal{E}$ only through the methods of Section~\ref{sec:data_structure}~and~\ref{sec:auxiliary_data_structure}, we guarantee that it is $3$-bounded and time ordered. Moreover, we can show that, because $\mathcal{A}$ is I/O deterministic, $\mathcal{E}$ will also be duplicate-free. From this, we can derive the correctness of Algorithm~\ref{algo:update}.
+
+\begin{theorem}\label{theorem:cea}
+  After the $j$-th iteration of \textsc{Evaluation}, the union of the \textsc{Output} procedure on each process $p \in \mathcal{P}$ enumerates the set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$ with output-linear delay after enumerating the first complex event.
+\end{theorem}
+
+The proof of Theorem~\ref{theorem:cea} is technical and the reader may find it in \cite{core}.
+
+\section{The Enumeration procedure}\label{sec:enumeration}
 
 We provide \aref{algo:enumeration} and show that: (1) it enumerates a subset of complex events $S \subseteq {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ where $|S| = \Omega(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$, and (2) it does so with output-linear delay after reaching the first complex event. Furthermore, we will prove Theorem~\ref{theorem:enumeration} to show that (3) the union of the enumeration of \aref{algo:enumeration} on each process $p \in \mathcal{P}$ corresponds to ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
 
-\begin{algorithm}[h]
+We next describe how \aref{algo:enumeration} works. During the description, the reader may find it helpful to refer to Figure~\ref{fig:tecs:enumeration}, which illustrates how \aref{algo:enumeration} enumerates the tECS $\mathcal{E}$ of Figure~\ref{fig:tecs:update}. In particular, how complex events ${\llbracket \text{4} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ are enumerated by distributing the workload on each process. Assuming $\mathcal{P} = 3$, each subfigure depicts the enumeration of the paths assigned to each process. The tECS is denoted in black, the attribute $paths$ of each node in red, and the traversed paths in green. Notice, each process traverses different paths but all paths are traversed at the end.
+
+\begin{figure}[h]
+  \centering
+  \begin{subfigure}[b]{0.3\linewidth}
+    \centering
+    \inputtikz{AB+_enumeration_0}
+    \caption{Process $0$}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.3\linewidth}
+    \centering
+    \inputtikz{AB+_enumeration_1}
+    \inputtikz{AB+_enumeration_2}
+    \caption{Process $1$}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.3\linewidth}
+    \centering
+    \inputtikz{AB+_enumeration_3}
+    \caption{Process $2$}
+  \end{subfigure}
+
+  \caption{Illustration of Algorithm \ref{algo:enumeration} on the tECS $\mathcal{E}$ of Figure~\ref{fig:tecs:update}.}
+  \label{fig:tecs:enumeration}
+\end{figure}
+
+\aref{algo:enumeration} uses a stack $st$ with common stack operations: \code{new-stack()} to create an empty stack, \code{push(st, e)} to add an element \code{e} at the top of the stack, and \code{pop(st)} to remove and return the element on the top of the stack. When the stack is empty, we will interpret $e \leftarrow pop(st)$ as \code{false}. We assume that stack operations can be performed in constant time.
+
+Recall that $\mathcal{E}$ encodes the \acrshort{dag} $G_{\mathcal{E}} = (N, E)$ where $N$ are the vertices, and $E$ the edges that go from any union node $u$ to left($u$) and right($u$), and from any output node $o$ to next($o$). For every node $n' \in N$, let ${paths}_{\ge \tau}(n')$ be all paths of $G_{\mathcal{E}}$ that start at $n'$ and end at some bottom node $b$ with $pos(b) \ge \tau$, and ${paths}_{\ge \tau, \sigma, \delta}(n')$ be a subset of ${paths}_{\ge \tau}(n')$ of size at most $\delta$ starting after path $\pi_{\sigma}$ where $0 \le \sigma \le |{paths}_{\ge \tau}(n')|$. It is clear that there exists an isomorphism between ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ and $paths_{\ge j - \epsilon}(n)$ i.e. for every complex event within a time window of size $\epsilon$ there exists exactly one path that reaches a bottom node $b$ with $pos(b) \ge j - \epsilon$, and vice versa. Formally,
+
+\begin{theorem}[${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longleftrightarrow paths_{\ge j - \epsilon}(n)$]\label{theorem:isomorphism}
+For every complex event within a time window of size $\epsilon$ there exists exactly one path that reaches a bottom node $b$ with $pos(b) \ge j - \epsilon$, and vice versa.
+\end{theorem}
+
+We defer the proof of Theorem~\ref{theorem:isomorphism} to Appendix~\ref{appendix:A:sec:1} to avoid disrupting the flow of the discussion.
+
+\begin{algorithm}[H]
   \setstretch{1.0} % space between lines
   \DontPrintSemicolon
   \SetAlgoNoEnd % don't print end
@@ -262,43 +316,6 @@ We provide \aref{algo:enumeration} and show that: (1) it enumerates a subset of 
 \caption{Enumeration of ${paths}_{\ge \tau, \sigma, \delta}(\text{n})$.}
 \label{algo:enumeration}
 \end{algorithm}
-
-We next describe how \aref{algo:enumeration} works. During the description, the reader may find it helpful to refer to Figure~\ref{fig:tecs:enumeration}, which illustrates how \aref{algo:enumeration} enumerates the tECS $\mathcal{E}$ of Figure~\ref{fig:tecs:update}. In particular, how complex events ${\llbracket \text{4} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ are enumerated by distributing the workload on each process. Assuming $\mathcal{P} = 3$, each subfigure depicts the enumeration of the paths assigned to each process. The tECS is denoted in black, the attribute $paths$ of each node in red, and the traversed paths in green. Notice, each process traverses different paths but all paths are traversed at the end.
-
-\begin{figure}[h]
-  \centering
-  \begin{subfigure}[b]{0.3\linewidth}
-    \centering
-    \inputtikz{AB+_enumeration_0}
-    \caption{Process $0$}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}[b]{0.3\linewidth}
-    \centering
-    \inputtikz{AB+_enumeration_1}
-    \inputtikz{AB+_enumeration_2}
-    \caption{Process $1$}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}[b]{0.3\linewidth}
-    \centering
-    \inputtikz{AB+_enumeration_3}
-    \caption{Process $2$}
-  \end{subfigure}
-
-  \caption{Illustration of Algorithm \ref{algo:enumeration} on the tECS $\mathcal{E}$ of Figure~\ref{fig:tecs:update}.}
-  \label{fig:tecs:enumeration}
-\end{figure}
-
-\aref{algo:enumeration} uses a stack $st$ with common stack operations: \code{new-stack()} to create an empty stack, \code{push(st, e)} to add an element \code{e} at the top of the stack, and \code{pop(st)} to remove and return the element on the top of the stack. When the stack is empty, we will interpret $e \leftarrow pop(st)$ as \code{false}. We assume that stack operations can be performed in constant time.
-
-Recall that $\mathcal{E}$ encodes the \acrshort{dag} $G_{\mathcal{E}} = (N, E)$ where $N$ are the vertices, and $E$ the edges that go from any union node $u$ to left($u$) and right($u$), and from any output node $o$ to next($o$). For every node $n' \in N$, let ${paths}_{\ge \tau}(n')$ be all paths of $G_{\mathcal{E}}$ that start at $n'$ and end at some bottom node $b$ with $pos(b) \ge \tau$, and ${paths}_{\ge \tau, \sigma, \delta}(n')$ be a subset of ${paths}_{\ge \tau}(n')$ of size at most $\delta$ starting after path $\pi_{\sigma}$ where $0 \le \sigma \le |{paths}_{\ge \tau}(n')|$. It is clear that there exists an isomorphism between ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ and $paths_{\ge j - \epsilon}(n)$ i.e. for every complex event within a time window of size $\epsilon$ there exists exactly one path that reaches a bottom node $b$ with $pos(b) \ge j - \epsilon$, and vice versa. Formally,
-
-\begin{theorem}[${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longleftrightarrow paths_{\ge j - \epsilon}(n)$]\label{theorem:isomorphism}
-For every complex event within a time window of size $\epsilon$ there exists exactly one path that reaches a bottom node $b$ with $pos(b) \ge j - \epsilon$, and vice versa.
-\end{theorem}
-
-We defer the proof of Theorem~\ref{theorem:isomorphism} to Appendix~\ref{appendix:A:sec:1} to avoid disrupting the flow of the discussion.
 
 \aref{algo:enumeration} receives as an input a \acrshort{tecs}, a node $n$, a time-window $\epsilon$, a position $j$, and a process $p$ and traverses a fraction of $G_{\mathcal{E}}$ in a DFS-way left-to-right order. First, computes the parameters $\sigma, \delta$ corresponding to the starting and ending path to enumerate, respectively. The value of these parameters can be computed statically i.e. without message interchanging.  Each iteration of the \code{while} of line~\ref{line:enumeration:while:1} traverses a new path starting from the point it branches from the previous path (except for the first iteration). For this, the stack $st$ is used to store the node and partial complex event of that branching point. Then, the \code{while} of line~\ref{line:enumeration:while:2} traverses through the nodes of the next path, following the left direction whenever a union node is reached and adding the right node to the stack whenever need. The \code{if}s of line~\ref{line:enumeration:if:1}~and~line~\ref{line:enumeration:if:2} make sure that enumeration starts on path $\pi_{\sigma}$ so only $paths_{\ge j - \epsilon, \sigma, \delta}$ are traversed. Moreover, by checking for every node $n'$ its value $max(n')$ before adding it to the stack, it makes sure of only going through paths in $paths_{\ge j - \epsilon}$.
 
@@ -396,4 +413,4 @@ This concludes the proofs of properties (1), (2), and (3).
 
 \section{Chapter summary}
 
-TODO
+In this chapter we have presented an efficient distributed algorithm for evaluating CEA $\mathcal{A}$. First, we introduced the compact data structure tECS and the union-lists, its restrictions and operations. Secondly, we explained thoroughly the evaluation algorithm and analysed its complexity. Finally, we described and discussed the \textsc{Enumeration} procedure in detail.
