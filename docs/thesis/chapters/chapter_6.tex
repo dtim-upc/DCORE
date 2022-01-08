@@ -1,11 +1,3 @@
-\chapter{System Implementation}\label{chapter:implementation}
-
-% You need to describe both systems
-%
-% \item A distributed system for evaluating non-unary predicates over CEQL queries. The CEQL query is feed into the system and processed by a single actor. This actor parses the query, analyses its semantics, and generates the corresponding unary CEQL, and an evaluation plan for the non-unary predicates. The unary CEQL is processed sequentially using the efficient evaluation process of \cite{formal-framework-cep} and complex events are output. Then, a \emph{distribution strategy} is used to distribute the complex events, with additional non-unary predicate information, between the nodes of the distributed system. Finally, each node of the system, evaluates the non-unary predicates over the resulting complex events.
-%
-% Furthermore, we propose different distributions strategies and analyse their behaviour.
-%
-% \item Another distributed system for evaluating non-unary predicates over CEQL queries based on the distributed evaluation algorithm presented in Contributions~(I). The system differs from the previous in that: the query is feed to \emph{all} the nodes, each node parses and extracts the corresponding unary CEQL query and a plan for evaluating the non-unary predicates of the query, and the evaluation algorithm is executed on each node. During the distributed enumeration phase of the evaluation algorithm, the output is filtered taking into account the non-unary predicates.
+\chapter{Implementation}\label{chapter:implementation}
 
 \section{Chapter summary}

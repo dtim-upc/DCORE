@@ -259,6 +259,13 @@
   bibsource = {dblp computer science bibliography, https://dblp.org}
 }
 
+@misc{flink-cep,
+  title={FlinkCEP - Complex Event Processing for Flink},
+  url={https://nightlies.apache.org/flink/flink-docs-release-1.13/docs/libs/cep/},
+  year={2022},
+  month={Jan},
+}
+
 @inproceedings{spark,
   author    = {Michael Armbrust and
                Tathagata Das and
@@ -330,6 +337,38 @@
   bibsource = {dblp computer science bibliography, https://dblp.org}
 }
 
+@article{trex,
+title = {Complex event processing with T-REX},
+journal = {Journal of Systems and Software},
+volume = {85},
+number = {8},
+pages = {1709-1728},
+year = {2012},
+issn = {0164-1212},
+doi = {https://doi.org/10.1016/j.jss.2012.03.056},
+url = {https://www.sciencedirect.com/science/article/pii/S0164121212000842},
+author = {Gianpaolo Cugola and Alessandro Margara},
+keywords = {Complex Event Processing, Event middleware, Information processing, Distributed systems},
+abstract = {Several application domains involve detecting complex situations and reacting to them. This asks for a Complex Event Processing (CEP) middleware specifically designed to timely process large amounts of event notifications as they flow from the peripheral to the center of the system, to identify the composite events relevant for the application. To answer this need we designed T-Rex, a new CEP middleware that combines expressiveness and efficiency. On the one hand, it adopts a language (TESLA) explicitly conceived to easily and naturally describe composite events. On the other hand, it provides an efficient event detection algorithm based on automata to interpret TESLA rules. Our evaluation shows that the T-Rex engine can process a large number of complex rules with a reduced overhead, even in the presence of challenging workloads.}
+}
+
+@inproceedings{next-cep,
+author = {Schultz-M\o{}ller, Nicholas Poul and Migliavacca, Matteo and Pietzuch, Peter},
+title = {Distributed Complex Event Processing with Query Rewriting},
+year = {2009},
+isbn = {9781605586656},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/1619258.1619264},
+doi = {10.1145/1619258.1619264},
+abstract = {The nature of data in enterprises and on the Internet is changing. Data used to be stored in a database first and queried later. Today timely processing of new data, represented as events, is increasingly valuable. In many domains, complex event processing (CEP) systems detect patterns of events for decision making. Examples include processing of environmental sensor data, trades in financial markets and RSS web feeds. Unlike conventional database systems, most current CEP systems pay little attention to query optimisation. They do not rewrite queries to more efficient representations or make decisions about operator distribution, limiting their overall scalability.This paper describes the NEXT CEP system that was especially designed for query rewriting and distribution. Event patterns are specified in a high-level query language and, before being translated into event automata, are rewritten in a more efficient form. Automata are then distributed across a cluster of machines for detection scalability. We present algorithms for query rewriting and distributed placement. Our experiments on the Emulab test-bed show a significant improvement in system scalability due to rewriting and distribution.},
+booktitle = {Proceedings of the Third ACM International Conference on Distributed Event-Based Systems},
+articleno = {4},
+numpages = {12},
+location = {Nashville, Tennessee},
+series = {DEBS '09}
+}
+
 @article{survey-systems-1,
 author = {Giatrakos, Nikos and Artikis, Alexander and Deligiannakis, Antonios and Garofalakis, Minos},
 title = {Complex Event Recognition in the Big Data Era: A Survey},
@@ -393,4 +432,154 @@ month = {may},
 articleno = {12},
 numpages = {51},
 keywords = {regular expressions, finite-state automata, Information extraction, document spanners}
+}
+
+@article{constant-delay-enumeration-previous-work,
+  title={Constant-Delay Enumeration for Nondeterministic Document Spanners},
+  author={Antoine Amarilli and P. Bourhis and Stefan Mengel and Matthias Niewerth},
+  journal={ACM SIGMOD Record},
+  year={2020},
+  volume={49},
+  pages={25 - 32}
+}
+
+@inproceedings{tree-based-system-1,
+author = {Liu, Mo and Rundensteiner, Elke and Greenfield, Kara and Gupta, Chetan and Wang, Song and Ari, Ismail and Mehta, Abhay},
+title = {E-Cube: Multi-Dimensional Event Sequence Analysis Using Hierarchical Pattern Query Sharing},
+year = {2011},
+isbn = {9781450306614},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/1989323.1989416},
+doi = {10.1145/1989323.1989416},
+abstract = {Many modern applications, including online financial feeds, tag-based mass transit systems and RFID-based supply chain management systems transmit real-time data streams. There is a need for event stream processing technology to analyze this vast amount of sequential data to enable online operational decision making. Existing techniques such as traditional online analytical processing (OLAP) systems are not designed for real-time pattern-based operations, while state-of-the-art Complex Event Processing (CEP) systems designed for sequence detection do not support OLAP operations. We propose a novel E-Cube model which combines CEP and OLAP techniques for efficient multi-dimensional event pattern analysis at different abstraction levels. Our analysis of the interrelationships in both concept abstraction and pattern refinement among queries facilitates the composition of these queries into an integrated E-Cube hierarchy. Based on this E-Cube hierarchy, strategies of drill-down (refinement from abstract to more specific patterns) and of roll-up (generalization from specific to more abstract patterns) are developed for the efficient workload evaluation. Our proposed execution strategies reuse intermediate results along both the concept and the pattern refinement relationships between queries. Based on this foundation, we design a cost-driven adaptive optimizer called Chase, that exploits the above reuse strategies for optimal E-Cube hierarchy execution. Our experimental studies comparing alternate strategies on a real world financial data stream under different workload conditions demonstrate the superiority of the Chase method. In particular, our Chase execution in many cases performs ten fold faster than the state-of-the art strategy for real stock market query workloads.},
+booktitle = {Proceedings of the 2011 ACM SIGMOD International Conference on Management of Data},
+pages = {889–900},
+numpages = {12},
+keywords = {algorithm, complex event processing, optimization, OLAP, streaming},
+location = {Athens, Greece},
+series = {SIGMOD '11}
+}
+
+@inproceedings{tree-based-system-2,
+author = {Mei, Yuan and Madden, Samuel},
+title = {ZStream: A Cost-Based Query Processor for Adaptively Detecting Composite Events},
+year = {2009},
+isbn = {9781605585512},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/1559845.1559867},
+doi = {10.1145/1559845.1559867},
+abstract = {Composite (or Complex) event processing (CEP) systems search sequences of incoming events for occurrences of user-specified event patterns. Recently, they have gained more attention in a variety of areas due to their powerful and expressive query language and performance potential. Sequentiality (temporal ordering) is the primary way in which CEP systems relate events to each other. In this paper, we present a CEP system called ZStream to efficiently process such sequential patterns. Besides simple sequential patterns, ZStream is also able to detect other patterns, including conjunction, disjunction, negation and Kleene closure.Unlike most recently proposed CEP systems, which use non-deterministic finite automata (NFA's) to detect patterns, ZStream uses tree-based query plans for both the logical and physical representation of query patterns. By carefully designing the underlying infrastructure and algorithms, ZStream is able to unify the evaluation of sequence, conjunction, disjunction, negation, and Kleene closure as variants of the join operator. Under this framework, a single pattern in ZStream may have several equivalent physical tree plans, with different evaluation costs. We propose a cost model to estimate the computation costs of a plan. We show that our cost model can accurately capture the actual runtime behavior of a plan, and that choosing the optimal plan can result in a factor of four or more speedup versus an NFA based approach. Based on this cost model and using a simple set of statistics about operator selectivity and data rates, ZStream is able to adaptively and seamlessly adjust the order in which it detects patterns on the fly. Finally, we describe a dynamic programming algorithm used in our cost model to efficiently search for an optimal query plan for a given pattern.},
+booktitle = {Proceedings of the 2009 ACM SIGMOD International Conference on Management of Data},
+pages = {193–206},
+numpages = {14},
+keywords = {streaming, optimization, complex event processing, algorithm},
+location = {Providence, Rhode Island, USA},
+series = {SIGMOD '09}
+}
+
+@InProceedings{logic-based-system-1,
+author="Anicic, Darko
+and Fodor, Paul
+and Rudolph, Sebastian
+and St{\"u}hmer, Roland
+and Stojanovic, Nenad
+and Studer, Rudi",
+editor="Hitzler, Pascal
+and Lukasiewicz, Thomas",
+title="A Rule-Based Language for Complex Event Processing and Reasoning",
+booktitle="Web Reasoning and Rule Systems",
+year="2010",
+publisher="Springer Berlin Heidelberg",
+address="Berlin, Heidelberg",
+pages="42--57",
+abstract="Complex Event Processing (CEP) is concerned with timely detection of complex events within multiple streams of atomic occurrences. It has useful applications in areas including financial services, mobile and sensor devices, click stream analysis etc. Numerous approaches in CEP have already been proposed in the literature. Event processing systems with a logic-based representation have attracted considerable attention as (among others reasons) they feature formal semantics and offer reasoning service. However logic-based approaches are not optimized for run-time event recognition (as they are mainly query-driven systems). In this paper, we present an expressive logic-based language for specifying and combining complex events. For this language we provide both a syntax as well as a formal declarative semantics. The language enables efficient run time event recognition and supports deductive reasoning. Execution model of the language is based on a compilation strategy into Prolog. We provide an implementation of the language, and present the performance results showing the competitiveness of our approach.",
+isbn="978-3-642-15918-3"
+}
+
+@article{logic-based-system-2,
+  title={An event calculus for event recognition},
+  author={Artikis, Alexander and Sergot, Marek and Paliouras, Georgios},
+  journal={IEEE Transactions on Knowledge and Data Engineering},
+  volume={27},
+  number={4},
+  pages={895--908},
+  year={2014},
+  publisher={IEEE}
+}
+
+@article{logic-based-system-3,
+  title={Logic-based event recognition},
+  volume={27},
+  DOI={10.1017/S0269888912000264},
+  number={4},
+  journal={The Knowledge Engineering Review},
+  publisher={Cambridge University Press},
+  author={Artikis, Alexander and Skarlatidis, Anastasios and Portet, François and Paliouras, Georgios},
+  year={2012},
+  pages={469–506}
+}
+
+@inproceedings{distributed-related-work-1,
+author = {Hirzel, Martin},
+title = {Partition and Compose: Parallel Complex Event Processing},
+year = {2012},
+isbn = {9781450313155},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/2335484.2335506},
+doi = {10.1145/2335484.2335506},
+abstract = {Complex event processing uses patterns to detect composite events in streams of simple events. Typically, the events are logically partitioned by some key. For instance, the key can be the stock symbol in stock quotes, the author in tweets, the vehicle in transportation, or the patient in health-care. Composite event patterns often become meaningful only after partitioning. For instance, a pattern over stock quotes is typically meaningful over quotes for the same stock symbol. This paper proposes a pattern syntax and translation scheme organized around the notion of partitions. Besides making patterns meaningful, partitioning also benefits performance, since different keys can be processed in parallel. We have implemented partitioned parallel complex event processing as an extension to IBM's System S high-performance streaming platform. Our experiments with several benchmarks from finance and social media demonstrate processing speeds of up to 830,000 events per second, and substantial speedups for expensive patterns parallelized on multi-core machines as well as multi-machine clusters. Partitioning the event stream before detecting composite events makes event processing both more intuitive and parallel.},
+booktitle = {Proceedings of the 6th ACM International Conference on Distributed Event-Based Systems},
+pages = {191–200},
+numpages = {10},
+keywords = {SPL, automata, composite events, CEP, stream processing, regular expressions, pattern matching, parallelism},
+location = {Berlin, Germany},
+series = {DEBS '12}
+}
+
+@inproceedings{distributed-related-work-2,
+author = {Mayer, Ruben and Tariq, Muhammad Adnan and Rothermel, Kurt},
+title = {Minimizing Communication Overhead in Window-Based Parallel Complex Event Processing},
+year = {2017},
+isbn = {9781450350655},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3093742.3093914},
+doi = {10.1145/3093742.3093914},
+abstract = {Distributed Complex Event Processing has emerged as a well-established paradigm to detect situations of interest from basic sensor streams, building an operator graph between sensors and applications. In order to detect event patterns that correspond to situations of interest, each operator correlates events on its incoming streams according to a sliding window mechanism. To increase the throughput of an operator, different windows can be assigned to different operator instances---i.e., identical operator copies---which process them in parallel. This implies that events that are part of multiple overlapping windows are replicated to different operator instances. The communication overhead of replicating the events can be reduced by assigning overlapping windows to the same operator instance. However, this imposes a higher processing load on the single operator instance, possibly overloading it. In this paper, we address the trade-off between processing load and communication overhead when assigning overlapping windows to a single operator instance. Controlling the trade-off is challenging and cannot be solved with traditional reactive methods. To this end, we propose a model-based batch scheduling controller building on prediction. Evaluations show that our approach is able to significantly save bandwidth, while keeping a user-defined latency bound in the operator instances.},
+booktitle = {Proceedings of the 11th ACM International Conference on Distributed and Event-Based Systems},
+pages = {54–65},
+numpages = {12},
+keywords = {Communication Overhead, Complex Event Processing, Data Parallelization},
+location = {Barcelona, Spain},
+series = {DEBS '17}
+}
+
+@ARTICLE{load-balancing-1,
+  author={Mitzenmacher, M.},
+  journal={IEEE Transactions on Parallel and Distributed Systems},
+  title={The power of two choices in randomized load balancing},
+  year={2001},
+  volume={12},
+  number={10},
+  pages={1094-1104},
+  doi={10.1109/71.963420}
+}
+
+@inproceedings{load-balancing-2,
+  title={When two choices are not enough: Balancing at scale in distributed stream processing},
+  author={Nasir, Muhammad Anis Uddin and Morales, Gianmarco De Francisci and Kourtellis, Nicolas and Serafini, Marco},
+  booktitle={2016 IEEE 32nd International Conference on Data Engineering (ICDE)},
+  pages={589--600},
+  year={2016},
+  organization={IEEE}
+}
+
+@article{load-balancing-3,
+  title={Partial key grouping: Load-balanced partitioning of distributed streams},
+  author={Nasir, Muhammad Anis Uddin and Morales, Gianmarco De Francisci and Garcia-Soriano, David and Kourtellis, Nicolas and Serafini, Marco},
+  journal={arXiv preprint arXiv:1510.07623},
+  year={2015}
 }
