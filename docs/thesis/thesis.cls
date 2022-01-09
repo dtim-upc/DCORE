@@ -181,8 +181,41 @@
 }
 
 \newcommand\acknowledgements[1]{
+\cleardoublepage
 \thispagestyle{plain}
 \begin{center}{\huge{\textit{Acknowledgements}} \par}\end{center}
 {\normalsize #1}
 \vfil\vfil\null
+}
+
+\newenvironment{pagecentered}{%
+\vspace*{\stretch{2}}%
+\begin{center}%
+\begin{minipage}{.8\textwidth}%
+}{%
+\end{minipage}%
+\end{center}%
+\vspace*{\stretch{3}}\clearpage}
+
+\newcommand{\license}{%
+  \thispagestyle{empty}
+  \begin{pagecentered}
+
+  \doublespacing
+
+  DISTRIBUTED COMPLEX EVENT RECOGNITION \\
+  COPYRIGHT \\
+  2022 \\
+  Arnau Abella \bigskip
+
+  \singlespacing
+
+  This work is licensed under a \href{https://www.gnu.org/licenses/gpl-3.0.en.html}{GNU General Public License v3.0}. To view a copy of this license, visit \bigskip
+
+  \url{https://www.gnu.org/licenses/gpl-3.0.en.html} \bigskip
+
+  The complete source code for this document is available from \bigskip
+
+  \url{https://github.com/dtim-upc/DCORE}
+  \end{pagecentered}
 }

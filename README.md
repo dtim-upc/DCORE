@@ -3,11 +3,7 @@
 The goal of this project is to empirically demonstrate the performance gains of the distribution of Complex Event Recognition.
 Particularly, the enumeration process and the evaluation of second order predicates.
 
-This project is mainly based on the work of:
-
-- [A. Grez et al.](./papers/AFormalFrameworkForComplexEventRecognition.pdf)
-- [M. Bucchi et al.](./papers/CORE.pdf)
-- [CORE: a COmplex event Recognition Engine](https://github.com/CORE-cer/CORE)
+This project is based on the work of [A. Grez et al.](https://dl.acm.org/doi/10.1145/3485463), [M. Bucchi et al.](https://arxiv.org/abs/2111.04635), among others.
 
 This project depends on [CORE](https://github.com/dtim-upc/CORE) (private) and [CORE2](https://github.com/dtim-upc/CORE2).
 
@@ -25,14 +21,6 @@ sbt compile
 
 Compilation should work out-of-box. Feel free to open an [issue](https://github.com/dtim-upc/DistributedCER2/) if it does not.
 
-### Unmanaged dependencies: CORE
-
-The project currently depends on the `jar`s since CORE's project uses `gradle` while we are using `sbt`.
-
-In the future, we could properly integrate both projects: 
-  - (a) Add CORE as a submodule and upgrade `build.sbt` to build it.
-  - (b) Publish CORE to a centralized repository e.g. Maven Central and add it to `DCORE` as a remote dependency.
-
 ## Usage
 
 The follow section will guide you on how to use the main _CLI_ executable of `dcer`.
@@ -43,11 +31,26 @@ All available options:
 $ sbt "run --help"
 
 Usage:
-    dcer --demo
-    dcer --role <string> [--port <string>] [--query <path>] [--strategy <string>]
-    
+    dcer core
+    dcer core2
 A distributed complex event processing engine.
+Options and flags:
+    --help
+        Display this help text.
+Subcommands:
+    core
+        Execute using CORE.
+    core2
+        Execute using CORE2.
+```
 
+```sh
+$ sbt "run core --help"
+
+Usage:
+    dcer core --demo
+    dcer core --role <string> [--port <string>] [--query <path>] [--strategy <string>]
+Execute using CORE.
 Options and flags:
     --help
         Display this help text.
@@ -60,7 +63,25 @@ Options and flags:
     --query <path>
         Examples at './core/src/main/resources/'
     --strategy <string>
-        Available strategies: List(Sequential, RoundRobin)
+        Available strategies: List(Sequential, RoundRobin, RoundRobinWeighted, PowerOfTwoChoices, MaximalMatchesEnumeration, MaximalMatchesDisjointEnumeration)
+```
+
+```sh
+$ sbt "run core2 --help"
+
+Usage: dcer core2 --role <string> [--port <string>] [--query <path>] [--strategy <string>]
+Execute using CORE2.
+Options and flags:
+    --help
+        Display this help text.
+    --role <string>
+        Available roles: List(Master, Slave)
+    --port <string>
+        Available ports: [1024, 49152]
+    --query <path>
+        Examples at './core/src/main/resources/'
+    --strategy <string>
+        Available strategies: List(Sequential, Distributed)
 ```
 
 ### Demo
@@ -69,27 +90,26 @@ The following command will run 1 Engine and 'n' Workers in a single JVM.
 All the communications will be inside the JVM i.e. this is not a realistic demo.
 
 ```sh
-sbt "run --demo"
+sbt "run core --demo"
 ```
 
-or
+### Execution on a cluster
+
+On a single machine of the cluster, you need to run the program as **master**:
 
 ```sh
-$ bloop run core -- --demo
+sbt "run core --role master"
 ```
 
-### Production
+On the rest of the machines, you need to run the program as **slave**:
 
-```sh
-# Machine 1
-sbt "run --role master"
-
-# Machine 2
-sbt "run --role slave"
-
-# (Optional) Machine N
-sbt "run --role slave"
 ```
+sbt "run core --role slave"
+```
+
+You usually run the slaves first, and later the master. 
+The master waits **10 seconds** for all the slaves to connect to the network.
+And then, starts processing the configured query.
 
 #### Configuration
 
@@ -104,21 +124,13 @@ Change the configuration at `core/src/main/resources/application.conf`:
 
 ## Running the tests
 
-```sh
-$ sbt test
-```
-
-or
+> Integration tests should be run separately from unit tests.
 
 ```sh
-$ bloop test core-test
-# To run a specific test
-$ bloop test core-test -o '*OutputValidation*' 
+$ sbt "testOnly dcer.unit*"
+
+$ sbt "testOnly dcer.integration*"
 ```
-
-> Integration tests should be run separately from unit tests (not sure why).
-
-Should run all subproject tests.
 
 ## Running the benchmarks
 
