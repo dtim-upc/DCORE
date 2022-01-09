@@ -135,11 +135,11 @@ Algorithm~\ref{algo:update} incrementally maintains (1) a tECS $\mathcal{E}$ tha
     \inputtikz{AB+_4}
     \caption*{$S[$4$]$}
   \end{subfigure}
-  \caption{Illustration of Algorithm~\ref{algo:update} on the CEA $\mathcal{A}$ and stream $S$ of Figure~\ref{fig:cea:ab+}.}
+  \caption{Illustration of Algorithm~\ref{algo:update} on the CEA $\mathcal{A}$ and stream $S$ of Figure~\ref{fig:cea}.}
   \label{fig:tecs:update}
 \end{figure}
 
-During the description, the reader may find it helpful to refer to Figure~\ref{fig:tecs:update}, which illustrates how \aref{algo:update} evaluates the CEA $\mathcal{A}$ of Figure~\ref{fig:cea:ab+} over the stream $S$ of Figure~\ref{fig:cea:ab+}. Each subfigure corresponds to the state after processing $S[j]$. The tECS is denoted in black, the attribute $paths$ of each node is coloured red, and the hash table $T$ that links the active states to union-lists is illustrated in blue. For each position, the set \code{ordered-keys($T$)} will be ordered top down.
+During the description, the reader may find it helpful to refer to Figure~\ref{fig:tecs:update}, which illustrates how \aref{algo:update} evaluates the CEA $\mathcal{A}$ of Figure~\ref{fig:cea} over the stream $S$ of Figure~\ref{fig:cea:ab+}. Each subfigure corresponds to the state after processing $S[j]$. The tECS is denoted in black, the attribute $paths$ of each node is coloured red, and the hash table $T$ that links the active states to union-lists is illustrated in blue. For each position, the set \code{ordered-keys($T$)} will be ordered top down.
 
 \begin{algorithm}[t]
   \setstretch{0.9} % space between lines

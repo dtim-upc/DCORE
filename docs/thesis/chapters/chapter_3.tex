@@ -14,9 +14,18 @@ A \emph{distributed program} is composed of an ordered-set of $n$ asynchronous p
 
 \section{Complex event logic}\label{sec:ceql}
 
+In this section, we introduce CEQL by means of an example, and then, we give the formal syntax and semantics of CEQL.
+
+\emph{Complex Event Query language (CEQL)} is a practical CER language based on \emph{Complex Event Logic (CEL)}, which is a formal logic that is built from the common operators in the literature of CER and whose expressiveness and complexity have been in-depth studied in \cite{formal-framework-cep,on-the-expressiveness,formal-framework-cer}.
+
+We continue
+
+
+
 \begin{figure}[H]
   \begin{minted}[xleftmargin=100pt, linenos=false, fontsize=\scriptsize]{text}
-    SELECT * FROM S
+    SELECT *
+    FROM S
     WHERE (T as t1; T+ as ts)
     FILTER t1[tmp < 30]
       AND ts[tmp > 30]
@@ -24,7 +33,7 @@ A \emph{distributed program} is composed of an ordered-set of $n$ asynchronous p
     WITHIN 5 minutes
   \end{minted}
   \caption{CEQL query on a synthetic stream S.}
-  \label{fig:query:ab+}
+  \label{fig:query}
 \end{figure}
 
 \section{Selection strategies}\label{sec:selection_strategies}
@@ -37,14 +46,14 @@ In order to speed up the matching process, it is common to restrict the set of r
   \centering
   \begin{subfigure}[b]{\textwidth}
     \centering
-    \inputtikz{ceaAB+}
+    \inputtikz{cea}
     \vspace*{2em}
   \end{subfigure}
   \begin{subfigure}[t]{\textwidth}
     \centering
-    \inputtikz{streamAB+}
+    \inputtikz{stream}
   \end{subfigure}
 
-  \caption{A CEA representing the query from Figure~\ref{fig:query:ab+} and an example of stream.}
-  \label{fig:cea:ab+}
+  \caption{A CEA representing the query from Figure~\ref{fig:query} and an example of stream.}
+  \label{fig:cea}
 \end{figure}
