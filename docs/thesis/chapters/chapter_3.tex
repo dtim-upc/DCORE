@@ -14,27 +14,41 @@ A \emph{distributed program} is composed of an ordered-set of $n$ asynchronous p
 
 \section{Complex event logic}\label{sec:ceql}
 
-In this section, we introduce CEQL by means of an example, and then, we give the formal syntax and semantics of CEQL.
-
-\emph{Complex Event Query language (CEQL)} is a practical CER language based on \emph{Complex Event Logic (CEL)}, which is a formal logic that is built from the common operators in the literature of CER and whose expressiveness and complexity have been in-depth studied in \cite{formal-framework-cep,on-the-expressiveness,formal-framework-cer}.
-
-We continue
-
-
+\emph{Complex Event Query language (CEQL)} is a practical CER language based on \emph{Complex Event Logic (CEL)}, which is a formal logic that is built from the common operators in the literature of CER and whose expressiveness and complexity have been in-depth studied in \cite{formal-framework-cep,on-the-expressiveness,formal-framework-cer}.\bigskip
 
 \begin{figure}[H]
-  \begin{minted}[xleftmargin=100pt, linenos=false, fontsize=\scriptsize]{text}
+  \begin{minted}[xleftmargin=120pt, linenos=false, fontsize=\footnotesize]{text}
     SELECT *
-    FROM S
+    FROM warehouse
     WHERE (T as t1; T+ as ts)
     FILTER t1[tmp < 30]
       AND ts[tmp > 30]
     PARTITION BY id
     WITHIN 5 minutes
   \end{minted}
-  \caption{CEQL query on a synthetic stream S.}
+  \caption{CEQL query on a wireless sensors network stream}
   \label{fig:query}
 \end{figure}
+
+We continue with our example of detecting fires in a stream produced by a network of wireless sensors placed in a warehouse. Suppose that we are interested in all triplets of \code{T} events where the first has temperature below $30$ Celsius degrees and the rest has temperature above $30$ Celsius degrees, partitioned by the zone of the warehouse where the sensor is placed. The query from Figure~\ref{fig:query} expresses this in CEQL. The \code{FROM} clause indicates the input streams. The \code{WHERE} clause indicates the pattern of events that need to be matched in the stream. The pattern can be any \emph{unary} CEL expression \cite{formal-framework-cer}. In our query, the pattern \code{T as t1; T+ as ts} indicates that we want to capture all complex events that consist of an event type \code{T} followed by an arbitrary number of events of type \code{T}. In particular, the operator (;) indicates sequencing and the operator (+) indicates non-empty repeated sequencing. We want to remark that sequencing in CEL is non-contiguous. Consequently, the \code{T} events do not need to be contiguous --- there might be other events in between. The \code{FILTER} clause allows to filter events by unary predicates. The clause \code{PARTITION BY} allows to express correlation among events in the form of equi-joins. The \code{WITHIN} clause specifies the time-window. In our query, the time between the first event \code{T} and the last event \code{T} must be within 5 minutes. Finally, the \code{SELECT} clause allows to project the result.
+
+Next, we give the formal syntax and semantics of CEQL.
+
+\textbf{Events, complex events, and valuations}. Fix a set of \emph{event types} \textbf{T} (e.g., \code{H} and \code{T}), a set of \emph{attribute names} \textbf{A} (e.g., $id$, $tmp$, and $hum$), and a set of \emph{data values} \textbf{D} (e.g., integer, strings, etc.). A \emph{data-tuple t} is a partial mapping that maps attribute names from \textbf{A} to data values in \textbf{D}. Each data-tuple is associated to an event type. We denote by $t(a) \in \textbf{D}$ the value of the attribute $a \in \textbf{A}$ assigned by $t$, and by $t(type) \in \textbf{T}$ the event type of $t$. If $t$ is not defined on attribute $a$, then we write $t(a) = \text{NULL}$.
+
+A \emph{stream} is a possibly infinite sequence $S = t_{0}t_{1}t_{2}\ldots$ of data-tuples. Given a set $D \subseteq \mathbb{N}$, we define the set of data tuples $S[D] = \{ t_{i} \ | \ i \in D\}$. A \emph{complex event} is a pair $C = ([i,j], D)$ where $i \le j \in \mathbb{N}$ and $D$ is a subset of $\{i, \ldots, j\}$. Intuitively, given a stream $S = t_{0}t_{1}\ldots$ the interval $[i, j]$ of $C$ represents the subsequence $t_{i}t_{i+1} \ldots t_{j}$ of $S$ where the complex event $C$ happens and $S[D]$ represents the data-tuples from $S$ that are relevant for $C$. We write $C(data)$ to denote $D$, $C(time)$ to denote the time-interval $[i, j]$, $C(data)$, and $C(start)$ and $C(end)$ for $i$ and $j$, respectively.
+
+Let \textbf{X} be a set of \emph{variables}, which includes all event types, $\textbf{T} \subseteq \textbf{X}$. A \emph{valuation} is a pair $V = ([i, j], \mu)$ with $[i,j]$ a time interval as above and $\mu$ a mapping that assigns subsets of $\{i, \ldots, j\}$ to variables in \textbf{X}. We write $V(time)$, $V(start)$, and $V(end)$ for $[i,j]$, $i$, and $j$, respectively, and $V(X)$ for the subset of $\{i,\ldots, j\}$ assigned to X by $\mu$.
+
+We write $C_{V}$ for the complex event that is obtained from valuation $V$ by forgetting the variables in $V$: $C_{V}(time) = V(time)$ and $C_{V}(data) = \bigcup\limits_{X \in \textbf{X}} V(X)$. The semantics of CEQL will be defined in terms of valuations, which are subsequently transformed into complex events as explained.
+
+\textbf{Predicates}. A (unary) \emph{predicate} is a possibly infinite set $P$
+
+\textbf{CEQL}.
+
+\textbf{Valuation semantics}.
+
+\textbf{Complex event semantics}.
 
 \section{Selection strategies}\label{sec:selection_strategies}
 
