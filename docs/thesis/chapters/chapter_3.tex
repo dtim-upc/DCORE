@@ -103,7 +103,9 @@ The semantics of CEQL is as follows. A CEQL query first evaluates its \code{FROM
 
 \section{Computational model}\label{sec:cea}
 
-\begin{figure}[H]
+As explained in Section~\ref{sec:ceql}, evaluating a CEQL query corresponds to evaluating the query's \code{SELECT-WHERE-WITHIN} clauses on either a single stream, or multiple different substreams. In our work, the \code{SELECT-WHERE} part of a query is compiled into a \emph{Complex Event Automaton} \cite{formal-framework-cep,formal-framework-cer}, which is a form of finite automaton that produces complex events. Our evaluation algorithm is then defined in terms of CEA: it takes as input a CEA $\mathcal{A}$, the time-window $\epsilon$ specified in the \code{WITHIN} clause, and a stream $S$, and uses this to compute $\InDBrackets{\varphi}(S)$.
+
+\begin{figure}[h]
   \centering
   \begin{subfigure}[b]{\textwidth}
     \centering
@@ -118,3 +120,20 @@ The semantics of CEQL is as follows. A CEQL query first evaluates its \code{FROM
   \caption{A CEA representing the query from Figure~\ref{fig:query} and an example of stream.}
   \label{fig:cea}
 \end{figure}
+
+\begin{example}
+  In Figure~\ref{fig:cea} we show the compilation of the query from Figure~\ref{fig:query} into an equivalent CEA $\mathcal{A}$. We depict predicates by listing, in array notation, the event type, and the constraint on the temperature attribute. The initial state is $q_{1}$ and there is only one final state: $q4$. The figure also includes an example stream $S$, where the values correspond to the event type, the identifier attribute, and the temperature attribute, in that order.
+\end{example}
+
+Formally, a \emph{Complex Event Automaton (CEA)} is a tuple $\mathcal{A} = (\mathcal{Q}, \Delta, q_{0}, F)$ where $\mathcal{Q}$ is a finite set of states, $\Delta \subseteq \mathcal{Q} \times \textbf{P} \times \{\bullet, \circ\} \times (\mathcal{Q} \setminus \{ q_{0} \})$ is a finite transition, $q_{0} \in \mathcal{Q}$ is the initial state, and $F \subseteq \mathcal{Q}$ is the set of final states. We will denote transitions in $\Delta$ by $q \xrightarrow[]{P/m} q'$. A \emph{run} of $\mathcal{A}$ over stream $S$ from positions $i$ to $j$ is a sequence $\rho := q_{i} \xrightarrow[]{P_{i}/m_{i}} q_{i+1} \xrightarrow[]{P_{i+1}/m_{i+1}} \ldots \xrightarrow[]{P_{j}/m_{j}} q_{j+1}$ such that $q_{i}$ is the initial state of $\mathcal{A}$ and for every $k \in [i,j]$ it holds that $q_{k} \xrightarrow[]{P_{k}/m_{k}} q_{k+1} \in \Delta$ and $t_{k} \vDash P_{k}$. A run $\rho$ is \emph{accepting} if $q_{j+1} \in F$. An accepting run of $\mathcal{A}$ over $S$ from $i$ to $j$ naturally defines the complex event $C_{\rho} := ([i, j], \{ k \ | \ i \le j \le j \land m_{k} = \bullet \})$. Finally, we define the semantics of $\mathcal{A}$ over a stream $S$ as $\InDBrackets{\mathcal{A}}(S) := \{ C_{\rho} \ | \ \rho \text{ is an accepting run of } \mathcal{A} \text{ over } S\}$.
+
+The usefulness of CEA comes from the fact that CEL cab be translated into CEA \cite{formal-framework-cep,formal-framework-cer}. Because the \code{SELECT-WHERE} part of a CEQL query is in essence a CEL formula, this reduces the evaluation problem of the \code{SELECT-WHERE-WITHIN} part of CEQL query into the evaluation problem for CEA.
+
+\begin{theorem}\label{theorem:cea}
+  For every CEL formula $\varphi$ we can construct a CEA $\mathcal{A}$ of size linear in $\varphi$ such that for every $\epsilon$:
+  \begin{equation*}
+    \InDBrackets{\varphi \code{ WITHIN } \epsilon}(S) = \{ C \ | \ C \in \InDBrackets{\mathcal{A}}(S) \land C(end) - C(start) \le \epsilon \}
+  \end{equation*}
+\end{theorem}
+
+Our evaluation algorithm will compute the right-hand side of this equation. It requires that the input CEA $\mathcal{A}$ is \emph{I/O deterministic}: for every pair of transitions $q \xrightarrow[]{P_{1}/m_{1}} q_{1}$ and $q \xrightarrow[]{P_{2}/m_{2}} q_{2}$ from the state $q$, if $P_{1} \cap P_{2} \ne \emptyset$ then $m_{1} \ne m_{2}$. To put it another way, an event $t$ may trigger both transitions at the same time only if one transition marks the event, but the other does not. In \cite{formal-framework-cep,formal-framework-cer}, it was shown that any CEA can be I/O-determinized, with a possibly exponential blow-up in the size of the automaton.
