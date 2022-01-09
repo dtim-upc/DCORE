@@ -21,20 +21,20 @@ A \emph{distributed program} is composed of an ordered-set of $n$ asynchronous p
     SELECT *
     FROM warehouse
     WHERE (T as t1; T+ as ts)
-    FILTER t1[tmp < 30]
-      AND ts[tmp > 30]
+    FILTER t1[val < 30]
+      AND ts[val > 30]
     PARTITION BY id
     WITHIN 5 minutes
   \end{minted}
-  \caption{CEQL query on a wireless sensors network stream}
-  \label{fig:query}
+  \caption{CEQL query on a wireless sensors network stream.}
+  \label{fig:query:2}
 \end{figure}
 
-We continue with our example of detecting fires in a stream produced by a network of wireless sensors placed in a warehouse. Suppose that we are interested in all triplets of \code{T} events where the first has temperature below $30$ Celsius degrees and the rest has temperature above $30$ Celsius degrees, partitioned by the zone of the warehouse where the sensor is placed. The query from Figure~\ref{fig:query} expresses this in CEQL. The \code{FROM} clause indicates the input streams. The \code{WHERE} clause indicates the pattern of events that need to be matched in the stream. The pattern can be any \emph{unary} CEL expression \cite{formal-framework-cer}. In our query, the pattern \code{T as t1; T+ as ts} indicates that we want to capture all complex events that consist of an event type \code{T} followed by an arbitrary number of events of type \code{T}. In particular, the operator (;) indicates sequencing and the operator (+) indicates non-empty repeated sequencing. We want to remark that sequencing in CEL is non-contiguous. Consequently, the \code{T} events do not need to be contiguous --- there might be other events in between. The \code{FILTER} clause allows to filter events by unary predicates. The clause \code{PARTITION BY} allows to express correlation among events in the form of equi-joins. The \code{WITHIN} clause specifies the time-window. In our query, the time between the first event \code{T} and the last event \code{T} must be within 5 minutes. Finally, the \code{SELECT} clause allows to project the result.
+We continue with our example of detecting fires in a stream produced by a network of wireless sensors placed in a warehouse. Suppose that we are interested in all triplets of \code{T} events where the first has temperature below $30$ Celsius degrees and the rest has temperature above $30$ Celsius degrees, partitioned by the zone of the warehouse where the sensor is placed. The query from Figure~\ref{fig:query:2} expresses this in CEQL. The \code{FROM} clause indicates the input streams. The \code{WHERE} clause indicates the pattern of events that need to be matched in the stream. The pattern can be any \emph{unary} CEL expression \cite{formal-framework-cer}. In our query, the pattern \code{T as t1; T+ as ts} indicates that we want to capture all complex events that consist of an event type \code{T} followed by an arbitrary number of events of type \code{T}. In particular, the operator (;) indicates sequencing and the operator (+) indicates non-empty repeated sequencing. We want to remark that sequencing in CEL is non-contiguous. Consequently, the \code{T} events do not need to be contiguous --- there might be other events in between. The \code{FILTER} clause allows to filter events by unary predicates. The clause \code{PARTITION BY} allows to express correlation among events in the form of equi-joins. The \code{WITHIN} clause specifies the time-window. In our query, the time between the first event \code{T} and the last event \code{T} must be within 5 minutes. Finally, the \code{SELECT} clause allows to project the result.
 
 Next, we give the formal syntax and semantics of CEQL.
 
-\textbf{Events, complex events, and valuations}. Fix a set of \emph{event types} \textbf{T} (e.g., \code{H} and \code{T}), a set of \emph{attribute names} \textbf{A} (e.g., $id$, $tmp$, and $hum$), and a set of \emph{data values} \textbf{D} (e.g., integer, strings, etc.). A \emph{data-tuple t} is a partial mapping that maps attribute names from \textbf{A} to data values in \textbf{D}. Each data-tuple is associated to an event type. We denote by $t(a) \in \textbf{D}$ the value of the attribute $a \in \textbf{A}$ assigned by $t$, and by $t(type) \in \textbf{T}$ the event type of $t$. If $t$ is not defined on attribute $a$, then we write $t(a) = \text{NULL}$.
+\textbf{Events, complex events, and valuations}. Fix a set of \emph{event types} \textbf{T} (e.g., \code{H} and \code{T}), a set of \emph{attribute names} \textbf{A} (e.g., $id$, and $val$), and a set of \emph{data values} \textbf{D} (e.g., integer, strings, etc.). A \emph{data-tuple t} is a partial mapping that maps attribute names from \textbf{A} to data values in \textbf{D}. Each data-tuple is associated to an event type. We denote by $t(a) \in \textbf{D}$ the value of the attribute $a \in \textbf{A}$ assigned by $t$, and by $t(type) \in \textbf{T}$ the event type of $t$. If $t$ is not defined on attribute $a$, then we write $t(a) = \text{NULL}$.
 
 A \emph{stream} is a possibly infinite sequence $S = t_{0}t_{1}t_{2}\ldots$ of data-tuples. Given a set $D \subseteq \mathbb{N}$, we define the set of data tuples $S[D] = \{ t_{i} \ | \ i \in D\}$. A \emph{complex event} is a pair $C = ([i,j], D)$ where $i \le j \in \mathbb{N}$ and $D$ is a subset of $\{i, \ldots, j\}$. Intuitively, given a stream $S = t_{0}t_{1}\ldots$ the interval $[i, j]$ of $C$ represents the subsequence $t_{i}t_{i+1} \ldots t_{j}$ of $S$ where the complex event $C$ happens and $S[D]$ represents the data-tuples from $S$ that are relevant for $C$. We write $C(data)$ to denote $D$, $C(time)$ to denote the time-interval $[i, j]$, $C(data)$, and $C(start)$ and $C(end)$ for $i$ and $j$, respectively.
 
@@ -117,12 +117,12 @@ As explained in Section~\ref{sec:ceql}, evaluating a CEQL query corresponds to e
     \inputtikz{stream}
   \end{subfigure}
 
-  \caption{A CEA representing the query from Figure~\ref{fig:query} and an example of stream.}
+  \caption{A CEA representing the query from Figure~\ref{fig:query:2} and an example of stream.}
   \label{fig:cea}
 \end{figure}
 
 \begin{example}
-  In Figure~\ref{fig:cea} we show the compilation of the query from Figure~\ref{fig:query} into an equivalent CEA $\mathcal{A}$. We depict predicates by listing, in array notation, the event type, and the constraint on the temperature attribute. The initial state is $q_{1}$ and there is only one final state: $q4$. The figure also includes an example stream $S$, where the values correspond to the event type, the identifier attribute, and the temperature attribute, in that order.
+  In Figure~\ref{fig:cea} we show the compilation of the query from Figure~\ref{fig:query:2} into an equivalent CEA $\mathcal{A}$. We depict predicates by listing, in array notation, the event type, and the constraint on the temperature attribute. The initial state is $q_{1}$ and there is only one final state: $q4$. The figure also includes an example stream $S$, where the values correspond to the event type, the identifier attribute, and the temperature attribute, in that order.
 \end{example}
 
 Formally, a \emph{Complex Event Automaton (CEA)} is a tuple $\mathcal{A} = (\mathcal{Q}, \Delta, q_{0}, F)$ where $\mathcal{Q}$ is a finite set of states, $\Delta \subseteq \mathcal{Q} \times \textbf{P} \times \{\bullet, \circ\} \times (\mathcal{Q} \setminus \{ q_{0} \})$ is a finite transition, $q_{0} \in \mathcal{Q}$ is the initial state, and $F \subseteq \mathcal{Q}$ is the set of final states. We will denote transitions in $\Delta$ by $q \xrightarrow[]{P/m} q'$. A \emph{run} of $\mathcal{A}$ over stream $S$ from positions $i$ to $j$ is a sequence $\rho := q_{i} \xrightarrow[]{P_{i}/m_{i}} q_{i+1} \xrightarrow[]{P_{i+1}/m_{i+1}} \ldots \xrightarrow[]{P_{j}/m_{j}} q_{j+1}$ such that $q_{i}$ is the initial state of $\mathcal{A}$ and for every $k \in [i,j]$ it holds that $q_{k} \xrightarrow[]{P_{k}/m_{k}} q_{k+1} \in \Delta$ and $t_{k} \vDash P_{k}$. A run $\rho$ is \emph{accepting} if $q_{j+1} \in F$. An accepting run of $\mathcal{A}$ over $S$ from $i$ to $j$ naturally defines the complex event $C_{\rho} := ([i, j], \{ k \ | \ i \le j \le j \land m_{k} = \bullet \})$. Finally, we define the semantics of $\mathcal{A}$ over a stream $S$ as $\InDBrackets{\mathcal{A}}(S) := \{ C_{\rho} \ | \ \rho \text{ is an accepting run of } \mathcal{A} \text{ over } S\}$.

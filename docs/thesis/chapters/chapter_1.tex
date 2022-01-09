@@ -3,61 +3,50 @@
 \emph{Complex Event Recognition (CER)}, also called Complex Event Processing, refers to the activity of identifying, in streams of high-velocity continuously arriving primitive event data, collections of events that collectively satisfy some pattern.
 These collections of events that satisfy some pattern are referred as \emph{complex events}. Conceptually, CER systems allow expressing patterns that match incoming events not only on the basis of their content, but also on where they occur in the input stream, and how this order relates to other events in the stream, in addition to other constraints between events. CER queries distinguish themselves from streaming queries supported by engines such as Flink \cite{flink}, or Spark \cite{spark} in that CER queries include \emph{regular expressions operators} like \emph{sequencing}, \emph{disjunction} and \emph{iteration} to express spatio-temporal constraints that are not supported by stream processing engines.
 
-In recent years, CER has emerged as a prominent technology and has been successfully applied in scenarios like maritime monitoring \cite{maritime-monitoring}, network intrusion detection \cite{network-intrusion-detection}, industrial control systems \cite{industrial-control}, and real-time analytics \cite{real-time-analytics}. Prominent examples of CER systems from academia and industry include Cayuga \cite{cayuga}, CORE \cite{core}, Esper \cite{esper}, SASE \cite{sase}, and TESLA \cite{tesla}, among others (see surveys \cite{survey-systems-1,survey-systems-2}). 
-All such systems share the common goal of providing timely reaction to situations of interest in a real-time manner. Thus, having query evaluation mechanisms that minimize latency is a shared desiderata. Nonetheless, the evaluation of CER queries is well known to be computationally expensive. Indeed, such evaluation requires the maintenance of a set of partial matches which grows \textit{super-linearly} in the number of processed events. We illustrate this problem with an example as follows.
-
-%CER systems aim to detect situations of interest, in the form of complex events, with the goal of providing insightful information and reactive responses. As such, they strive for low latency query evaluation. CER query evaluation, however, is known to be \emph{computationally challenging}. In practise, evaluating a CER query requires maintaining a set of partial matches, and this set quickly grows \emph{super-linearly} in the number of events processed. We illustrate this problem with the following example.
-
-\todo[inline]{I think it is a better idea to use the example environment, as it makes a distinction using italics}
+In recent years, CER has emerged as a prominent technology and has been successfully applied in scenarios like maritime monitoring \cite{maritime-monitoring}, network intrusion detection \cite{network-intrusion-detection}, industrial control systems \cite{industrial-control}, and real-time analytics \cite{real-time-analytics}. Prominent examples of CER systems from academia and industry include Cayuga \cite{cayuga}, CORE \cite{core}, Esper \cite{esper}, SASE \cite{sase}, and TESLA \cite{tesla}, among others (see surveys \cite{survey-systems-1,survey-systems-2}).  All such systems share the common goal of providing timely reaction to situations of interest in a real-time manner. Thus, having query evaluation mechanisms that minimize latency is a shared desiderata. Nonetheless, the evaluation of CER queries is well known to be computationally expensive. Indeed, such evaluation requires the maintenance of a set of partial matches which grows \textit{super-linearly} in the number of processed events. We illustrate this problem with an example as follows.
 
 \begin{example}
-Consider a stream produced by wireless sensors placed in a warehouse, whose main objective is to detect fires. We assume each sensor can measure both temperature (in Celsius degrees) and relative humidity (as a percentage). Additionally, each sensor is assigned a unique id corresponding to the zone of the warehouse where the sensor is located. The \emph{events} produced by the sensors are composed of the id of the sensor and a measurement corresponding to temperature or relative humidity. We write $T(id, val)$ for an event reporting temperature $val$ from sensor $id$, and $H(id, val)$ for an event reporting humidity $val$ from sensor $id$. An excerpt of the stream of events, indexed by order of arrival, is depicted in Figure \ref{fig:stream}.
-\todo[inline]{Arnau, please, fix the numbers so they make sense in your example}
+Consider a stream produced by wireless sensors placed in a warehouse, whose main objective is to detect fires. We assume each sensor can measure both temperature (in Celsius degrees) and relative humidity (as a percentage). Additionally, each sensor is assigned a unique id corresponding to the zone of the warehouse where the sensor is located. The \emph{events} produced by the sensors are composed of the id of the sensor and a measurement corresponding to temperature or relative humidity. We write $T(id, val)$ for an event reporting temperature $val$ from sensor $id$, and $H(id, val)$ for an event reporting humidity $val$ from sensor $id$. An excerpt of the stream of events, indexed by order of arrival, is depicted in Figure~\ref{fig:stream}.
 
-\begin{figure}[h!]
-	\centering{
-		{
-			\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c}\hline
-				type  &$H$&$T$&$H$&$H$&$T$&$H$&$T$&$H$&$H$ & \ldots \\ \hline
-				id  & 1 & 2 & 2 & 3 & 1 & 2 & 1 & 3 & 2 & \multirow{2}{*}{\ldots} \\
-				val & 50 & -1& 40& 35& 3& 50& -1& 45& 65\\ \hline
-				timestamp & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & \ldots \\ \hline
-		\end{tabular}}
-		\caption{Exemplary stream of events measuring temperature ($T$) and relative humidity ($H$)}\label{fig:stream}
-	}
+\begin{figure}[H]
+  \centering
+  \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c}\hline
+    type  &$H$&$T$&$H$&$H$&$T$&$H$&$H$&$T$&$T$ & \ldots \\ \hline
+    id  & 1 & 1 & 2 & 1 & 2 & 2 & 1 & 1 & 1 & \multirow{2}{*}{\ldots} \\
+    val & 50 & 24& 49& 24& 24& 42& 23& 40& 45\\ \hline
+    timestamp & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & \ldots \\ \hline
+  \end{tabular}
+  \caption{Exemplary stream of events measuring temperature ($T$) and relative humidity ($H$)}
+  \label{fig:stream}
 \end{figure}
 
 For the sake of illustration, assume that it has been detected that when the temperature of a storage room increases from below 30 celsius degrees to above 40 celsius degrees and the humidity is below 25\% there is a high probability of fire. The following query retrieves the id of the zone where the fire might be originated so the notification system could warn the security team.
 
-\begin{figure}[H]
-  \begin{minted}[xleftmargin=100pt, linenos=false, fontsize=\scriptsize]{text}
+\begin{figure}[h!]
+  \begin{minted}[xleftmargin=100pt, linenos=false, fontsize=\footnotesize]{text}
     SELECT t2.id FROM warehouse
     WHERE (T as t1; H as h1; T as t2)
     FILTER t1[val < 30] AND h1[val < 25]
       AND t2[val > 40] AND t1[id] = h1[id]
       AND h1[id] = t2[id]
-    WITHIN 10 minutes
+    WITHIN 10 events
   \end{minted}
+  \caption{CEQL query on a wireless sensors network stream, which goal is to detect fires.}
+  \label{fig:query:1}
 \end{figure}
 
-\vspace{-30pt}
-Notice that, within a given time window, the number of \emph{partial matches} that consist of a temperature measurement followed by a humidity measurement followed by a temperature measurement may easily be cubic in the number of events in the window. 
-\todo[inline]{Elaborate on such partial matches using few examples using the stream above}
+When the query from Figure~\ref{fig:query:1} is applied to the input stream from Figure~\ref{fig:stream}, the resulting complex events are: $\{ 1, 3, 7 \}$, $\{ 1, 6, 7 \}$, $\{ 1, 3, 6, 7 \}$, $\{ 1, 3, 8 \}$, $\{ 1, 6, 8 \}$, $\{ 1, 3, 6, 8 \}$, $\{ 1, 3, 7, 8\}$, $\{ 1, 6, 7, 8\}$, and $\{ 1, 3, 6, 7, 8\}$. Observe that, within a given time window, the number of \emph{partial matches} that consist of a temperature measurement followed by a humidity measurement followed by a temperature measurement may easily be cubic in the number of events in the window.
 \end{example}
 
-In order to overcome the issues illustrated by the example above, current CER engines either materialize, or lazily compute this set of partial matches to be able to quickly determine when a temperature measurement constitute an answer to this query. In either case, an $\Omega(N^{3})$ operation is required to complete the processing of the complex event, where $N$ is the number of previous events seen within the sliding window. This gets worsened under the default \emph{skip-till-any-match} \cite{skip-till-any-match} policy, where queries that include the iterator operator may have sets of partial matches that grow \emph{exponentially} in $N$ \cite{core}. 
-Given the computational challenges of CER query evaluation, there has been ongoing research on this field \cite{research-evaluation-query, formal-framework-cer}, where a wide range of different execution models has been proposed \cite{survey-systems-1, survey-systems-2}. %A myriad of optimization techniques have proposed such as restricting the output set using event selection policies \cite{skip-till-any-match} that somewhat limit the super-linear complexity. 
-Although, all of these system still suffer from overhead super-linear in the size of the stream, and thus their scalability is limited to queries over short time windows. %(see Section~6 \cite{core}). Unfortunately, some applications like maritime monitoring \cite{maritime-monitoring} or credit card fraud detection \cite{fraud-detection} require long time windows.
+In order to overcome the issues illustrated by the example above, current CER engines either materialize, or lazily compute this set of partial matches to be able to quickly determine when a temperature measurement constitute an answer to this query. In either case, an $\Omega(N^{3})$ operation is required to complete the processing of the complex event, where $N$ is the number of previous events seen within the sliding window. This gets worsened under the default \emph{skip-till-any-match} \cite{skip-till-any-match} policy, where queries that include the iterator operator may have sets of partial matches that grow \emph{exponentially} in $N$ \cite{core}.  Given the computational challenges of CER query evaluation, there has been ongoing research on this field \cite{research-evaluation-query, formal-framework-cer}, where a wide range of different execution models has been proposed \cite{survey-systems-1, survey-systems-2}. Although, all of these system still suffer from overhead super-linear in the size of the stream, and thus their scalability is limited to queries over short time windows.
 
-An attempt to overcome the detrimental super-linear complexity of contemporary CER systems is the \emph{COmplex event Recognition Engine (CORE)} engine \cite{core}. Such engine builds on top of a \emph{rigorous} and \emph{efficient} framework for CER \cite{formal-framework-cep, formal-framework-cer}. To do so, it employs a formal language for specifying complex events, called \emph{CEQL}, that contains many features used in the literature including time windows as well as a partition-by event correlation operator \cite{on-the-expressiveness, core}. Such language can be compiled into a \emph{formal computational model} called \emph{complex event automata (CEA)}, which includes the evaluation of unary filter predicates. % into CEA \cite{formal-framework-cer}. 
-CORE incorporates efficient algorithms for evaluating CEA over event streams using constant time, under data complexity, per event followed by output-linear delay enumeration of the complex events, which are not affected by the length of the stream, size of the query, or size of the time window \cite{formal-framework-cer, core}.%, and implemented such system, \emph{COmplex event Recognition Engine (CORE)}, which outperforms the other systems by up to three orders of magnitude on different query workloads \cite{core}.
+An attempt to overcome the detrimental super-linear complexity of contemporary CER systems is the \emph{COmplex event Recognition Engine (CORE)} engine \cite{core}. Such engine builds on top of a \emph{rigorous} and \emph{efficient} framework for CER \cite{formal-framework-cep, formal-framework-cer}. To do so, it employs a formal language for specifying complex events, called \emph{CEQL}, that contains many features used in the literature including time windows as well as a partition-by event correlation operator \cite{on-the-expressiveness, core}. Such language can be compiled into a \emph{formal computational model} called \emph{complex event automata (CEA)}, which includes the evaluation of unary filter predicates. CORE incorporates efficient algorithms for evaluating CEA over event streams using constant time, under data complexity, per event followed by output-linear delay enumeration of the complex events, which are not affected by the length of the stream, size of the query, or size of the time window \cite{formal-framework-cer, core}.
 
 Despite all previous accomplishments, there is still room for improvement. First, CEQL has to be restricted to unary predicates to be able to translate it into an equivalent CEA. Unary CEQL and CEA are expressively equivalent, however, incomparable when equipped with $n$-ary predicates, with $n > 1$ (e.g., the evaluation of predicates of the kind \texttt{t1[id] = h1[id]}). In particular, when CEQL is restricted to binary predicates, it is strictly more expressive than CEA \cite{on-the-expressiveness}. Secondly, CORE's evaluation algorithm guarantees constant update time per event, under data complexity, and, once a match is found, the results are materialized from the data structure and enumerated with output-linear delay, however, when a query includes an iteration, the set of partial matches may grow exponentially in the size of the stream, resulting in an exponential cost of enumerating the complex events.
 
-In this thesis, we embark on the task of extending CORE to support the evaluation of non-unary predicates while maintaining the performance guarantees, and reduce the time complexity of the enumeration phase of the evaluation algorithm. To do so, we propose a novel parallel enumeration algorithm that allows to partition the workload of enumerating candidate complex events and evaluating $n$-ary predicates over a set of workers. We theoretically show the soundness of the approach, and demostrate its practical superiority with respect to CORE's built-in evaluation algorithm as well as state of the art partitioning strategies.
+In this thesis, we embark on the task of extending CORE to support the evaluation of non-unary predicates while maintaining the performance guarantees, and reduce the time complexity of the enumeration phase of the evaluation algorithm. To do so, we propose a novel parallel enumeration algorithm that allows to partition the workload of enumerating candidate complex events and evaluating $n$-ary predicates over a set of workers. We theoretically show the soundness of the approach, and demonstrate its practical superiority with respect to CORE's built-in evaluation algorithm as well as state of the art partitioning strategies.
 
-\textbf{Note.} Throughout the development of this thesis, several new publications on the area have been published \cite{formal-framework-cer, core}, which have impacted the results of this work. In particular, we started this thesis focusing on the evaluation of non-unary predicates, and later on reducing the complexity of the enumeration phase of the evaluation algorithm. The former is based on the work of \cite{formal-framework-cep, on-the-expressiveness}, and the later on the more recent work of \cite{formal-framework-cer, core}. We emphasize that both works present similar results: a formal language for CER, an automata-based computational model, and a theoretical evaluation algorithm that requires only constant time per event, followed by output-linear delay enumeration of the output. But, the later has a more solid theoretical background, more rigorous proofs, a simpler and more elegant evaluation algorithm, and a publicly available implementation (see \cite{core-repo}).
-\todo[inline]{Is it necessary to make the distinction between the different works?}
+\textbf{Note.} Throughout the development of this thesis, several new publications on the area have been published \cite{formal-framework-cer, core}, which have impacted the results of this work.
 
 \section{Contributions}
 \label{sec:contribution}
