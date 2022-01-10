@@ -4,27 +4,15 @@ In this chapter we propose a novel framework for distributed CER that is based o
 
 \section{Proposed approach}\label{sec:proposed-approach}
 
-Given the efficient evaluation of CEA's algorithms in a centralized manner (see \cite{formal-framework-cer, core}), it is hard to foresee scenarios where it can benefit from distribution. Indeed, both automata distribution approaches (i.e., query partitioning and pipelining) will incur a big overhead in terms of network communication during the evaluation process to synchronize the tECS $\mathcal{E}$ and the enumeration process. However, as previously discussed, CEA is very limited in terms of filtering capabilities, allowing only \emph{unary} predicates. Thus, one might wonder how to include the evaluation of more complex filters over non-unary predicates such as binary predicates (e.g., an equi-join \code{h1[id] = t2[id]}), or second-order predicates (e.g., the sequence of \code{T[val]} must monotonically increase). In \cite{on-the-expressiveness}, it is discussed that CEL and CEA are equivalent in expressive power when CEL is restricted to unary predicates, but incomparable in general. Thus, non-unary CEL, in general, cannot be compiled into an equivalent CEA. However, one could split the pattern matching process and the filtering in CER. In other words, we would maintain the generation of complex events in CEA, but leverage on a distributed framework for complex filtering.
+Given the efficient evaluation of CEA in a centralized manner \cite{formal-framework-cer, core}, it is hard to foresee scenarios where it can benefit from distribution. Indeed, both automata distribution approaches (i.e., query partitioning and pipelining) will incur a big overhead in terms of network communication during the evaluation process to synchronize the tECS $\mathcal{E}$ and the enumeration process. However, as previously discussed, CEA is very limited in terms of filtering capabilities, allowing only \emph{unary} predicates. Thus, one might wonder how to include the evaluation of more complex filters over non-unary predicates such as binary predicates (e.g., an equi-join \code{h1[id] = t2[id]}), or second-order predicates (e.g., the sequence of \code{T[val]} must monotonically increase). In \cite{on-the-expressiveness}, it is discussed that CEL and CEA are equivalent in expressive power when CEL is restricted to unary predicates, but incomparable in general. Thus, non-unary CEL, in general, cannot be compiled into an equivalent CEA. However, one could split the pattern matching process and the filtering in CER. In other words, we would maintain the generation of complex events in CEA, but leverage on a distributed framework for complex filtering.
 
+We propose a framework for distributed complex event recognition based on the previous discussion. The framework receives a stream of data-tuples and a query as an input. We will use CEQL as our query language, but we will allow $n$-ary CEL predicates inside the \code{WHERE} clause. The query is parsed using any context free grammar (CFG) parsing algorithm (e.g., Earley's algorithm \cite{earley}). The resulting abstract syntax tree (AST) is applied to the \emph{rewrite algorithm}. The rewrite algorithm translates the non-unary CEL predicate into a unary CEL predicate of a CEQL query, and outputs the corresponding non-unary predicates as a compact AST for later use, if any. The resulting CEQL query is compiled into a CEA by \cite[Theorem~6.2]{formal-framework-cer}. Then, this CEA and the input stream are evaluated using one the efficient evaluation algorithms presented in \cite{formal-framework-cer, core}. Notice, the results of this evaluation is not yet a valid output since we still need to apply the \code{FILTER} clause for the non-unary predicates, if present. The resulting set of complex events is distributed among the processing units of the distributed system using any of the \emph{distribution strategies} (explained below). Then, each processing unit applies the \emph{refine algorithm} to its assigned complex events. The refine algorithm uses the non-unary predicates to filter the complex events. Finally, each processing unit outputs the set of complex events corresponding to the input query.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+\textbf{Note}. We implemented a rewrite and refine algorithm that only works for very specific queries. Implementing a generic rewrite and refine algorithm is outside of the scope of this thesis and it is left for future work.
 
 \section{Prototype I}\label{sec:prototype:I}
+
+This framework is built on top of a distributed actor model (see Chapter~\ref{chapter:implementation} for more details).
 
 % \item A distributed system for evaluating non-unary predicates over CEQL queries. The CEQL query is feed into the system and processed by a single actor. This actor parses the query, analyses its semantics, and generates the corresponding unary CEQL, and an evaluation plan for the non-unary predicates. The unary CEQL is processed sequentially using the efficient evaluation process of \cite{formal-framework-cep} and complex events are output. Then, a \emph{distribution strategy} is used to distribute the complex events, with additional non-unary predicate information, between the nodes of the distributed system. Finally, each node of the system, evaluates the non-unary predicates over the resulting complex events.
 
