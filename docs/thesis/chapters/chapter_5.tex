@@ -1,12 +1,34 @@
-\chapter{Distributed Evaluation of Non-unary Predicates}\label{chapter:non-unary-predicates}
+\chapter{Distributed CER}\label{chapter:distributed-cer}
 
-% You need to describe both systems
-%
+In this chapter we propose a novel framework for distributed CER that is based on CEL and CEA from Chapter~\ref{chapter:preliminaries}. We describe a first implementation based on this framework. Furthermore, we introduce several distributions strategies to be used on this implementation. Finally, we introduce an alternative implementation based on the distributed evaluation algorithm from Chapter~\ref{chapter:algorithm}. We show in Chapter~\ref{chapter:experimental_evaluation} that the latter implementation performance is overall better thanks to its ad-hoc evaluation algorithm.
+
+\section{Proposed approach}\label{sec:proposed-approach}
+
+Given the efficient evaluation of CEA's algorithms in a centralized manner (see \cite{formal-framework-cer, core}), it is hard to foresee scenarios where it can benefit from distribution. Indeed, both automata distribution approaches (i.e., query partitioning and pipelining) will incur a big overhead in terms of network communication during the evaluation process to synchronize the tECS $\mathcal{E}$ and the enumeration process. However, as previously discussed, CEA is very limited in terms of filtering capabilities, allowing only \emph{unary} predicates. Thus, one might wonder how to include the evaluation of more complex filters over non-unary predicates such as binary predicates (e.g., an equi-join \code{h1[id] = t2[id]}), or second-order predicates (e.g., the sequence of \code{T[val]} must monotonically increase). In \cite{on-the-expressiveness}, it is discussed that CEL and CEA are equivalent in expressive power when CEL is restricted to unary predicates, but incomparable in general. Thus, non-unary CEL, in general, cannot be compiled into an equivalent CEA. However, one could split the pattern matching process and the filtering in CER. In other words, we would maintain the generation of complex events in CEA, but leverage on a distributed framework for complex filtering.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{Prototype I}\label{sec:prototype:I}
+
 % \item A distributed system for evaluating non-unary predicates over CEQL queries. The CEQL query is feed into the system and processed by a single actor. This actor parses the query, analyses its semantics, and generates the corresponding unary CEQL, and an evaluation plan for the non-unary predicates. The unary CEQL is processed sequentially using the efficient evaluation process of \cite{formal-framework-cep} and complex events are output. Then, a \emph{distribution strategy} is used to distribute the complex events, with additional non-unary predicate information, between the nodes of the distributed system. Finally, each node of the system, evaluates the non-unary predicates over the resulting complex events.
-%
-% Furthermore, we propose different distributions strategies and analyse their behaviour.
-%
-% \item Another distributed system for evaluating non-unary predicates over CEQL queries based on the distributed evaluation algorithm presented in Contributions~(I). The system differs from the previous in that: the query is feed to \emph{all} the nodes, each node parses and extracts the corresponding unary CEQL query and a plan for evaluating the non-unary predicates of the query, and the evaluation algorithm is executed on each node. During the distributed enumeration phase of the evaluation algorithm, the output is filtered taking into account the non-unary predicates.
+
+\subsection{Distribution Strategies}\label{subsec:distribution-strategies}
 
 We propose a novel enumeration algorithm called \acrfull{mmde}
 
@@ -149,4 +171,11 @@ We propose a novel enumeration algorithm called \acrfull{mmde}
 
 % The complexity of the algorithm remains the same if we accomplish linear time enumeration in each worker (this is the tricky part).
 
+
+\section{Prototype II}\label{sec:prototype:II}
+
+% \item Another distributed system for evaluating non-unary predicates over CEQL queries based on the distributed evaluation algorithm presented in Contributions~(I). The system differs from the previous in that: the query is feed to \emph{all} the nodes, each node parses and extracts the corresponding unary CEQL query and a plan for evaluating the non-unary predicates of the query, and the evaluation algorithm is executed on each node. During the distributed enumeration phase of the evaluation algorithm, the output is filtered taking into account the non-unary predicates.
+
+
 \section{Chapter summary}
+
