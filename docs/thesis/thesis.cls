@@ -183,14 +183,14 @@
 \newcommand\acknowledgements[1]{
 \cleardoublepage
 \thispagestyle{plain}
-\setlength{\parindent}{20pt}
-\setlength{\parskip}{0pt}
+% \setlength{\parindent}{20pt}
+% \setlength{\parskip}{0pt}
 \begin{center}{\huge{\textit{Acknowledgements}} \par}\end{center}
 \vspace{20pt}
 {\normalsize #1}
 \vfil\vfil\null
-\setlength{\parindent}{0pt}
-\setlength{\parskip}{2.0ex plus0.5ex minus0.2ex}
+% \setlength{\parindent}{0pt}
+% \setlength{\parskip}{2.0ex plus0.5ex minus0.2ex}
 }
 
 \newenvironment{pagecentered}{%
