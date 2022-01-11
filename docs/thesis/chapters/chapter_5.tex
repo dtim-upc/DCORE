@@ -1,4 +1,4 @@
-\chapter{Evaluation Algorithm}\label{chapter:algorithm}
+\chapter{Distributed evaluation algorithm}\label{chapter:algorithm}
 
 In this chapter we propose an \emph{efficient} and \emph{distributed} evaluation algorithm for CEA, heavily inspired by \cite{core}, that computes the set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}(S) := \{ C \ | \ C \in {\llbracket \mathcal{A} \rrbracket}(S) \land C(end) - C(start) \le \epsilon\}$ where $\mathcal{A}$ is a CEA, $\epsilon$ a time window, and $S$ a stream. Actually, it will compute this set \emph{incrementally}: at every position $j$ in the stream, it outputs the set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S) := \{ C \ | \ C \in {\llbracket \mathcal{A} \rrbracket}^{\epsilon}(S) \land C(end) = j \}$.
 
