@@ -1,12 +1,7 @@
-What to include in the presentation?
+Do not get to technical.
 
-Introduce the topic.
-Present my contributions.
-Introduce all the concepts up to CORE's algorithm.
-Present CORE's algorithm with my modifications.
-Present the theorem and the proof.
-Explain how this algorithm can be used to evaluate second-order predicates.
-Show the experiments.
-And conclude.
+For example CEL present syntax and grammar CEL.
 
-I will be skipping ALL about the old CORE and the distribution strategies.
+Algorithm: present properties, present a with Figure 4.3 and 4.4 in mind.
+
+https://eddelbuettel.github.io/binb/metropolis_demo.pdf

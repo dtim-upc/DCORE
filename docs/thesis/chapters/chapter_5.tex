@@ -1,8 +1,9 @@
 \chapter{Distributed CER}\label{chapter:distributed-cer}
 
-In this chapter we propose a novel framework for distributed CER that is based on CEL and CEA from Chapter~\ref{chapter:preliminaries}. We describe a first implementation based on this framework. Furthermore, we introduce several distributions strategies to be used on this implementation. Finally, we introduce an alternative implementation based on the distributed evaluation algorithm from Chapter~\ref{chapter:algorithm}. We show in Chapter~\ref{chapter:experimental_evaluation} that the latter implementation performance is overall better thanks to its ad-hoc evaluation algorithm.
+In this chapter we propose a novel framework for distributed CER that is based on CEA from Chapter~\ref{chapter:preliminaries}.
+We describe two possible architectures based on this framework, and discuss several distributions strategies for each.
 
-\section{Proposed approach}\label{sec:proposed-approach}
+\section{Proposed framework}\label{sec:proposed-approach}
 
 Given the efficient evaluation of CEA in a centralized manner \cite{formal-framework-cer, core}, it is hard to foresee scenarios where it can benefit from distribution. Indeed, both automata distribution approaches (i.e., query partitioning and pipelining) will incur a big overhead in terms of network communication during the evaluation process to synchronize the tECS $\mathcal{E}$ and the enumeration process. However, as previously discussed, CEA is very limited in terms of filtering capabilities, allowing only \emph{unary} predicates. Thus, one might wonder how to include the evaluation of more complex filters over non-unary predicates such as binary predicates (e.g., an equi-join \code{h1[id] = t2[id]}), or second-order predicates (e.g., the sequence of \code{T[val]} must monotonically increase). In \cite{on-the-expressiveness}, it is discussed that CEL and CEA are equivalent in expressive power when CEL is restricted to unary predicates, but incomparable in general. Thus, non-unary CEL, in general, cannot be compiled into an equivalent CEA. However, one could split the pattern matching process and the filtering in CER. In other words, we would maintain the generation of complex events in CEA, but leverage on a distributed framework for complex filtering.
 
@@ -10,9 +11,15 @@ We propose a framework for distributed complex event recognition based on the pr
 
 \textbf{Note}. We implemented a rewrite and refine algorithm that only works for very specific queries. Implementing a generic rewrite and refine algorithm is outside of the scope of this thesis and it is left for future work.
 
-\section{Prototype I}\label{sec:prototype:I}
+% Talk about the two different architectures and present their names
 
-In this section, we discuss the first implementation of the framework proposed in Section~\ref{sec:proposed-approach}. This implementation is built on top of a distributed actor model (see Chapter~\ref{chapter:implementation} for more details). We will differentiate between two roles of actors: master and slave. There will be a single master actor in the cluster, and as many slave actors as processing units left. The master actor will act as the leader of the cluster and will orchestrate the rest of the slave actors. The master actor receives a stream of data-tuples and a query as an input. It parses and rewrite the input query to unary CEL. Then, it compiles the query to CEA, and evaluate it to retrieve the corresponding set of complex events. For this implementation we use the evaluation algorithm from \cite{formal-framework-cer} which guarantees constant update of the data structure and output-linear delay enumeration. Then, we apply one of the selection strategies from Section~\ref{subsec:distribution-strategies} to distribute the set of complex events among the slave actors. Asynchronously and independently, each processing unit receives its corresponding subset of complex events and it applies the refine algorithm to the complex events. Afterwards, once the refine algorithm is finished, the actor returns the resulting subset of complex events to the master node. Finally, once the master has received the output of all processing units, it executes the configured response (e.g., write the complex events to disk, or send an email, or activate an alarm \ldots).
+\section{Architecture I}\label{sec:prototype:I}
+
+In this section, we discuss the first implementation of the framework proposed in Section~\ref{sec:proposed-approach}.
+
+This implementation is built on top of a distributed actor model. We emphasize that actor models can be used either to encode parallelism by considering each core of a processor as a different actor, or distributed programming by considering each processing unit in the network as a different actor. Indeed, in our implementation from Chapter~\ref{chapter:implementation}, we consider as many actors as the product of the number of processing units in our cluster by the number of cores of each processor.
+
+We will differentiate between two roles of actors: master and slave. There will be a single master actor in the cluster, and as many slave actors as processing units left. The master actor will act as the leader of the cluster and will orchestrate the rest of the slave actors. The master actor receives a stream of data-tuples and a query as an input. It parses and rewrite the input query to unary CEL. Then, it compiles the query to CEA, and evaluate it to retrieve the corresponding set of complex events. For this implementation we use the evaluation algorithm from \cite{formal-framework-cer} which guarantees constant update of the data structure and output-linear delay enumeration. Then, we apply one of the selection strategies from Section~\ref{subsec:distribution-strategies} to distribute the set of complex events among the slave actors. Asynchronously and independently, each processing unit receives its corresponding subset of complex events and it applies the refine algorithm to the complex events. Afterwards, once the refine algorithm is finished, the actor returns the resulting subset of complex events to the master node. Finally, once the master has received the output of all processing units, it executes the configured response (e.g., write the complex events to disk, or send an email, or activate an alarm \ldots).
 
 \subsection{Distribution Strategies}\label{subsec:distribution-strategies}
 
@@ -25,8 +32,6 @@ We briefly describe existing distribution strategies and refer the interested re
 \textbf{Weighted Shuffling}.
 
 \textbf{Power of Two Choices}. The \emph{Power of Two Choices (PoTC)} \cite{load-balancing-1} is a randomized load balancing ...
-
-\textbf{Maximal Matches Enumeration}.
 
 \textbf{Maximal Matches Disjoint Enumeration}.
 
@@ -171,15 +176,17 @@ We briefly describe existing distribution strategies and refer the interested re
 
 % The complexity of the algorithm remains the same if we accomplish linear time enumeration in each worker (this is the tricky part).
 
-\section{Prototype II}\label{sec:prototype:II}
+\section{Architecture II}\label{sec:prototype:II}
 
 In this section, we discuss the second implementation of the framework proposed in Section~\ref{sec:proposed-approach}. This implementation is also built on top of a distributed actor model, differentiates between two roles of actors, and has the same restrictions on the roles, however, the architecture and the algorithm used are different. In this implementation, the master actor plays a secondary role. It is only used to retrieve the complex events from the rest of the slave actors in order to execute the configured response. Indeed, if the response can be executed on the slaves actors (e.g., writing to an output stream), then the master actor can be removed from the system.
 
 The following steps are all execute asynchronously and independently on each node of the distributed system. There is no communication between the nodes throughout this process. We assume that the system can duplicate the input data, otherwise, the master node could receive the input stream and query and send to each slave a copy. The node receives an input stream and a query. It parses and rewrites the input query to unary CEL. Then, it compiles the query to CEA, and evaluates it to retrieve the corresponding set of complex events. For this implementation we use the distributed evaluation algorithm from Chapter~\ref{chapter:algorithm} which also guarantees constant update of the data structure and output-linear delay enumeration, but also guarantees that the number of complex events processed on each processing unit is divided by the total number of processes. This will have a positive impact on the performance of this system. In this implementation, the refine algorithm is executed at the same time as the enumeration process, not requiring and additional traversal of the complex events. The output of the evaluation algorithm is already the output corresponding to the query.
 
-\section{Comparison}\label{comparison}
+% Challenge here is the distributed algorithm of section 5
 
-In this section we compare Prototype~I and Prototype~II.
+\subsection{Distribution Strategies}\label{subsec:distribution-strategies}
+
+\textbf{Broadcast}.
 
 \section{Chapter summary}
 
