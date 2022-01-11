@@ -25,6 +25,15 @@
 
 \usepackage{bm, stmaryrd} % math symbols
 
+\DeclareFontFamily{U}{mathx}{\hyphenchar\font45}
+\DeclareFontShape{U}{mathx}{m}{n}{
+      <5> <6> <7> <8> <9> <10>
+      <10.95> <12> <14.4> <17.28> <20.74> <24.88>
+      mathx10
+      }{}
+\DeclareSymbolFont{mathx}{U}{mathx}{m}{n}
+\DeclareMathSymbol{\bigtimes}{1}{mathx}{"91}
+
 % Defines a new environment to write your or claim - proof
 \newenvironment{claim}[1]{\par\noindent\underline{Claim:}\space#1}{}
 \newenvironment{claimproof}[1]{\par\noindent\underline{Proof:}\space#1}{\hfill $\blacksquare$}
@@ -107,10 +116,8 @@
 
 \newacronym{tecs}{tECS}{\emph{timed Enumerable Compact Set}}
 \newacronym{core}{CORE}{Complex Event Recognition Engine}
-\newacronym{mmde}{\textsc{MMDE}}{\emph{Maximal Match Disjoint Enumeration}}
 \newacronym{dte}{\textsc{DTE}}{\emph{Distributed tECS Enumeration}}
 \newacronym{cea}{CEA}{Complex Event Automata}
-\newacronym{rmi}{RMI}{Remote Method Invocation}
 \newacronym{dag}{DAG}{Directed Acyclic Graph}
 \newacronym{cer}{CER}{Complex Event Recognition}
 \newacronym{cep}{CEP}{Complex Event Processing}

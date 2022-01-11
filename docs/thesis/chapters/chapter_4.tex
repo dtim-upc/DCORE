@@ -30,42 +30,77 @@ We will differentiate between two roles of actors: master actors and slave actor
 
 \subsection{Distribution Strategies}\label{subsec:dcere:distribution-strategies}
 
-In this section we describe the distributions strategies used by Prototype~I to distribute the set of complex events among the set of actors on the distributed system. We have considered distribution strategies ranging from \emph{load-balancing algorithms} to \emph{stream partitioning algorithms}. But, we have also proposed our own novel distribution strategies specific to the distribution of complex events.
+In this section we describe the distributions strategies used by DCERE to distribute the set of complex events among the set of actors on the distributed system. We have considered distribution strategies ranging from \emph{load-balancing algorithms} to \emph{stream partitioning algorithms}. Additionally, we have proposed our own novel distribution strategy specific to the distribution of complex events, called \emph{Maximal Complex Event Enumeration (MCEE)}. In Chapter~\ref{chapter:experimental_evaluation}, we compare the proposed selection strategies.
 
-We briefly describe existing distribution strategies and refer the interested reader to its original publication for further information. The newly presented distribution strategies are extensively described. We compare the proposed selection strategies in Chapter~\ref{chapter:experimental_evaluation}.
+\textbf{Round Robin}. \emph{Round Robin (RR)} is the most basic load-balancing strategy. It consist of blindly routing the complex events to the actors in a circular fashion. Although simple, it works well in practice.
 
-\textbf{Shuffling}.
+\textbf{Power of Two Choices}. The \emph{Power of Two Choices (PoTC)} \cite{load-balancing-1} is a randomized load balancing algorithm introduced in \emph{queue theory}. Given $n$ actors, for each each complex event, we randomly pick $d$ actors. Finally, from those $d$ choices, we pick the one with lowest workload. Surprisingly, having $d = 2$ choices leads to an exponential improvement in the load-balance, whereas $d > 2$ choices is only constant factor better than $d = 2$.
 
-\textbf{Weighted Shuffling}.
+\textbf{Exact Search}. \emph{Exact Search (ES)} is a load balancing algorithm equivalent to PoTC when $d = n$. This distribution strategy was designed taking into account that computing the static load of an actor is cheap, while computing the dynamic load is not. Therefore, for each complex event, we query the static load in constant time of all the actors of the system, and send the complex event to the actor with lowest workload.
 
-\textbf{Power of Two Choices}. The \emph{Power of Two Choices (PoTC)} \cite{load-balancing-1} is a randomized load balancing ...
-
-\textbf{Maximal Matches Disjoint Enumeration}.
+\textbf{Maximal Complex Event Enumeration}. \emph{Maximal Complex Event Enumeration (MCEE)} is a load balancing algorithm specific to CER.
 
 \begin{algorithm}[H]
+  \setstretch{0.9} % space between lines
   \DontPrintSemicolon
   \SetAlgoNoEnd % don't print end
   \SetAlgoNoLine % no vertical lines
   \LinesNumbered
   \SetKwProg{Procedure}{procedure}{}{}
-  \SetKwFunction{MMDE}{\textsc{MaximalMatchesDisjointEnumeration}}
-  \SetKwFunction{Enumerate}{\textsc{Enumerate}}
+  \SetKwFunction{MCEE}{\textsc{MaximalComplexEventEnumeration}}
+  \SetKwFunction{Configurations}{\textsc{Configurations}}
+  \SetKwFunction{Head}{head}
+  \SetKwFunction{Type}{type}
+  \SetKwFunction{Last}{last}
+  \SetKwFunction{Enum}{enum}
+  \SetKwFunction{OrdTypes}{ordered-types}
 
-  \Procedure{\MMDE{$M$, $W$}}{
-    \KwIn{A set of maximal matches $M := \{M_{1}, \ldots, M_{n}\}$ \newline
-      and a set of workers $W := \{w_{1},\ldots, w_{m}\}$.
+  \Procedure{\MCEE{$C_{V}$, $W$}}{
+    \KwIn{A set of maximal complex events $\mathcal{C}_{V} := \{C^{1}_{V}, \ldots, C^{n}_{V}\}$ \newline
+      and a set of workers $\mathcal{W} := \{W_{1},\ldots, W_{m}\}$.
     }
-    \KwResult{Enumerates all \emph{submatches} $\subseteq M$ without repetitions.}
-    $C \leftarrow \emptyset$\;
-    \ForEach{$M_{i} \in M$}{
-        $C \leftarrow C \cup \textsc{Configurations}(M_{i}).map(\lambda c \to ( c, M_{i} ))$\;
+    \KwResult{Enumerates all \emph{complex events} $C_{V} \subseteq \mathcal{C}_{V}$.}
+    $\mathcal{K} \leftarrow \emptyset$\;
+    \ForEach{$C_{V} \in \mathcal{C}_{V}$}{
+        $\mathcal{K} \leftarrow \mathcal{K} \cup \textsc{Configurations}(C_{V}).map(\lambda K \to ( K, C_{V} ))$\;
     }
-    $D \leftarrow C.groupBy(\lambda (c, \_ ) \to c)$\;
+    $D \leftarrow K.groupBy(\lambda (K, \_ ) \to K)$\;
     $\textsc{Distribute}(W, D)$
   }
   \;
-\caption{Non-repeated enumeration of a set of maximal matches.}
-\label{algo:mmde}
+  \Procedure{\Configurations{$C_{V}$}}{
+    \KwIn{A complex event $C_{V} = \{i, \ldots, j\}$ with $C_{V} \subseteq 2^{\mathbb{N}}$.}
+    \KwOut{A set $\mathcal{K}$ of configurations $K := T \times \mathbb{N}$ where $K$ is the mapping from the event type $t \in T$ to the size of the group of consecutive events of type $t$ in the complex $C_{V}$.}
+    $\mathcal{V} \leftarrow \emptyset$\;
+    $i \cup C_{V}' \leftarrow \Head{$C_{V}$}$\;
+    $A \leftarrow \{ i \}$\;
+    $\Type{$A$} \leftarrow \Type{$i$}$\;
+    \For{$j \in C_{V}'$}{
+      \eIf{$\Type{$j$} = \Type{$A$}$}{
+        $A \leftarrow A \cup j$\;
+        \uIf{$\Last{$C_{V}$} = j$} {
+          $\mathcal{V} \leftarrow \mathcal{V} \cup \Enum{$1, |A|$}$
+        }
+      }{
+        $\mathcal{V} \leftarrow \mathcal{V} \cup \Enum{$1, |A|$}$\;
+        $A \leftarrow \{ j \}$\;
+        $\Type{$A$} \leftarrow \Type{$j$}$\;
+      }
+    }
+    $\mathcal{W} \leftarrow \bigtimes\limits_{V \in \mathcal{V}} V$\;
+    $T \leftarrow \OrdTypes{$C_{V}$}$\tcp*[l]{\scriptsize e.g., $\OrdTypes{$A_{1}A_{2}B_{1}C_{1}$} = \{A,B,C\}$}
+    $\mathcal{K} \leftarrow \emptyset$\;
+    \ForEach{$W \in \mathcal{W}$}{
+      $K \leftarrow \emptyset$\;
+      \For{$i \leftarrow 1$ \KwTo $|W|$}{
+        $K \leftarrow K \cup (T[i], W[i])$\;
+      }
+      $\mathcal{C} \leftarrow \mathcal{C} \cup C$\;
+    }
+    \Return{$\mathcal{C}$}
+  }
+\caption{Distributed enumeration of a set of maximal complex events $C_{V}$ over a set of workers $W$.}
+\label{algo:mcee:1}
 \end{algorithm}
 
 % This procedure enumerates all submatches of M without repetitions.
@@ -74,6 +109,7 @@ We briefly describe existing distribution strategies and refer the interested re
 % The complexity is still exponential w.r.t. the size of the largest iteration.
 % The exponential time enumeration must be repeated a constant factor of times.
 \begin{algorithm}[H]
+  \setstretch{0.9} % space between lines
   \DontPrintSemicolon
   \SetAlgoNoEnd % don't print end
   \SetAlgoNoLine % no vertical lines
@@ -81,88 +117,50 @@ We briefly describe existing distribution strategies and refer the interested re
   \SetKwProg{Procedure}{procedure}{}{}
   \SetKwFunction{Enumerate}{\textsc{Enumerate}}
   \SetKwFunction{Enumeratee}{\textsc{Enumerate'}}
-
-  \Procedure{\Enumerate{}}{
-    \KwData{A set of tuples $A = \{ (c, \{ M_{1}, \ldots, M_{n}\}) \}$ where $c$ is a \emph{configuration} and $M_{i}$ are maximal matches.}
-    \KwOut{The set of all submatches without repetitions.}
-    \ForEach{$(c, M) \in A$}{
-      $T \leftarrow$ \text{new-root()}
-      \ForEach{$M_{i} \in M$}{
-        $G \leftarrow \textsc{GroupBy}(M_{i})$\;
-        $\textsc{Enumerate'}(T, G, \emptyset, \bot)$\;
+  \SetKwFunction{GroupBy}{group-by}
+  \SetKwFunction{Type}{type}
+  \SetKwFunction{Event}{event}
+  \SetKwFunction{Children}{children}
+  \SetKwFunction{Add}{add}
+  \SetKwFunction{NewNode}{new-node}
+  \Procedure{\Enumerate{$D$}}{
+    \KwData{A set of tuples $D = \{ \langle K, \mathcal{C}_{V} \rangle \}$ where $K$ is a configuration and $\mathcal{C}_{V}$ is a set of maximal complex events.}
+    \KwOut{The set of all complex events $C_{V} \in D$ without duplicates.}
+    \ForEach{$(K, \mathcal{C_{V}}) \in A$}{
+      $T \leftarrow$ \text{\NewNode{}}\;
+      \ForEach{$C_{V} \in \mathcal{C}_{V}$}{
+        $\mathcal{G} \leftarrow \GroupBy{$M_V$})$\;
+        $\textsc{Enumerate'}(T, \mathcal{G}, \emptyset, \bot, K)$\;
         }
     }
   }
   \;
-  \Procedure{\Enumeratee{$n, G, S, new$}}{
-    \KwData{A node $n$, a set of grouped events $G$, a time-ordered set of events $S$, and a boolean $new$.}
-    \Switch{$G$}{
+  \Procedure{\Enumeratee{$n, \mathcal{G}, S, new, K$}}{
+    \KwData{A node $n$, a set of grouped events $\mathcal{G}$, a partial complex event $C_{V}$, a boolean $new$, and a configuration $K$.}
+    \Switch{$\mathcal{G}$}{
       \uCase{$\emptyset$}{
         \If{$new$}{
-          \Return{$S$}
+          \Return{$C_{V}$}
         }
       }
-      \uCase{$g \cup G'$}{
-        $k \leftarrow c(g.type)$
-        $E \leftarrow \binom{g}{k}$
-        \ForEach{$e \in E$}{
-          \eIf{$\exists n' \in n.children \land n'.event = e$}{
-            $\textsc{Enumerate'}(n', G', S \cup e, new)$\;
+      \uCase{$G \cup \mathcal{G}$}{
+        $k \leftarrow K(\Type{G})$\;
+        $N \leftarrow \binom{G}{k}$\;
+        \ForEach{$i \in N$}{
+          \eIf{$\exists n' \in \Children{n}. \ \ \Event{n'} = i$}{
+            $\textsc{Enumerate'}(n', \mathcal{G}, C_{V} \cup i, new)$\;
           }{
-            $p \leftarrow$ new-node($e$)\;
-            $n.children.add(p)$\;
-            \textsc{Enumerate'}$(p, G', S \cup e, \top)$\;
+            $n' \leftarrow $\NewNode{$i$}\;
+            $\Add{\Children{n}, n'}$\;
+            \textsc{Enumerate'}$(n', \mathcal{G}, C_{V} \cup i, \top, K)$\;
           }
         }
       }
     }
   }
   \;
-\caption{Non-repeated enumeration of a set of maximal matches given a predicate configuration.}
-\label{algo:enumerate}
-\end{algorithm}
-
-\begin{algorithm}[H]
-  \DontPrintSemicolon
-  \SetAlgoNoEnd % don't print end
-  \SetAlgoNoLine % no vertical lines
-  \LinesNumbered
-  \SetKwProg{Procedure}{procedure}{}{}
-  \SetKwFunction{Configurations}{\textsc{Configurations}}
-
-  \Procedure{\Configurations{$M$}}{
-    \KwIn{A match $M = \{e_{1}, \ldots, e_{n}\}$ where $e_{i}$ is an event of type $t \in T$.}
-    \KwOut{A set $C$ of configurations $c := T \times \mathbb{N}$ where $c$ is the mapping from the event type $t \in T$ to the size of the iteration of the event type $t$ in the submatches of $M$.}
-    $V \leftarrow newList$\;
-    $e_{0} \cup M' \leftarrow pop(M)$\;
-    $A \leftarrow \{ e_{0} \}$\;
-    $A.type \leftarrow e_{0}.type$\;
-    \For{event $e$ in $M'$}{
-      \eIf{$e.type = A.type$}{
-        $A \leftarrow A \cup e$\;
-        \uIf{$isLast(e)$} {
-          $V \leftarrow V + enumFromTo(1, |A|)$
-        }
-      }{
-        $V \leftarrow V + enumFromTo(1, |A|)$\;
-        $A \leftarrow \{ e \}$\;
-        $A.type \leftarrow e.type$\;
-      }
-    }
-    $WW \leftarrow V_{1} \times \cdots \times V_{n}$\tcp*[l]{$V = \{V_{1}, \cdots, V_{n}\}$}
-    $T \leftarrow types(M)$\tcp*[l]{Ordered set of types e.g. $types(A_{1}A_{2}B_{1}C_{1}) = \{A,B,C\}$}
-    $C \leftarrow \emptyset$\;
-    \ForEach(\tcp*[h]{E.g. $W = \{1, 2, 1\}$}){$W \in WW$}{
-      $c \leftarrow \emptyset$\tcp*[l]{E.g. $c = \{(A,1), (B,2), (C, 1)\}$}
-      \For{$i \leftarrow 1$ \KwTo $|W|$}{
-        $c \leftarrow c \cup (T[i], W[i])$\;
-      }
-      $C \leftarrow C \cup c$\;
-    }
-    \Return{C}
-  }
-\caption{Computes all disjoint configurations of a maximal match.}
-\label{algo:configurations}
+\caption{Enumeration of a set of maximal complex events given a predicate configuration.}
+\label{algo:mcee:2}
 \end{algorithm}
 
 % You need to make the following observations of "Maximal Matches Enumeration":
