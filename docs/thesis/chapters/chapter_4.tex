@@ -15,9 +15,12 @@ The rest of this chapter is dedicated to explaining in detail both systems.
 
 \section{Distributed CER Engine}\label{sec:dcere}
 
-% TIKZ Diagram
-% TIKZ Diagram
-% TIKZ Diagram
+\begin{figure}[H]
+  \centering
+  \inputtikz{dcere}
+  \caption{Distributed CER Engine architecture.}
+  \label{fig:dcere}
+\end{figure}
 
 In this section, we discuss the first implementation of the framework proposed in Section~\ref{sec:proposed-approach}.
 
@@ -180,15 +183,18 @@ We briefly describe existing distribution strategies and refer the interested re
 
 \section{Distributed CORE}\label{sec:dcore}
 
-% TIKZ Diagram
-% TIKZ Diagram
-% TIKZ Diagram
+\begin{figure}[H]
+  \centering
+  \inputtikz{dcore}
+  \caption{Distributed CORE architecture.}
+  \label{fig:dcore}
+\end{figure}
 
-In this section, we discuss \emph{Distributed CORE (DCORE)}, an implementation of the framework proposed in Section~\ref{sec:framework}. This implementation is also built on top of a distributed actor model, but the master actor plays a secondary role. It is only used to retrieve the complex events from the rest of the slave actors in order to execute the configured response. Indeed, if the response can be executed on the slaves actors (e.g., writing to an output stream), then the master actor can be removed from the system. We assume that the system can duplicate the input data. Otherwise, assume that the master node receives as an input a stream and a query, and \emph{broadcasts} them to the rest of the actors.
+In this section, we discuss \emph{Distributed CORE (DCORE)}, an implementation of the framework proposed in Section~\ref{sec:framework}. This implementation is also built on top of a distributed actor model, but the master actor plays a secondary role. It is only used to retrieve the complex events from the rest of the slave actors in order to execute the configured response. Indeed, if the response can be executed on the slaves actors (e.g., writing to an output stream), then the master actor can be removed from the system. We assume that the system can duplicate the input data. Otherwise, assume that the master node receives as an input a stream and a query, and \emph{broadcasts} them to the rest of the actors (illustrated in Figure~\ref{fig:dcore}).
 
 The following steps are all execute asynchronously and independently on each node of the distributed system, and there is no communication between the nodes throughout this process. Each node in the system: receives an input stream and a query, parses and rewrites the input query to unary CEL, compiles the query to CEA, and finally evaluates the CEA, applies the refine algorithm and enumerates the resulting complex events.
 
-In this implementation, the refine algorithm is executed at the same time as the enumeration process, not requiring and additional traversal of the complex events. In other words, the output of the evaluation algorithm is already the output corresponding to the complex events captured by our query.
+In this implementation, the refine algorithm is executed at the same time as the enumeration process (corresponding to $\mathcal{A} \to C'_{1}$ in Figure~\ref{fig:dcore}), not requiring and additional traversal of the complex events. In other words, the output of the evaluation algorithm is already the output corresponding to the complex events captured by our query.
 
 We emphasize that our system needs to evaluate, filter and enumerate disjoint subsets of complex events; otherwise, this implementation would be equivalent to a sequential version, but slower. For this reason, we require an efficient distributed evaluation algorithm for CEA. But, as far as we are concerned, such an algorithm does not exist. For this reason, we devote Chapter~\ref{chapter:algorithm} to the design of such an algorithm.
 
