@@ -1,418 +1,193 @@
-\chapter{Evaluation Algorithm}\label{chapter:algorithm}
+\chapter{Distributed CER}\label{chapter:distributed-cer}
 
-In this chapter we propose an \emph{efficient} and \emph{distributed} evaluation algorithm for CEA, heavily inspired by \cite{core}, that computes the set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}(S) := \{ C \ | \ C \in {\llbracket \mathcal{A} \rrbracket}(S) \land C(end) - C(start) \le \epsilon\}$ where $\mathcal{A}$ is a CEA, $\epsilon$ a time window, and $S$ a stream. Actually, it will compute this set \emph{incrementally}: at every position $j$ in the stream, it outputs the set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S) := \{ C \ | \ C \in {\llbracket \mathcal{A} \rrbracket}^{\epsilon}(S) \land C(end) = j \}$.
+In this chapter we propose a novel framework for distributed CER that is based on CEA from Chapter~\ref{chapter:preliminaries}.
+We describe two possible architectures based on this framework, and discuss several distributions strategies for each.
 
-The evaluation algorithm is executed on a \emph{distributed system} composed by independent processes $\mathcal{P}$. The processes do not share a global memory and communicate solely by passing messages. Each asynchronous process incrementally updates a data structure that \emph{compactly} represents partials outputs. Whenever a new tuple arrives, it takes \emph{constant time} (in data complexity \cite{data-complexity}) to update the compact data structure. Moreover, the distributed system may enumerate \emph{cooperatively} without message passing, at each position $j$, the complex events of ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$, one by one, and without duplicates. During the enumeration, each process enumerates at most $\frac{|{\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)|}{|\mathcal{P}|}$ complex events with \emph{output-linear delay} after printing the first complex event. This means that the time required to print the following complex events is linear in the size of the complex event being printed. We remark that the evaluation the CEA is intrinsically sequential and the data complexity our algorithm is asymptotically optimal: any evaluation algorithm needs to inspect every input event and enumerate the query's answers.
+\section{Proposed framework}\label{sec:proposed-approach}
 
-It might seem suboptimal to have all processes evaluating the CEA and updating the data structure. Surprisingly, we show that it is not the case. We describe an alternative implementation, where the CEA and the compact data structure is only evaluated in one of the processes, and show that our implementation is asymptotically equivalent. The algorithm is as follows: we assign a process (e.g. $p_{0}$) to ingesting events and updating the data structure representing the partials outputs. Once a complex event is found, we distribute the data structure among the rest of the processes and enumerate the complex events on each. If implemented in a na\"ive way, the update algorithm may take linear time (instead of constant time), because distributing the tECS takes time proportional to its size which is linear in the size of the stream. However, if the distribution of the tECS is done incrementally on each input tuple, then each process will need to keep a copy that has to be incrementally updated and it would take, at least, constant time to update this copy. Furthermore, each process will need to keep all the auxiliary data structures used in the evaluation of the CEA. We emphasise that this alternative algorithm is equivalent, under time and data complexity, to our  algorithm. In fact, our algorithm performs better in practise because it requires no communication among the processes.
+Given the efficient evaluation of CEA in a centralized manner \cite{formal-framework-cer, core}, it is hard to foresee scenarios where it can benefit from distribution. Indeed, both automata distribution approaches (i.e., query partitioning and pipelining) will incur a big overhead in terms of network communication during the evaluation process to synchronize the tECS $\mathcal{E}$ and the enumeration process. However, as previously discussed, CEA is very limited in terms of filtering capabilities, allowing only \emph{unary} predicates. Thus, one might wonder how to include the evaluation of more complex filters over non-unary predicates such as binary predicates (e.g., an equi-join \code{h1[id] = t2[id]}), or second-order predicates (e.g., the sequence of \code{T[val]} must monotonically increase). In \cite{on-the-expressiveness}, it is discussed that CEL and CEA are equivalent in expressive power when CEL is restricted to unary predicates, but incomparable in general. Thus, non-unary CEL, in general, cannot be compiled into an equivalent CEA. However, one could split the pattern matching process and the filtering in CER. In other words, we would maintain the generation of complex events in CEA, but leverage on a distributed framework for complex filtering.
 
-The rest of the chapter is structured as follows. In Section~\ref{sec:data_structure} we define the data structure structure and its operations. In Section~\ref{sec:auxiliary_data_structure} we define auxiliary data structures used by the evaluation algorithm. In Section~\ref{sec:evaluation}~and~\ref{sec:enumeration} we describe the evaluation algorithm and discuss its complexity. We conclude with a summary of the main points discussed in this chapter.
+We propose a framework for distributed complex event recognition based on the previous discussion. The framework receives a stream of data-tuples and a query as an input. We will use CEQL as our query language, but we will allow $n$-ary CEL predicates inside the \code{WHERE} clause. The query is parsed using any context free grammar (CFG) parsing algorithm (e.g., Earley's algorithm \cite{earley}). The resulting abstract syntax tree (AST) is applied to the \emph{rewrite algorithm}. The rewrite algorithm translates the non-unary CEL predicate into a unary CEL predicate of a CEQL query, and outputs the corresponding non-unary predicates as a compact AST for later use, if any. The resulting CEQL query is compiled into a CEA by \cite[Theorem~6.2]{formal-framework-cer}. Then, this CEA and the input stream are evaluated using one the efficient evaluation algorithms presented in \cite{formal-framework-cer, core}. Notice, the results of this evaluation is not yet a valid output since we still need to apply the \code{FILTER} clause for the non-unary predicates, if present. The resulting set of complex events is distributed among the processing units of the distributed system using any of the \emph{distribution strategies} (explained below). Then, each processing unit applies the \emph{refine algorithm} to its assigned complex events. The refine algorithm uses the non-unary predicates to filter the complex events. Finally, each processing unit outputs the set of complex events corresponding to the input query.
 
-\section{The data structure}\label{sec:data_structure}
+\textbf{Note}. We implemented a rewrite and refine algorithm that only works for very specific queries. Implementing a generic rewrite and refine algorithm is outside of the scope of this thesis and it is left for future work.
 
-The data structure is called \acrfull{tecs}. A tECS is a \acrfull{dag} $\mathcal{E}$ with two kinds of nodes: \emph{union nodes} and \emph{non-union nodes}. Every union node \textrm{u} has exactly two children, the left child \code{left(\textrm{u})} and the right child \code{right(\textrm{u})}. Every non-union node \textrm{n} is labelled by a stream position (an element of $\mathbb{N}$) and has at most one child. If non-union node \textrm{n} has no child it is called a \emph{bottom node}, otherwise it is an \emph{output node}. We write \code{pos(\textrm{n})} for the label of non-union node \textrm{n} and \code{next(\textrm{o})} for the unique child of output node \textrm{o}. For a node \textrm{n}, define its \emph{descending-paths}, denoted \code{paths(\textrm{n})}, recursively as follows: if \textrm{n} is a bottom node, then \code{paths(\textrm{n})} = 1; if \textrm{n} is an output node, then \code{paths(\textrm{n}) = paths(next(\textrm{n}))}; if \textrm{n} is a union node, \code{paths(\textrm{n}) = paths(left(\textrm{n})) + paths(right(\textrm{n}))}. Every node \textrm{n} carries paths(\textrm{n}) as an extra label (so that descending-paths can be retrieved in constant time). To simplify presentation in what follows, we write nodes of any kind as \textrm{n}, bottom, output and union nodes as \textrm{b, o, u}, respectively, and we denote the sets of bottom, output and union nodes by $N_{B}$, $N_{O}$ and $N_{U}$, respectively.
+% Talk about the two different architectures and present their names
 
-A \acrshort{tecs} represents sets of open complex events. An \emph{open complex event} is a pair $(i, D)$ where $i \in \mathbb{N}$ is the starting position and $D$ is a finite subset of $\{i, i+1, \ldots\}$ positions. An open complex event is almost a complex event, but the end time is missing: if we choose $j \ge max(D)$, then $([i, j], D)$ is a complex event. Intuitively, when processing a stream, the open complex events represented by a tECS are partial results that may later become complex events.
+\section{Architecture I}\label{sec:prototype:I}
 
-Let $\bar{p} = n_{1}, n_{2}, \ldots, n_{k}$ be a \emph{full-path} in $\mathcal{E}$ such that $n_{k}$ is a bottom node. Then $\bar{p}$ represents the open complex event ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}} = (i, D)$, where $i = pos(n_{k})$ is the label of bottom node $n_{k}$ and $D$ are the labels of the other non-union nodes in $\bar{p}$.
+In this section, we discuss the first implementation of the framework proposed in Section~\ref{sec:proposed-approach}.
 
-Given a node $n$, ${\llbracket \textrm{n} \rrbracket}_{\mathcal{E}}$ is the set of open complex events represented by \textrm{n} and consists of all open complex events ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}}$ with $\bar{p}$ a full-path in $\mathcal{E}$ starting at \textrm{n}.
+This implementation is built on top of a distributed actor model. We emphasize that actor models can be used either to encode parallelism by considering each core of a processor as a different actor, or distributed programming by considering each processing unit in the network as a different actor. Indeed, in our implementation from Chapter~\ref{chapter:implementation}, we consider as many actors as the product of the number of processing units in our cluster by the number of cores of each processor.
 
-To enumerate, at every position $j$, the set of complex events ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$, we will need to enumerate, for some nodes in $\mathcal{E}$, the set ${\llbracket \textrm{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) := \{ ([i, j], D) \ | \ (i, D) \in {\llbracket \textrm{n} \rrbracket}_{\mathcal{E}} \land j - i \leq \epsilon \}$ i.e. all open complex events represented by \textrm{n} that, when closed with $j$, are within a time window of size $\epsilon$.
+We will differentiate between two roles of actors: master and slave. There will be a single master actor in the cluster, and as many slave actors as processing units left. The master actor will act as the leader of the cluster and will orchestrate the rest of the slave actors. The master actor receives a stream of data-tuples and a query as an input. It parses and rewrite the input query to unary CEL. Then, it compiles the query to CEA, and evaluate it to retrieve the corresponding set of complex events. For this implementation we use the evaluation algorithm from \cite{formal-framework-cer} which guarantees constant update of the data structure and output-linear delay enumeration. Then, we apply one of the selection strategies from Section~\ref{subsec:distribution-strategies} to distribute the set of complex events among the slave actors. Asynchronously and independently, each processing unit receives its corresponding subset of complex events and it applies the refine algorithm to the complex events. Afterwards, once the refine algorithm is finished, the actor returns the resulting subset of complex events to the master node. Finally, once the master has received the output of all processing units, it executes the configured response (e.g., write the complex events to disk, or send an email, or activate an alarm \ldots).
 
-In order to enumerate the set of complex events ${\llbracket \textrm{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$, one by one, without duplicates, and with output-linear delay, it will be necessary to impose three restrictions on the structure of the tECS $\mathcal{E}$:
+\subsection{Distribution Strategies}\label{subsec:distribution-strategies}
 
-\textbf{Time-ordered}. For a node \textrm{n} define its \emph{maximum-start}, denoted max(\textrm{n}), as max(\textrm{n}) = max(${ i \ | \ (i, D) \in {\llbracket \textrm{n} \rrbracket}_{\mathcal{E}}}$). Then, a tECS is \emph{time-ordered} if (1) every node \textrm{n} includes max(\textrm{n}) as an attribute that can be access in constant time, and (2) for every union node \textrm{u} it holds that max(left(\textrm{u})) $\ge$ max(right(\textrm{u})). Needless path traversals are avoided on a time-ordered tECS: we always check first that $j - \text{max({\textrm{n}})} \le \epsilon$, and when we traverse a union node \textrm{u}, we always visit left(\textrm{u}) before right(\textrm{u}) and we only visit right(\textrm{u}) if $j - \text{max(right(\textrm{u}))} \le \epsilon$.
+In this section we describe the distributions strategies used by Prototype~I to distribute the set of complex events among the set of actors on the distributed system. We have considered distribution strategies ranging from \emph{load-balancing algorithms} to \emph{stream partitioning algorithms}. But, we have also proposed our own novel distribution strategies specific to the distribution of complex events.
 
-\textbf{$K$-bounded}. For a node \textrm{n} define its \emph{output-depth}, denoted odepth(\textrm{n}), recursively as: if \textrm{n} is a non-union node, then odepth(\textrm{n}) = 0; otherwise, $\text{odepth(\textrm{n})} = \text{odepth(left(\textrm(n)))} + 1$. Then, a $\mathcal{E}$ is \emph{k-bounded} if odepth(\textrm{n}) $\leq k$ for every node \textrm{n}. The $k$-boundedness restriction is necessary to preserve output-linear delay; otherwise the corresponding full-path $\bar{p}$ of a node \textrm{n} in $\mathcal{E}$ may contain an unbounded number of union nodes to visit before reaching the bottom node violating the output-linear delay.
+We briefly describe existing distribution strategies and refer the interested reader to its original publication for further information. The newly presented distribution strategies are extensively described. We compare the proposed selection strategies in Chapter~\ref{chapter:experimental_evaluation}.
 
-\textbf{Duplicate-free}. A tECS $\mathcal{E}$ is \emph{duplicate-free} if all of its nodes are duplicate-free, and a node \textrm{n} is duplicate-free if for every pair of distinct full-paths $\bar{p}$ and $\bar{q}$ that start at \textrm{n} holds that ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}} \ne {\llbracket \bar{q} \rrbracket}_{\mathcal{E}}$.
+\textbf{Shuffling}.
 
-Remember that the purpose of constructing tECS $\mathcal{E}$ is to be able to enumerate the set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$ at every position $j$. If $\mathcal{E}$ is time-ordered, $k$-bounded for $k = 3$, and duplicate-free, then Theorem~\ref{theorem:enumeration} ensures that we enumerate set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$.
-\begin{theorem}\label{theorem:enumeration}
-  Let $\mathcal{E}$ be a time-ordered \acrshort{tecs}, \textrm{n} a duplicate-free node of $\mathcal{E}$, $\epsilon$ a time-window, $\mathcal{P}$ the set of all processes. Let $C_{p}$ be the output of \aref{algo:enumeration} on process $p \in \mathcal{P}$. Then, $\bigcup\limits_{p \in \mathcal{P}} C_{p} = {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
-\end{theorem}
+\textbf{Weighted Shuffling}.
 
-In Section~\ref{sec:enumeration}, we will give the pseudocode of the enumeration algorithm executed on each process, and show its correctness.
+\textbf{Power of Two Choices}. The \emph{Power of Two Choices (PoTC)} \cite{load-balancing-1} is a randomized load balancing ...
 
-\textbf{Operations on tECS}. We define three operations on $\mathcal{E}$. In order to ensure that newly created nodes are $3$-bounded, we require that the argument nodes of these operations are safe. A node is \emph{safe} if it is a non-union node or if both $\text{odepth(\textrm{n})} = 1$ and $\text{odepth(right(\textrm{n}))} \le 2$. All three operations on tECS return safe nodes.
+\textbf{Maximal Matches Disjoint Enumeration}.
 
-\code{$\text{b} \leftarrow \text{new-botom}(i)$}. The first method adds a new bottom node \textrm{b} labelled by $i \in \mathbb{N}$ to $\mathcal{E}$.
-
-\code{$o \leftarrow \text{extend}(\textrm{n}, j)$}. The second method adds a new output node \textrm{o} to $\mathcal{E}$ with $\text{pos(\textrm{o})} = j$ and $\text{next(\textrm{o})} = n$.
-
-\code{$\textrm{u} \leftarrow \text{union}(\text{n}_{1},\text{n}_{2})$}. The third method returns a union node \textrm{u} such that ${\llbracket u \rrbracket}_{\mathcal{E}} = {\llbracket \textrm{n}_{1} \rrbracket}_{\mathcal{E}} \cup {\llbracket \textrm{n}_{2} \rrbracket}_{\mathcal{E}}$. Both $\textrm{n}_{1}$ and $\textrm{n}_{2}$ are required to be safe and max($\textrm{n}_{1}$) $=$ max($\textrm{n}_{2}$). If $\textrm{n}_{1}$ is a non-union then a new union node \textrm{u} is created which is connected to $\textrm{n}_{1}$ and $\textrm{n}_{2}$ as shown in Figure~\ref{fig:union:a}. If $\textrm{n}_{2}$ is a non-union node, then \textrm{u} is created as shown in Figure~\ref{fig:union:b}. When $\textrm{n}_{1}$ and $\textrm{n}_{2}$ are union nodes: if max(right($\textrm{n}_{1}$)) $\ge$ max(right($\textrm{n}_{2}$)), three new union nodes, \textrm{u}, $\textrm{u}_{1}$, $\textrm{u}_{2}$ are added and connected as show in Figure~\ref{fig:union:c}; otherwise, as in Figure~\ref{fig:union:d}. Notice, the output-depth  of the created union nodes is at most 3.
-
-\begin{figure}[t]
-  \centering
-  \begin{subfigure}[b]{0.15\linewidth}
-    \centering
-    \inputtikz{union_a}
-    \caption{}
-    \label{fig:union:a}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}[b]{0.15\linewidth}
-    \centering
-    \inputtikz{union_b}
-    \caption{}
-    \label{fig:union:b}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}[b]{0.3\linewidth}
-    \centering
-    \inputtikz{union_c}
-    \caption{}
-    \label{fig:union:c}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}[b]{0.3\linewidth}
-    \centering
-    \inputtikz{union_d}
-    \caption{}
-    \label{fig:union:d}
-  \end{subfigure}
-  \caption{Visualisation of the four cases of method union(\textrm{u}). The \textrm{u} are union nodes, where the dashed and bold arrows point to the left and right node, respectively.}
-  \label{fig:union}
-\end{figure}
-
-Because nodes created by new-bottom, extend and union are time-ordered, and have output-depth at most 3, it follows that any tECS created using only these three methods is time-ordered and 3-bounded. Moreover, all these methods take constant time.
-
-\section{Auxiliary data structures}\label{sec:auxiliary_data_structure}
-
-In this section, we introduce two auxiliary data structures that are going to be used to incrementally maintain $\mathcal{E}$ during the evaluation of the algorithm.
-
-\textbf{Union-lists and its operations}. A \emph{union-list} is a non-empty sequence of safe nodes, denoted $\textrm{ul} = \textrm{n}_{0}, \textrm{n}_{1}, \ldots, \textrm{n}_{k}$ such that $\textrm{n}_{0}$ is a non-union node, max($\textrm{n}_{0}$) $\ge$ max($\textrm{n}_{i}$), and max($\textrm{n}_{i}$) $>$ max($\textrm{n}_{i+1}$) for every $0 < i \le k$. We define three operations on union-lists, all of them taking safe nodes as arguments.
-
-\code{$\textrm{ul} \leftarrow \text{new-ulist(\textrm{n})}$}. The first method creates a new union-list with a single non-union node \textrm{n}.
-
-\code{$\text{insert(\textrm{ul, n})}$}. The second method mutates, in situ, the union-list $\textrm{ul} = \textrm{n}_{0}, \ldots, \textrm{n}_{k}$ by inserting a safe node \textrm{n} such that max($\textrm{n}$) $\le$ max($\textrm{n}_{0}$). If there is a $i > 0$ such that max($\textrm{n}_{i}$) $=$ max($\textrm{n}$), then it replaces $\textrm{n}_{i}$ in \textrm{ul} by the result of union($\textrm{n}_{i}, \textrm{n}$). Otherwise, we consider two cases: if max($\textrm{n}$) $=$ max($\textrm{n}_{0}$), then \textrm{n} is inserted after $\textrm{n}_{0}$; otherwise,  \textrm{n} is inserted between $\textrm{n}_{i}$ and $\textrm{n}_{i+1}$ with $i > 0$ such that max($\textrm{n}_{i}$) $>$ max($\textrm{n}$) $>$ max($\textrm{n}_{i+1}$).
-
-\code{$\textrm{u} \leftarrow \text{merge(\textrm{ul})}$}. The third method takes a union-list \textrm{ul} and returns a node \textrm{u} such that ${\llbracket \textrm{u} \rrbracket}_{\mathcal{E}} = {\llbracket \textrm{n}_{0} \rrbracket}_{\mathcal{E}} \cup \ldots \cup {\llbracket \textrm{n}_{k} \rrbracket}_{\mathcal{E}} $. If $k = 0$, then $\textrm{u} = \textrm{n}_{0}$, or else, we add $k$ union nodes to $\mathcal{E}$, and connect them as shown in Figure~\ref{fig:merge}. Since $\textrm{n}_{0}$ is a non-union node, $\text{odepth(\textrm{u})} \le 1$. And, because all $\textrm{n}_{i}$ are safe, odepth($\textrm{u}_i$) $\le 2$. As a result, it is easy to note that \textrm{u} is safe. Furthermore, all of the new union nodes are time-ordered and $3$-bounded.
-
-\begin{figure}[t]
-  \centering
-  \inputtikz{merge}
-  \caption{Visualisation of method merge(\textrm{ul}). The \textrm{u} are union nodes, where the dashed and bold arrows point to the left and right node, respectively.}
-  \label{fig:merge}
-\end{figure}
-
-We remark that all operations on union-lists take time linear in the length of \textrm{ul}.
-
-\textbf{Hash table and its operations}. A \emph{hash table} is an abstract data structure that maps keys to values by the use of a \emph{hash function}. During the evaluation of the algorithm, we will use a hash table to map CEA states to nodes of union-lists. Let $T$ be such a hash table, we write $T[q]$ for the union-list associated to state $q$ and $T[q] \leftarrow ul$ for inserting or updating the union-list associated with state $q$. We define two methods on hash tables.
-
-\code{keys($T$)}. The first method returns the set of states $q$ that have a union-list associated. We write $q \in \text{keys(T)}$ for checking if $q$ is present in $T$.
-
-\code{ordered-keys($T$)}. returns keys($T$) as a list sorted in the order in which keys have been inserted into $T$. If a key is insert multiple times, then it is the time of the first that is used for sorting.
-
-We assume that hash table lookups and insertions take constant time, and iterating over has constant delay.
-
-\section{The evaluation algorithm}\label{sec:evaluation}
-
-In this section, we present the evaluation algorithm. It receives as input a I/O deterministic CEA ${\mathcal{A} = (Q, \Delta, q_{0}, F)}$, a stream $S$, and time-window $\epsilon$ and may enumerate, on process $p$, a subset of ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$ at every position $j$. We remark that when the evaluation Algorithm~\ref{algo:update} is executed simultaneously on each process $p \in \mathcal{P}$, it may enumerate the set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$ at every position $j$. We next describe the algorithm and analyse its complexity.
-
-Algorithm~\ref{algo:update} incrementally maintains (1) a tECS $\mathcal{E}$ that represents the set of open complex events and (2) a set of \emph{active states} of $\mathcal{A}$. A state $q \in \mathcal{Q}$ is \emph{active} at a stream position $j$ if there is some run of $\mathcal{A}$ which is in state $q$ at position $j$. The algorithm uses a hash table $T$ that links active states of $Q$ to union-list nodes to incrementally maintain the $\mathcal{E}$.
-
-\begin{figure}[H]
-  \centering
-  \begin{subfigure}[b]{0.1\linewidth}
-    \inputtikz{AB+_0}
-    \caption*{$S[$0$]$}
-  \end{subfigure}
-  \begin{subfigure}[b]{0.1\linewidth}
-    \inputtikz{AB+_1}
-    \caption*{$S[$1$]$}
-  \end{subfigure}
-  \begin{subfigure}[b]{0.24\linewidth}
-    \inputtikz{AB+_2}
-    \caption*{$S[$2$]$}
-  \end{subfigure}
-  \begin{subfigure}[b]{0.24\linewidth}
-    \inputtikz{AB+_3}
-    \caption*{$S[$3$]$}
-  \end{subfigure}
-  \begin{subfigure}[b]{0.28\linewidth}
-    \inputtikz{AB+_4}
-    \caption*{$S[$4$]$}
-  \end{subfigure}
-  \caption{Illustration of Algorithm~\ref{algo:update} on the CEA $\mathcal{A}$ and stream $S$ of Figure~\ref{fig:cea}.}
-  \label{fig:tecs:update}
-\end{figure}
-
-During the description, the reader may find it helpful to refer to Figure~\ref{fig:tecs:update}, which illustrates how \aref{algo:update} evaluates the CEA $\mathcal{A}$ of Figure~\ref{fig:cea} over the stream $S$ of Figure~\ref{fig:cea:ab+}. Each subfigure corresponds to the state after processing $S[j]$. The tECS is denoted in black, the attribute $paths$ of each node is coloured red, and the hash table $T$ that links the active states to union-lists is illustrated in blue. For each position, the set \code{ordered-keys($T$)} will be ordered top down.
-
-\begin{algorithm}[t]
-  \setstretch{0.9} % space between lines
-  \DontPrintSemicolon
-  \SetAlgoNoEnd % don't print end
-  \SetAlgoNoLine % no vertical lines
-  \SetKwProg{Procedure}{procedure}{}{}
-  \SetKwFunction{Evaluation}{\textsc{Evaluation}}
-  \SetKwFunction{ExecTrans}{\textsc{ExecTrans}}
-  \SetKwFunction{Add}{\textsc{Add}}
-  \SetKwFunction{Output}{\textsc{Output}}
-  \SetKwFunction{Enumerate}{\textsc{Enumerate}}
-  \SetKwFunction{Yield}{yield}
-  \SetKwFunction{NewUlist}{new-ulist}
-  \SetKwFunction{NewBottom}{new-bottom}
-  \SetKwFunction{OrderedKeys}{ordered-keys}
-  \SetKwFunction{Merge}{merge}
-  \SetKwFunction{Extend}{extend}
-  \SetKwFunction{Keys}{keys}
-  \SetKwFunction{Insert}{insert}
-  \Procedure{\Evaluation{$\mathcal{A}, S, \epsilon, p$}}{
-    $j \leftarrow -1$\;
-    $T \leftarrow \emptyset$\;
-    \While{$t \leftarrow $ \Yield{$S$}}{
-      $j \leftarrow j + 1$\;
-      $T' \leftarrow \emptyset$\;
-      $\textrm{ul} \leftarrow $\NewUlist{\NewBottom{$j$}}\;
-      \ExecTrans{$q_{0}, \textrm{ul}, t, j$}\;
-      \For{$p \in$ \OrderedKeys{$T$}}{
-        \ExecTrans{$p, T[p], t, j$}\;
-      }
-      $T \leftarrow T'$\;
-      \Output{$j, \epsilon, p$}\;
-    }
-  }
-  \;
-  \Procedure{\ExecTrans{$p, \textrm{ul}, t, j$}}{
-    $\textrm{n} \leftarrow$ \Merge{$\textrm{ul}$}\;
-    \If{$q \leftarrow \Delta(p, t, \bullet)$}{
-      $\textrm{n'} \leftarrow$ \Extend{$\textrm{n}, j$}\;
-      $\textrm{ul'} \leftarrow$ \NewUlist{$\textrm{n'}$}\;
-      \Add{$q, \textrm{n'}, \textrm{ul'}$}\;
-    }
-    \If{$q \leftarrow \Delta(p, t, \circ)$}{
-      \Add{$q, \textrm{n}, \textrm{ul}$}\;
-    }
-  }
-  \;
-  \Procedure{\Add{$q, \textrm{n}, \textrm{ul}$}}{
-    \eIf{$q \in$ \Keys{$T'$}}{
-      $T'[q] \leftarrow$ \Insert{$T'[q], \textrm{n}$}\;
-    }{
-      $T'[q] \leftarrow \textrm{ul}$\;
-    }
-  }
-  \;
-  \Procedure{\Output{$j, \epsilon, p$}}{
-    \For{$p \in$ \Keys{$T$}}{
-      \If{$p \in F$}{
-        $n \leftarrow$ \Merge{$T[p]$}\;
-        \Enumerate{$\textrm{n}, \epsilon, j, p$}\;
-      }
-    }
-  }
-\caption{Evaluation of an I/O-deterministic \mbox{CEA ${\mathcal{A} = (Q, \Delta, q_{0}, F)}$} over a stream $S$ given a time-window $\epsilon$ on a process $p$.}
-\label{algo:update}
-\end{algorithm}
-
-Algorithm~\ref{algo:update} consist of four procedures: \textsc{Evaluation}, \textsc{ExecTrans}, \textsc{Add}, and \textsc{Output}. The main procedure \textsc{Evaluation} starts by initialising the current stream position $j$ and the hash table $T$ (lines~2~and~3). We assume that yield($S$) returns the next tuple in the stream $S$. We execute the \code{while} (lines~4-12): for every tuple $t$, we update $j$ and initialise the hash table $T'$. The hash tables $T$ and $T'$ will hold the actives states at position $j-1$ and $j$, respectively. Lines~7-8 take into account that a new run may start at any position in the stream. For this, the algorithm creates a new union-list starting at position $j$ and executes all transitions of initial state $q_{0}$ by calling \textsc{ExecTrans}. The \code{for} of lines~9-10 consider runs active at position $j-1$. For this case, we iterate over all active states at position $j-1$, and execute all transitions by calling \textsc{ExecTrans}. Then, we replace $T$ by $T'$ to prepare for the next iteration and call \textsc{Output} in case we need to enumerate any complex event closed at position $j$.
-
-Procedure \textsc{ExecTrans} receives an active state $p$, a union list \textrm{ul}, the current tuple $t$, and the current position $j$. The union-list \textrm{ul} encodes all open complex events of active runs that reached $p$. At line~15, it merges \textrm{ul} into a single node \textrm{n}. At line~16, we check if there is a marking transition $p \xrightarrow[]{P/\bullet} q$ in $\Delta$ such that $t \vDash P$. Recall that because CEA $\mathcal{A}$ is I/O deterministic there is at most one such transition. If there is such a transition, at lines~17-19, we extend all open complex events represented by \textrm{n} with the new position $j$ and add them to $T[q]$. At line~20, we repeat the same but for non-marking transition $p \xrightarrow[]{P/\circ} q$. Note, this time we do not extend open complex events represented by node \textrm{n} because the transition is non-marking.
-
-The procedure \textsc{Add} adds open complex events represented by node \textrm{n} to $T'[q]$. If $q \in \text{keys}(T')$ we have already reached $q$ on iteration $j$ (line~24), then we insert \textrm{n} at union list $T'[q]$ (line~25). Otherwise,  we initialise the entry $q$ of $T'$ with the union-list representation of \textrm{n} (line~27)
-
-The procedure \textsc{Output} enumerates a subset of all complex events in ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$ at process $p$. The method is called at line~12, when $T$ contains all active states at position $j$. We iterate over all active states $p \in \text{keys}(T)$ (line~30) and check if $p$ is a final state (line~31). If the state is final, we merge the union list $T[p]$ into a node \textrm{n} in $\mathcal{E}$ and call $\textsc{Enumerate}(\mathcal{E}, \textrm{n}, \epsilon, j, p)$ where \textsc{Enumerate} is the algorithm of Theorem~\ref{theorem:enumeration} described in Section~\ref{sec:enumeration}.
-
-This concludes the presentation of Algorithm~\ref{algo:update}. Now, we analyse its complexity. When a new tuple arrives, Algorithm~\ref{algo:update} updates $T$, $T'$, and $\mathcal{E}$ by means of methods in Section~\ref{sec:data_structure}~and~\ref{sec:auxiliary_data_structure} which either take constant time or linear time with respect to the size of the union-list. For every position $j$, the length of every union list is bounded by the number of active states (see Appendix~B.3~\cite{core}). Then, because we iterate over all transitions in the worst case (line~9), and executing a transition takes time proportional to the length of the union-list, which is at most the number of states, we may conclude that the time for processing a new tuple is $\mathcal{O}(|\mathcal{Q}| \cdot |\Delta|)$. This is constant under data complexity.
-
-Finally, we analyse its correctness. Because Algorithm~\ref{algo:update} builds $\mathcal{E}$ only through the methods of Section~\ref{sec:data_structure}~and~\ref{sec:auxiliary_data_structure}, we guarantee that it is $3$-bounded and time ordered. Moreover, we can show that, because $\mathcal{A}$ is I/O deterministic, $\mathcal{E}$ will also be duplicate-free. From this, we can derive the correctness of Algorithm~\ref{algo:update}.
-
-\begin{theorem}\label{theorem:cea}
-  After the $j$-th iteration of \textsc{Evaluation}, the union of the \textsc{Output} procedure on each process $p \in \mathcal{P}$ enumerates the set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$ with output-linear delay after enumerating the first complex event.
-\end{theorem}
-
-The proof of Theorem~\ref{theorem:cea} is technical and the reader may find it in \cite{core}.
-
-\section{The Enumeration procedure}\label{sec:enumeration}
-
-We provide \aref{algo:enumeration} and show that: (1) it enumerates a subset of complex events $S \subseteq {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ where $|S| = \mathcal{O}(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$, and (2) it does so with output-linear delay after reaching the first complex event. Furthermore, we will prove Theorem~\ref{theorem:enumeration} to show that (3) the union of the enumeration of \aref{algo:enumeration} on each process $p \in \mathcal{P}$ corresponds to ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
-
-We next describe how \aref{algo:enumeration} works. During the description, the reader may find it helpful to refer to Figure~\ref{fig:tecs:enumeration}, which illustrates how \aref{algo:enumeration} enumerates the tECS $\mathcal{E}$ of Figure~\ref{fig:tecs:update}. In particular, how complex events ${\llbracket \text{4} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ are enumerated by distributing the workload on each process. Assuming $|mathcal{P}| = 3$, each subfigure depicts the enumeration of the paths assigned to each process. The tECS is denoted in black, the attribute $paths$ of each node in red, and the traversed paths in green. Notice, each process traverses different paths but all paths are traversed at the end.
-
-\begin{figure}[h]
-  \centering
-  \begin{subfigure}[b]{0.3\linewidth}
-    \centering
-    \inputtikz{AB+_enumeration_0}
-    \caption{Process $0$}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}[b]{0.3\linewidth}
-    \centering
-    \inputtikz{AB+_enumeration_1}
-    \inputtikz{AB+_enumeration_2}
-    \caption{Process $1$}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}[b]{0.3\linewidth}
-    \centering
-    \inputtikz{AB+_enumeration_3}
-    \caption{Process $2$}
-  \end{subfigure}
-
-  \caption{Illustration of Algorithm \ref{algo:enumeration} on the tECS $\mathcal{E}$ of Figure~\ref{fig:tecs:update}.}
-  \label{fig:tecs:enumeration}
-\end{figure}
-
-\aref{algo:enumeration} uses a stack $st$ with common stack operations: \code{new-stack()} to create an empty stack, \code{push(st, e)} to add an element \code{e} at the top of the stack, and \code{pop(st)} to remove and return the element on the top of the stack. When the stack is empty, we will interpret $e \leftarrow pop(st)$ as \code{false}. We assume that stack operations can be performed in constant time.
-
-Recall that $\mathcal{E}$ encodes the \acrshort{dag} $G_{\mathcal{E}} = (N, E)$ where $N$ are the vertices, and $E$ the edges that go from any union node $u$ to left($u$) and right($u$), and from any output node $o$ to next($o$). For every node $n' \in N$, let ${paths}_{\ge \tau}(n')$ be all paths of $G_{\mathcal{E}}$ that start at $n'$ and end at some bottom node $b$ with $pos(b) \ge \tau$, and ${paths}_{\ge \tau, \sigma, \delta}(n')$ be a subset of ${paths}_{\ge \tau}(n')$ of size at most $\delta$ starting after path $\pi_{\sigma}$, where $\pi_{\sigma}$ is the $\sigma$-th path from $\mathcal{E}$ starting at node $n'$ such that $0 \le \sigma \le |\text{paths}(n')|$. It is clear that there exists an isomorphism between ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ and $paths_{\ge j - \epsilon}(n)$ i.e. for every complex event within a time window of size $\epsilon$ there exists exactly one path that reaches a bottom node $b$ with $pos(b) \ge j - \epsilon$, and vice versa. Formally,
-
-\begin{theorem}[${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longleftrightarrow paths_{\ge j - \epsilon}(n)$]\label{theorem:isomorphism}
-For every complex event within a time window of size $\epsilon$ there exists exactly one path that reaches a bottom node $b$ with $pos(b) \ge j - \epsilon$, and vice versa.
-\end{theorem}
-
-We defer the proof of Theorem~\ref{theorem:isomorphism} to Appendix~\ref{appendix:A:sec:1} to avoid disrupting the flow of the discussion.
+\subsubsection{Maximal Matches Disjoint Enumeration}\label{subsubsec:mmde}
 
 \begin{algorithm}[H]
-  \setstretch{1.0} % space between lines
   \DontPrintSemicolon
   \SetAlgoNoEnd % don't print end
   \SetAlgoNoLine % no vertical lines
+  \LinesNumbered
+  \SetKwProg{Procedure}{procedure}{}{}
+  \SetKwFunction{MMDE}{\textsc{MaximalMatchesDisjointEnumeration}}
+  \SetKwFunction{Enumerate}{\textsc{Enumerate}}
+
+  \Procedure{\MMDE{$M$, $W$}}{
+    \KwIn{A set of maximal matches $M := \{M_{1}, \ldots, M_{n}\}$ \newline
+      and a set of workers $W := \{w_{1},\ldots, w_{m}\}$.
+    }
+    \KwResult{Enumerates all \emph{submatches} $\subseteq M$ without repetitions.}
+    $C \leftarrow \emptyset$\;
+    \ForEach{$M_{i} \in M$}{
+        $C \leftarrow C \cup \textsc{Configurations}(M_{i}).map(\lambda c \to ( c, M_{i} ))$\;
+    }
+    $D \leftarrow C.groupBy(\lambda (c, \_ ) \to c)$\;
+    $\textsc{Distribute}(W, D)$
+  }
+  \;
+\caption{Non-repeated enumeration of a set of maximal matches.}
+\label{algo:mmde}
+\end{algorithm}
+
+% This procedure enumerates all submatches of M without repetitions.
+% It stills enumerates all submatches but only outputs non-repeated.
+% It efficiently detects repetitions by constructing an n-ary tree of complex events.
+% The complexity is still exponential w.r.t. the size of the largest iteration.
+% The exponential time enumeration must be repeated a constant factor of times.
+\begin{algorithm}[H]
+  \DontPrintSemicolon
+  \SetAlgoNoEnd % don't print end
+  \SetAlgoNoLine % no vertical lines
+  \LinesNumbered
   \SetKwProg{Procedure}{procedure}{}{}
   \SetKwFunction{Enumerate}{\textsc{Enumerate}}
-  \Procedure{\Enumerate{$\mathcal{E}, n, \epsilon, j, p$}}{
-    $\delta \leftarrow \lceil \text{paths(n)} \ / \ {|\mathcal{P}|} \rceil$\;
-    $\sigma \leftarrow \text{index}(p) \cdot \delta$\;
-    st $\leftarrow$ new-stack()\;
-    $\tau \leftarrow j - \epsilon $\;
-    \If{$\text{max(n)} \ge \tau$}{
-      push(st,($n$, $\emptyset$, $\sigma$, $\delta$))\;
+  \SetKwFunction{Enumeratee}{\textsc{Enumerate'}}
+
+  \Procedure{\Enumerate{}}{
+    \KwData{A set of tuples $A = \{ (c, \{ M_{1}, \ldots, M_{n}\}) \}$ where $c$ is a \emph{configuration} and $M_{i}$ are maximal matches.}
+    \KwOut{The set of all submatches without repetitions.}
+    \ForEach{$(c, M) \in A$}{
+      $T \leftarrow$ \text{new-root()}
+      \ForEach{$M_{i} \in M$}{
+        $G \leftarrow \textsc{GroupBy}(M_{i})$\;
+        $\textsc{Enumerate'}(T, G, \emptyset, \bot)$\;
+        }
     }
-    \While{$(n', P, \sigma', \delta') \leftarrow$ pop(st)}{\label{line:enumeration:while:1}
-      \While{true}{\label{line:enumeration:while:2}
-        \If{$n' \in N_{B}$}{
-          output([pos($n'$), $j$], $P$)\;\label{line:enumeration:output}
-          \textbf{break}\;\label{line:enumeration:break}
+  }
+  \;
+  \Procedure{\Enumeratee{$n, G, S, new$}}{
+    \KwData{A node $n$, a set of grouped events $G$, a time-ordered set of events $S$, and a boolean $new$.}
+    \Switch{$G$}{
+      \uCase{$\emptyset$}{
+        \If{$new$}{
+          \Return{$S$}
         }
-        \ElseIf{$\text{n}' \in N_{O}$}{
-          $P \leftarrow P \ \cup $ {pos($n'$)}\;
-          $n' \leftarrow $ next($n'$)\;
-        }
-        \ElseIf{$n' \in N_{U}$}{
-          \If{$max(right(n')) \ge \tau$}{
-            \eIf{$paths(left(n')) > \sigma'$}{
-              $\delta'' \leftarrow \delta' - max(0, paths(left(n')) - \sigma')$\;
-            }{
-              $\delta'' \leftarrow \delta'$\;
-            }
-            $\sigma'' \leftarrow max(0, \sigma' - paths(left(n')))$\;
-            \If{$paths(right(n')) > \sigma'' \land \delta'' > 0$}{\label{line:enumeration:if:1}
-              push(st, (right($n'$), $P$, $\sigma''$, $\delta''$))\;
-            }
-          }
-          \eIf{$paths(left(n')) > \sigma'$}{\label{line:enumeration:if:2}
-            $n' \leftarrow left(n')$\;
+      }
+      \uCase{$g \cup G'$}{
+        $k \leftarrow c(g.type)$
+        $E \leftarrow \binom{g}{k}$
+        \ForEach{$e \in E$}{
+          \eIf{$\exists n' \in n.children \land n'.event = e$}{
+            $\textsc{Enumerate'}(n', G', S \cup e, new)$\;
           }{
-            \textbf{break}\;
+            $p \leftarrow$ new-node($e$)\;
+            $n.children.add(p)$\;
+            \textsc{Enumerate'}$(p, G', S \cup e, \top)$\;
           }
         }
       }
     }
   }
-\caption{Enumeration of ${paths}_{\ge \tau, \sigma, \delta}(\text{n})$.}
-\label{algo:enumeration}
+  \;
+\caption{Non-repeated enumeration of a set of maximal matches given a predicate configuration.}
+\label{algo:enumerate}
 \end{algorithm}
 
-\aref{algo:enumeration} receives as an input a \acrshort{tecs}, a node $n$, a time-window $\epsilon$, a position $j$, and a process $p$ and traverses a fraction of $G_{\mathcal{E}}$ in a DFS-way left-to-right order. First, computes the parameters $\sigma, \delta$ corresponding to the starting and ending path to enumerate, respectively. The value of these parameters can be computed statically i.e. without message interchanging.  Each iteration of the \code{while} of line~\ref{line:enumeration:while:1} traverses a new path starting from the point it branches from the previous path (except for the first iteration). For this, the stack $st$ is used to store the node and partial complex event of that branching point. Then, the \code{while} of line~\ref{line:enumeration:while:2} traverses through the nodes of the next path, following the left direction whenever a union node is reached and adding the right node to the stack whenever need. The \code{if}s of line~\ref{line:enumeration:if:1}~and~line~\ref{line:enumeration:if:2} make sure that enumeration starts on path $\pi_{\sigma}$ so only $paths_{\ge j - \epsilon, \sigma, \delta}$ are traversed. Moreover, by checking for every node $n'$ its value $max(n')$ before adding it to the stack, it makes sure of only going through paths in $paths_{\ge j - \epsilon}$.
+\begin{algorithm}[H]
+  \DontPrintSemicolon
+  \SetAlgoNoEnd % don't print end
+  \SetAlgoNoLine % no vertical lines
+  \LinesNumbered
+  \SetKwProg{Procedure}{procedure}{}{}
+  \SetKwFunction{Configurations}{\textsc{Configurations}}
 
-A simpler recursive algorithm could have been used, however, the constant-delay output might not be guaranteed because the number of backtracking steps after branching might be as long as the longest path of $G_{\mathcal{E}}$. To guarantee constant steps after branching and assure constant-delay output, \aref{algo:enumeration} uses a stack which allows to jump immediately to the next branch. We assume that storing $P$ in the stack takes constant time. We materialize this assumption by modelling $P$ as a linked list of positions, where the list is ordered by the last element added. To update $P$ with position $i$, we only need to create a node $i$ that points to the previous last element of $P$. Then, storing $P$ on the stack is just storing the pointer of the last element added.
+  \Procedure{\Configurations{$M$}}{
+    \KwIn{A match $M = \{e_{1}, \ldots, e_{n}\}$ where $e_{i}$ is an event of type $t \in T$.}
+    \KwOut{A set $C$ of configurations $c := T \times \mathbb{N}$ where $c$ is the mapping from the event type $t \in T$ to the size of the iteration of the event type $t$ in the submatches of $M$.}
+    $V \leftarrow newList$\;
+    $e_{0} \cup M' \leftarrow pop(M)$\;
+    $A \leftarrow \{ e_{0} \}$\;
+    $A.type \leftarrow e_{0}.type$\;
+    \For{event $e$ in $M'$}{
+      \eIf{$e.type = A.type$}{
+        $A \leftarrow A \cup e$\;
+        \uIf{$isLast(e)$} {
+          $V \leftarrow V + enumFromTo(1, |A|)$
+        }
+      }{
+        $V \leftarrow V + enumFromTo(1, |A|)$\;
+        $A \leftarrow \{ e \}$\;
+        $A.type \leftarrow e.type$\;
+      }
+    }
+    $WW \leftarrow V_{1} \times \cdots \times V_{n}$\tcp*[l]{$V = \{V_{1}, \cdots, V_{n}\}$}
+    $T \leftarrow types(M)$\tcp*[l]{Ordered set of types e.g. $types(A_{1}A_{2}B_{1}C_{1}) = \{A,B,C\}$}
+    $C \leftarrow \emptyset$\;
+    \ForEach(\tcp*[h]{E.g. $W = \{1, 2, 1\}$}){$W \in WW$}{
+      $c \leftarrow \emptyset$\tcp*[l]{E.g. $c = \{(A,1), (B,2), (C, 1)\}$}
+      \For{$i \leftarrow 1$ \KwTo $|W|$}{
+        $c \leftarrow c \cup (T[i], W[i])$\;
+      }
+      $C \leftarrow C \cup c$\;
+    }
+    \Return{C}
+  }
+\caption{Computes all disjoint configurations of a maximal match.}
+\label{algo:configurations}
+\end{algorithm}
 
-This concludes the presentation of Algorithm~\ref{algo:enumeration}. In the reminding of this section, we prove properties (1), (2) and (3).
+% You need to make the following observations of "Maximal Matches Enumeration":
+% 1. The algorithm produces disjoint submatches given a maximal match.
+% 2. The algorithm produces non-disjoint submatches given multiple maximal matches.
 
-We start by proving that \aref{algo:enumeration} enumerates $paths_{\ge \tau, \sigma, \delta}$ with output-linear delay after reaching the starting path $\pi_{\sigma}$, provided that $\mathcal{E}$ is $k$-bounded and time-ordered and $n$ is a duplicate-free node.
+% But (2) can be analyzed further:
+% 1. Disjoint configurations produce disjoint submatches.
+% 2. Non-disjoint configurations produce non-disjoint submatches.
 
-\begin{lemma}\label{lemma:enumeration:process}
-  Fix $k$, $\mathcal{P}$ and $p \in \mathcal{P}$. Let $\mathcal{E}$ be a $k$-bounded and time-ordered \acrshort{tecs}, $n$ a node of $\mathcal{E}$, and $\epsilon$ a time-window. Then, \aref{algo:enumeration} enumerates $paths_{\ge \tau, \sigma, \delta}$ with output-linear delay after reaching the starting path $\pi_{\sigma}$.
-\end{lemma}
+% From previous observations we can conclude that repeated submatches are only generated by applying the same configuration to different maximal matches.
 
-\begin{proof}
-  Fix $\mathcal{E}$, $\tau$, $\sigma$ and $\delta$. We first show that \aref{algo:enumeration} traverses all paths $paths_{\ge \tau, \sigma, \delta}(n)$. Notice, the order in which the paths are traversed is completely determined by the order of the union nodes: for each union node $u$, the paths to its left are traversed first, and then the ones to its right. Formally, for every node $n'$ define the leftmost path from $n'$ as ${\pi_{\swarrow}(n') := n_{0} \rightarrow n_{1} \rightarrow \ldots \rightarrow n_{l}}$ such that $n_{0} = n'$ and, for every $i \le l$:
+% Uniqueness of submatches is guaranteed by (3) and (4).
+% (3) guarantees that the output of each worker is disjoint wrt the others.
+% (4) guarantees that the output of a worker is disjoint.
 
-  \begin{itemize}
-      \item if $n_{i} \in N_{B}$, then $i = l$,
-      \item if $n_{i} \in N_{O}$, then $n_{i+1} = next(n_{i})$, and
-      \item if $n_{i} \in N_{U}$, then $n_{i+1} = left(n_{i})$.
-  \end{itemize}
+% The complexity of the algorithm remains the same if we accomplish linear time enumeration in each worker (this is the tricky part).
 
-  For the first path, though, the order is different because the algorithm needs to skip all path before $\pi_{\sigma}$. Formally, for every node $n'$ define the leftmost path from $n'$ after $\pi_{\sigma}$ as ${\pi_{\swarrow > \sigma}(n') := n_{0} \rightarrow n_{1} \rightarrow \ldots \rightarrow n_{l}}$ such that $n_{0} = n'$ and, for every $i \le l$:
-  \begin{itemize}
-      \item if $n_{i} \in N_{B}$, then $i = l$,
-      \item if $n_{i} \in N_{O}$, then $n_{i+1} = next(n_{i})$, and
-      \item if $n_{i} \in N_{U}$ and $paths(n_{i}) > \sigma$, then ${n_{i+1} = left(n_{i})}$, otherwise, ${n_{i+1} = right(n_{i})}$.
-  \end{itemize}
+\section{Architecture II}\label{sec:prototype:II}
 
-  Consider a path $\pi := n_{0} \rightarrow n_{1} \rightarrow \ldots \rightarrow n_{l}$, and let $j \leq l$ be the last position such that $n_{j}$ is a union node, $n_{j+1} = left(n_{j})$, $max(right(n_{j})) \ge \tau$, and $paths(n_{j}) > \sigma$. Then, let $\pi^{u}_{j}$ be the path $\pi$ up to position $j$ i.e. that stops at such union node.
+In this section, we discuss the second implementation of the framework proposed in Section~\ref{sec:proposed-approach}. This implementation is also built on top of a distributed actor model, differentiates between two roles of actors, and has the same restrictions on the roles, however, the architecture and the algorithm used are different. In this implementation, the master actor plays a secondary role. It is only used to retrieve the complex events from the rest of the slave actors in order to execute the configured response. Indeed, if the response can be executed on the slaves actors (e.g., writing to an output stream), then the master actor can be removed from the system.
 
-  Let $P = \{\pi_{1}, \pi_{2}, \ldots, \pi_{\delta}\}$ be the set of paths enumerated by \aref{algo:enumeration} in that order. Then, by analysing \aref{algo:enumeration}, one can see that $\pi_{1} = \pi_{\swarrow > \sigma}(n)$ and, for every $i \le \delta$, $\pi_{i} = \pi^{u}_{i-1} \cdot \pi_{\swarrow}(right(u))$. To put it another way, after reaching the starting path $\pi_{\sigma}$, it performs a greedy DFS from left to right: the first path to enumerate is $\pi_{1} = \pi_{\swarrow > \sigma}(n)$, then each $\pi_{i}$ is the path in ${paths}_{\ge \tau, \sigma, \delta}(n)$ that branches from $\pi_{i-1}$ to the right at the deepest level $u$ and from there follows the leftmost path. Moreover, to jump from $\pi_{i-1}$ to $\pi_{i}$, the node popped by the stack is exactly $u$, that is, the last node of $\pi^{u}_{i-1}$.
+The following steps are all execute asynchronously and independently on each node of the distributed system. There is no communication between the nodes throughout this process. We assume that the system can duplicate the input data, otherwise, the master node could receive the input stream and query and send to each slave a copy. The node receives an input stream and a query. It parses and rewrites the input query to unary CEL. Then, it compiles the query to CEA, and evaluates it to retrieve the corresponding set of complex events. For this implementation we use the distributed evaluation algorithm from Chapter~\ref{chapter:algorithm} which also guarantees constant update of the data structure and output-linear delay enumeration, but also guarantees that the number of complex events processed on each processing unit is divided by the total number of processes. This will have a positive impact on the performance of this system. In this implementation, the refine algorithm is executed at the same time as the enumeration process, not requiring and additional traversal of the complex events. The output of the evaluation algorithm is already the output corresponding to the query.
 
-  To show that the enumeration is done with output-linear delay after enumerating the first path, we study how long it takes between enumerating the complex events of $\pi_{i-1}$ and $\pi_{i}$. Consider that $\pi_{i-1}$ was just traversed and its complex event was output by line~\ref{line:enumeration:output}. Then, the \code{break} of line~\ref{line:enumeration:break} is executed, breaking the \code{while} of line~\ref{line:enumeration:while:2}. Afterwards, either the stack is empty and the algorithm ends, or a pair $(n', P)$ is popped from the stack, where $n'$ corresponds to the last node of $\pi^{u}_{i-1}$. From that point, it is straightforward to see that the number of iterations of the while of line~\ref{line:enumeration:while:2} (each taking constant time) is equal to the number of nodes $l$ in $\pi_{\swarrow}(n')$, so those nodes are traversed and the complex event of the path $\pi_{i}$ is output. But, because $\mathcal{E}$ is $k$-bounded, then $l \le k \cdot |C|$, where $C$ is the complex event of $\pi_{i}$. Finally, the time taken is bounded by the size of the output, and the enumeration is performed with output-linear delay after reaching the first path.
-\end{proof}
+% Challenge here is the distributed algorithm of section 5
 
-Then, we present Lemma~\ref{lemma:bijection_subpath} that follows from Theorem~\ref{theorem:isomorphism} which will be necessary in the following proof of Theorem~\ref{theorem:enumeration:process}.
+\subsection{Distribution Strategies}\label{subsec:distribution-strategies}
 
-A note on notation conventions: we denote \emph{injective functions} as $x \mapsto f(x)$.
-
-\begin{lemma}[${paths}_{\ge j-\epsilon, \sigma, \delta}(n) \mapsto {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$]\label{lemma:bijection_subpath}
-  For every path in ${paths}_{\ge j-\epsilon, \sigma, \delta}$(n) there exist exactly one complex event in ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ within a time window of size $\epsilon$ that starts at event $pos(b)$ and ends at event $j$.
-\end{lemma}
-
-\begin{proof}
-  Fix $j$, $\epsilon$, $\sigma$, and $\delta$. Let $n$ be a node in $\mathcal{E}$. Recall that ${paths}_{\ge j-\epsilon, \sigma, \delta}(n) \subseteq {paths}_{\ge j-\epsilon}(n)$. Let $S := {paths}_{\ge j-\epsilon, \sigma, \delta}(n)$ be the subset of ${paths}_{\ge j-\epsilon}(n)$ corresponding to ${paths}_{\ge j-\epsilon, \sigma, \delta}(n)$. Then, by Theorem~\ref{theorem:isomorphism}, $S \subseteq {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$. And so, ${paths}_{\ge j-\epsilon, \sigma, \delta}(n) \mapsto {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
-\end{proof}
-
-Now, we can finally prove that \aref{algo:enumeration} enumerates a subset of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ of size $\mathcal{O}(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$ with output-linear delay after the first complex event, provided that $\mathcal{E}$ is $k$-bounded and time-ordered and $n$ is a duplicate-free node.
-
-\begin{theorem}\label{theorem:enumeration:process}
-  Fix $k$, $\mathcal{P}$ and $p \in \mathcal{P}$. Let $\mathcal{E}$ be a $k$-bounded and time-ordered \acrshort{tecs}, $n$ a node of $\mathcal{E}$, $\epsilon$ a time-window. Then, \aref{algo:enumeration} enumerates a subset of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ of size $\mathcal{O}(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$ with output-linear delay after enumerating the first complex event in ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
-\end{theorem}
-
-\begin{proof}
-  Fix $\tau$. Let $\delta = \frac{|paths_{\ge \tau}(n)|}{|\mathcal{P}|}$ and $\sigma = index(p) \cdot \delta$ be constants as in \aref{algo:enumeration}. By Lemma~\ref{lemma:enumeration:process}, \aref{algo:enumeration} enumerates $paths_{\ge \tau, \sigma, \delta}$ with output-linear delay after $\pi_{\sigma}$. We need to prove that: (1) $paths_{\ge \tau, \sigma, \delta}(n)$ corresponds to a subset $S$ of ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$, (2) $|S| = \mathcal{O}(\frac{{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))}{|\mathcal{P}|})$, and (3) it enumerates with output-linear delay after enumerating the first complex event in ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
-
- \begin{itemize}
-   \item (1) By Lemma~\ref{lemma:bijection_subpath}, immediately follows that $paths_{\ge \tau, \sigma, \delta}(n)$ corresponds to a subset $S \subseteq {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
-
-   \item (2) By Lemma~\ref{lemma:enumeration:process}, \aref{algo:enumeration} enumerates the set $paths_{\ge \tau, \sigma, \delta}(n)$ of size at most $\delta$, then $S$ is of size at most $\frac{|paths_{\ge \tau}(n)|}{|\mathcal{P}|}$. And, by Theorem~\ref{theorem:isomorphism}, $S$ is at most of size $\frac{|{\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j))|}{|\mathcal{P}|}$.
-
-  \item (3) By Lemma~\ref{lemma:enumeration:process}, \aref{algo:enumeration} enumerates with output-linear delay after $\pi_{\sigma} \in paths_{\ge \tau, \sigma, \delta}(n)$. And, by Lemma~\ref{lemma:bijection_subpath}, for every path $\pi \in paths_{\ge \tau, \sigma, \delta}(n)$ there exists one complex event in ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
- \end{itemize}
-
-\end{proof}
-
-To conclude, we start with Lemma~\ref{lemma:union_of_paths} and finally prove Theorem~\ref{theorem:enumeration} from Section~\ref{sec:data_structure} corresponding to property (3).
-
-\begin{lemma}\label{lemma:union_of_paths}
-  Let $\mathcal{E}$ be a time-ordered \acrshort{tecs}, $n$ a duplicate-free node of $\mathcal{E}$, $\epsilon$ a time-window, $\mathcal{P}$ the set of all processes. Let $P_{p} := paths_{\ge \tau, \sigma, \delta}(n)$ be the output of \aref{algo:enumeration} on process $p \in \mathcal{P}$. Then, $\bigcup\limits_{p \in \mathcal{P}} P_{p} = paths_{\ge \tau}(n)$.
-\end{lemma}
-
-\begin{proof}
-  Fix $\tau$ and $\mathcal{P}$.
-
-  Let $n$ be a node in $\mathcal{E}$. Recall that ${paths}_{\ge \tau}(n) = \{ \pi_{0}, \pi_{1}, \ldots, \pi_{m} \}$ where $m = |paths_{\ge \tau}(n)|$ and ${paths}_{\ge \tau, \sigma, \delta}(n) = \{ \pi_{\sigma}, \pi_{\sigma+1}, \ldots, \pi_{\sigma+\delta}\}$ is a subset of ${paths}_{\ge \tau}(n)$.
-
-
-  For every process $p \in \mathcal{P}$, Lemma~\ref{lemma:enumeration:process} states that \aref{algo:enumeration} enumerates $paths_{\ge \tau, \sigma, \delta}$ where $\sigma$ and $\delta$ are variables that depend on $p$ and $P$, respectively.
-
-  Let $\delta = \lceil \frac{m}{|\mathcal{P}|} \rceil$ and $\sigma = index(p) \cdot \delta$ be constants as in \aref{algo:enumeration}.
-  Let $P_{0} = paths_{\ge \tau, 0, \delta}(n)$ be the output of process $0$, $P_{1} = paths_{\ge \tau, \delta, 2\cdot\delta}(n)$ be the output of process $1$, \ldots, $P_{|\mathcal{P}| - 1} = paths_{\ge \tau, (|\mathcal{P}| - 1) \cdot \delta, |\mathcal{P}| \cdot \delta}(n)$ be the output of process $|\mathcal{P}| - 1$, i.e. process $0$ enumerates $\{ \pi_{0}, \ldots \pi_{\delta-1} \}$ , process $1$ enumerates $\{\pi_{\delta}, \ldots \pi_{2 \cdot \delta-1}\}$, \ldots, process $(|\mathcal{P}| - 1)$ enumerates $\{\pi_{(|\mathcal{P}| - 1) \cdot \delta}, \ldots, \pi_{\mathcal{P} \lceil \frac{m}{\mathcal{P}} \rceil}\}$.
-  Then, the union of all the outputs corresponds to the set of paths $\{ \pi_{0}, \pi_{1}, \ldots, \pi_{(|\mathcal{P}| - 1)\frac{m}{\mathcal{P}}}, \pi_{m} \}$ that corresponds to the definition of $paths_{\ge \tau}(n)$.
-  And so, $\bigcup\limits_{p \in \mathcal{P}} P_{p} = paths_{\ge \tau}(n)$.
-\end{proof}
-
-\begin{theorem*}[\ref{theorem:enumeration}]
-  Let $\mathcal{E}$ be a time-ordered \acrshort{tecs}, $n$ a duplicate-free node of $\mathcal{E}$, $\epsilon$ a time-window, $\mathcal{P}$ the set of all processes. Let $C_{p}$ be the output of \aref{algo:enumeration} on process $p \in \mathcal{P}$. Then, $\bigcup\limits_{p \in \mathcal{P}} C_{p} = {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
-\end{theorem*}
-
-\begin{proof}
-  Fix $\tau$ and $\mathcal{P}$. For every node $n$ in $\mathcal{E}$, Lemma~\ref{lemma:union_of_paths} states that the union of the output of each process corresponds to ${paths}_{\ge \tau}(n)$. Then, we apply Theorem~\ref{theorem:isomorphism}, which states that there is an isomorphism between ${paths}_{\ge \tau}(n)$ and ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$, to the output of Lemma~\ref{lemma:union_of_paths}. And so, the union of the output of each process in $\mathcal{P}$ corresponds to ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ i.e. $\bigcup\limits_{p \in \mathcal{P}} C_{p} = {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
-\end{proof}
-
-This concludes the proofs of properties (1), (2), and (3).
+\textbf{Broadcast}.
 
 \section{Chapter summary}
 
-In this chapter we have presented an efficient distributed algorithm for evaluating CEA $\mathcal{A}$. First, we introduced the compact data structure tECS and the union-lists, its restrictions and operations. Secondly, we explained thoroughly the evaluation algorithm and analysed its complexity. Finally, we described and discussed the \textsc{Enumeration} procedure in detail.
+% In this chapter we have presented an efficient distributed algorithm for evaluating CEA $\mathcal{A}$. First, we introduced the compact data structure tECS and the union-lists, its restrictions and operations. Secondly, we explained thoroughly the evaluation algorithm and analysed its complexity. Finally, we described and discussed the \textsc{Enumeration} procedure in detail.
