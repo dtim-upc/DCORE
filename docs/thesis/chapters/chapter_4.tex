@@ -4,12 +4,12 @@ In this chapter we propose a novel framework for distributed CER based on the fo
 
 \section{Distributed CER framework}\label{sec:framework}
 
-In this section we describe our proposal for a framework for distributed CER. Our framework uses CEQL as its query language, but we allow $n$-ary CEL predicates inside the \code{WHERE} clause. It receives a stream of data-tuples and a query as an input.  The query is parsed using any context free grammar parsing algorithm (e.g., Earley's algorithm \cite{earley}). The resulting abstract syntax tree (AST) is applied to the \emph{rewrite algorithm}. The rewrite algorithm translates the non-unary CEL predicate of a CEQL query into a unary CEL predicate, and additionally outputs a data structure encoding the corresponding non-unary predicates, if any, to be applied later. The resulting CEQL query is compiled into a CEA by \cite[Theorem~6.2]{formal-framework-cer}. Then, this CEA and the input stream are evaluated using one the efficient evaluation algorithms presented in \cite{formal-framework-cer, core}. Notice, the results of this evaluation is not yet a valid output since we still need to apply the \code{FILTER} clause for the non-unary predicates, if present. Afterwards, the resulting set of complex events is filtered distributedly. Each processing unit applies the \emph{refine algorithm} to its assigned complex events. The refine algorithm uses the non-unary predicates to filter the complex events. Finally, each processing unit enumerates the set of complex events corresponding to the input query.
+In this section we describe our proposal for a framework for distributed CER. Our framework uses CEQL as its query language, but we allow $n$-ary CEL predicates inside the \code{WHERE} clause. It receives a stream of data-tuples and a query as an input.  The query is parsed using any context free grammar parsing algorithm (e.g., Earley's algorithm \cite{earley}). The resulting abstract syntax tree (AST) is applied to the \emph{rewrite algorithm}. The rewrite algorithm translates the non-unary CEL predicate of a CEQL query into a unary CEL predicate, and additionally outputs a data structure encoding the corresponding non-unary predicates, if any, to be applied later. The resulting CEQL query is compiled into a CEA by \cite[Theorem~6.2]{formal-framework-cer}. Then, this CEA is evaluated using one of the efficient evaluation algorithms presented in \cite{formal-framework-cer, core}. Notice, the result of this evaluation is not yet a valid output since we still need to apply the \code{FILTER} clause for the non-unary predicates, if present. Afterwards, the resulting set of complex events is filtered distributedly. Each processing unit applies the \emph{refine algorithm} to its assigned complex events. The refine algorithm uses the non-unary predicates to filter the complex events. Finally, each processing unit enumerates the set of complex events corresponding to the input query.
 
 \textbf{Note}. We implemented a rewrite and refine algorithm that only works for very specific queries. Implementing a generic rewrite and refine algorithm is outside of the scope of this thesis and it is left for future work.
 
 It is clear that the refine algorithm has to be applied distributedly in order to achieve optimal scalability and performance.
-However, there are still two relevant decisions left: where do you compile and process the CEA and how do you distribute the resulting complex events among the processing units. We propose two different architectures that take different answers to previous questions. The first architecture, called \emph{Distributed CER Engine (DCERE for short)}, compiles and executes the CEA in a centralized manner and distributes the resulting complex events to each processing unit. The second architecture, called \emph{Distributed CORE (DCORE for short)}, broadcast the events, and compiles and executes the CEA on each processing unit. We remark that implementing the latter is more challenging than implementing the former. For the former, we could use any state-of-the-art sequential evaluation algorithm (e.g. \cite{formal-framework-cer}, or \cite{core}). However, the latter requires an efficient distributed evaluation algorithm for CEA, that to the best of our knowledge, is yet to be discovered.
+However, there are still two relevant decisions left: where do you compile and process the CEA and how do you distribute the resulting complex events among the processing units. We propose two different architectures that take different approaches to previous questions. The first architecture, called \emph{Distributed CER Engine (DCERE for short)}, compiles and executes the CEA in a centralized manner and distributes the resulting complex events to each processing unit. The second architecture, called \emph{Distributed CORE (DCORE for short)}, broadcast the events, and compiles and executes the CEA on each processing unit. We remark that implementing the latter is more challenging than implementing the former. For the former, we could use any state-of-the-art sequential evaluation algorithm (e.g. \cite{formal-framework-cer}, or \cite{core}). However, the latter requires an efficient distributed evaluation algorithm for CEA, that to the best of our knowledge, is yet to be outlined.
 
 The rest of this chapter is dedicated to explaining in detail both systems.
 
@@ -22,15 +22,15 @@ The rest of this chapter is dedicated to explaining in detail both systems.
   \label{fig:dcere}
 \end{figure}
 
-In this section we discuss \emph{Distributed CER Engine (DCERE)}, an implementation of the framework proposed in Section~\ref{sec:framework} (illustrated in Figure~\ref{fig:dcere})
+In this section we discuss \emph{Distributed CER Engine (DCERE)}, an implementation of the framework proposed in Section~\ref{sec:framework}.
 
 This implementation is built on top of a distributed actor model. We emphasize that actor models can be used to either encode parallelism by considering each core of a processor as an actor, or distributed programming by considering each processing unit in the network as an actor. Indeed, in the implementation from Chapter~\ref{chapter:experimental_evaluation}, we consider as many actors as the product of the number of processing units in our cluster by the number of cores of each processor.
 
-We will differentiate between two roles of actors: master actors and slave actors. There will be a single master actor in the cluster, and as many slave actors as processing units left. The master actor will act as the leader of the cluster and will orchestrate the rest of the slave actors. The master actor receives a stream of data-tuples and a query as an input. It parses and rewrite the input query to unary CEL. Then, it compiles the query to CEA, and evaluate it to retrieve the corresponding set of complex events. For the compilation and evaluation, we will reuse CORE \cite{core} which guarantees constant update of the data structure and output-linear delay enumeration, and outperforms the other automaton-based engines. Then, we apply one of the selection strategies (explained below) to distribute the set of complex events among the slave actors. Asynchronously and independently, each processing unit receives its corresponding subset of complex events and it applies the refine algorithm to the complex events. Afterwards, once the refine algorithm is finished, the actor returns the resulting subset of complex events to the master node. Finally, once the master has received the output of all processing units, it executes the configured response (e.g., write the complex events to disk, send an email, activate an alarm).
+We will differentiate between two roles of actors: master actors and slave actors. There will be a single master actor in the cluster, and as many slave actors as processing units left. The master actor will act as the leader of the cluster and will orchestrate the rest of the slave actors. The master actor receives a stream of data-tuples and a query as an input. It parses and rewrite the input query to unary CEL. Then, it compiles the query to CEA, and evaluate it to retrieve the corresponding set of complex events. For the compilation and evaluation, we will use CORE \cite{core} which guarantees constant update of the data structure and output-linear delay enumeration, and outperforms the other automaton-based engines. Then, we apply one of the selection strategies (explained below) to distribute the set of complex events among the slave actors. Asynchronously and independently, each processing unit receives its corresponding subset of complex events and it applies the refine algorithm to the complex events. Afterwards, once the refine algorithm is finished, the actor returns the resulting subset of complex events to the master node. Finally, once the master has received the output of all processing units, it executes the configured response (e.g., write the complex events to disk, send an email, activate an alarm).
 
 \subsection{Distribution Strategies}\label{subsec:dcere:distribution-strategies}
 
-In this section we describe the distributions strategies used by DCERE to distribute the set of complex events among the set of actors on the distributed system. We have considered distribution strategies ranging from \emph{load-balancing algorithms} to \emph{stream partitioning algorithms}. Additionally, we have proposed our own novel distribution strategy specific to the distribution of complex events, called \emph{Maximal Complex Event Enumeration (MCEE)}. In Chapter~\ref{chapter:experimental_evaluation}, we compare the proposed selection strategies.
+In this section we describe the distributions strategies used by DCERE to distribute the set of complex events among the set of actors on the distributed system. We have considered distribution strategies ranging from \emph{load-balancing algorithms} to \emph{stream partitioning algorithms}. Additionally, we have proposed our own novel distribution strategy specific to the distribution of complex events, called \emph{Maximal Complex Event Enumeration (MCEE)}. In Chapter~\ref{chapter:experimental_evaluation}, we empirically compare the proposed selection strategies.
 
 \textbf{Round Robin}. \emph{Round Robin (RR)} is the most basic load-balancing strategy. It consist of blindly routing the complex events to the actors in a circular fashion. Although simple, it works well in practice.
 
@@ -38,130 +38,96 @@ In this section we describe the distributions strategies used by DCERE to distri
 
 \textbf{Exact Search}. \emph{Exact Search (ES)} is a load balancing algorithm equivalent to PoTC when $d = n$. This distribution strategy was designed taking into account that computing the static load of an actor is cheap, while computing the dynamic load is not. Therefore, for each complex event, we query the static load in constant time of all the actors of the system, and send the complex event to the actor with lowest workload.
 
-\textbf{Maximal Complex Event Enumeration}. \emph{Maximal Complex Event Enumeration (MCEE)} is a load balancing algorithm specific to CER. The idea behind \textsc{Mcee} is to take advantage of the selection strategy \textsc{max} to retrieve only the \emph{maximal complex events} that are the most \emph{informative}, distribute them, and retrieve all complex events included in the maximal complex events. One of the challenges of this approach is how do you distribute maximal complex events. In the absence of iteration (\code{+}), most queries produce few, in the worse-case only one, maximal complex events and so, enumerating and filtering \emph{whole} maximal complex events in a single node incur in skewness in the load balance. Another challenge of this approach is to avoid duplicated outputs (illustrated in Example~\ref{example:3}).
+\textbf{Maximal Complex Event Enumeration}. \emph{Maximal Complex Event Enumeration (MCEE)} is a load balancing algorithm specific to CER. The idea behind \textsc{Mcee} is to take advantage of the selection strategy \textsc{max} to retrieve only the \emph{maximal complex events} that are the most \emph{informative}, distribute them, and retrieve all complex events included in the maximal complex events. One of the challenges of this approach is the choice of an algorithm to distribute maximal complex events. In the absence of disjunctions or iterations in a query, queries produce few maximal complex events. Hence, enumerating and filtering \emph{whole} maximal complex events in single nodes will incur in skewness in the load balance, which degrades performance. Another challenge of this approach is finding the way to avoid duplicated outputs. Example~\ref{example:3} illustrates this problem.
 
 \begin{example}\label{example:3}
   We continue our example of detecting fires in a warehouse to illustrate that a nai\"ve implementation based on \textsc{Mcee} generates duplicates. Given a query $\mathcal{Q}$ with pattern \code{(T+; H+)} and stream $S = \{ T_{1}, H_{1}, T_{2}, H_{2}\}$. Query $\mathcal{Q}$ evaluated under selection strategy \textsc{max} over stream $S$ produces the following complex events: $\{T_{1}, H_{1}, H_{2}\}$, and $\{T_{1}, T_{2}, H_{2}\}$. The first maximal complex event includes complex events: $\{T_{1}, H_{1}\}$, $\{T_{1}, H_{2}\}$, and $\{T_{1}, H_{1}, H_{2}\}$. The second maximal complex event includes: $\{T_{1}, H_{2}\}$, $\{T_{2}, H_{2}\}$, and $\{T_{1}, T_{2}, H_{2}\}$. Notice, complex event $\{T_{1}, H_{2}\}$ has been outputted twice.
 \end{example}
 
-We next describe \textsc{Mcee}
+% Algorithm~\ref{algo:mcee} consist of three procedures: \textsc{MaximalComplexEventEnumeration}, \textsc{Enumerate}, and \textsc{Enumerate'}. The main procedure is \textsc{MaximalComplexEventEnumeration}. It receives as an input a set of \emph{maximal} complex events $\mathcal{C}_{V} := \{C^{1}_{V}, \ldots, C^{n}_{V}\}$ and a set of processing unit $\mathcal{P} := \{P_{1},\ldots, P_{n}\}$, and outputs all \emph{complex events} $C_{V}' \subseteq \mathcal{C}_{V}$. The \code{foreach} of line~\ref{algo:mcee:line:for:1} computes the set of \emph{configurations} corresponding to each maximal complex event in $\mathcal{C}_{V}$ and pairs each configuration with its maximal complex event. A \emph{configuration} is a binary relation $T \times \mathbb{N}$ from data-tuples $t \in T$ to natural numbers. For example, given maximal complex event $C_{V} := \{T, T, H, H, H\}$, then $\textsc{Configurations}(C_{V}) = \{ \{T, 2\}, \{H, 3\}\}$. \code{group-by} of line~\ref{algo:mcee:line:groupby} groups the set of tuples $\mathcal{K} := \{\langle C_{V}, K \rangle \ldots \}$ by their configuration resulting in the set of tuples $D := \{\langle K, \mathcal{C}_{V} = \{C^{1}_{V}, \ldots, C^{m}_{V}\} \rangle \ldots \}$. Then, the set $D$ is distributed among the $|\mathcal{P}|$ processing units. \textsc{Distribute} is a generic load-balancing algorithm can be implemented in many ways (e.g., shuffle, partial key grouping, etc.).
 
+% Then, each processing unit $P$, on the arrival of a new message with $D$ calls the procedure \textsc{Enumerate} that internally uses procedure \textsc{Enumerate'}. Then, for each tuple $\langle K, \mathcal{C}_{V} \rangle$, lines~10-13 are executed. First, a new \emph{tree} root $T$ is created on line~\ref{algo:mcee:line:new-node}. This $n$-ary tree will be used through the algorithm to detect which complex events have been outputted before to avoid duplicates. Then, for each maximal complex event $C_{V} \in \mathcal{C}_{V}$, the procedure \textsc{Partition} is executed and the result is given to procedure \textsc{Enumerate'}.
 
-% You need to make the following observations of "Maximal Matches Enumeration":
-% 1. The algorithm produces disjoint submatches given a maximal match.
-% 2. The algorithm produces non-disjoint submatches given multiple maximal matches.
+% The procedure \textsc{Partition} partitions the complex event $C_{V}$ in sets of consecutive positions of events of the same type. For example, $\textsc{Partition}(\{T, T, H, H, H\}) = \{\{T,T\}, \{H,H,H\}\}$
 
-% But (2) can be analyzed further:
-% 1. Disjoint configurations produce disjoint submatches.
-% 2. Non-disjoint configurations produce non-disjoint submatches.
+% \textsc{Enumerate'} is a recursive procedure that receives as input a node $n$, a grouped complex event $\mathcal{G}$, a partial complex event $C_{V}$, a boolean $new$, and a configuration $K$ corresponding to complex event $C_{V}' \equiv \mathcal{G}$. The \code{switch} from line~\ref{algo:mcee:line:switch} is split in two cases. Case 1 (lines~17-19) corresponds to the base case when $\mathcal{G}$ is empty. If the complex event $C_{V}$ has not been outputted before (i.e., $new = \top$), then we output the complex event $C_{V}$ and stop, otherwise, we just stop. Case 2 (lines~20-29) corresponds to the inductive step when $\mathcal{G}$ has at least a group of events of the same type in the corresponding complex event $C_{V}'$. Notice, that $\mathcal{G}$ on each iteration is smaller, ergo the algorithm terminates. For each group of events of the same type $G$, $k \in \mathbb{N}$ is retrieved from the configuration $K$, which corresponds to the size assigned to that processing unit for the group $G$. Different processing units will have different sizes assigned to each group, resulting in disjoint complex events enumerated by each unit. The $k$-combination set $N := \binom{G}{k}$ is computed, where $N$ contains complex event positions. Then, lines~23-29 are executed for each $k$-combination of positions in $G$. If there exists a children node in $n$ that contains event $i \in N$, then the partial complex event $C_{V}$.
 
-% From previous observations we can conclude that repeated submatches are only generated by applying the same configuration to different maximal matches.
+% \begin{algorithm}[t]
+%   \setstretch{0.9} % space between lines
+%   \DontPrintSemicolon
+%   \SetAlgoNoEnd % don't print end
+%   \SetAlgoNoLine % no vertical lines
+%   \LinesNumbered
+%   \SetKwProg{Procedure}{procedure}{}{}
+%   \SetKwFunction{MCEE}{\textsc{MaximalComplexEventEnumeration}}
+%   \SetKwFunction{Enumerate}{\textsc{Enumerate}}
+%   \SetKwFunction{Enumeratee}{\textsc{Enumerate'}}
+%   \SetKwFunction{Head}{head}
+%   \SetKwFunction{Type}{type}
+%   \SetKwFunction{Last}{last}
+%   \SetKwFunction{Enum}{enum}
+%   \SetKwFunction{OrdTypes}{ordered-types}
+%   \SetKwFunction{GroupBy}{group-by}
+%   \SetKwFunction{Type}{type}
+%   \SetKwFunction{Event}{event}
+%   \SetKwFunction{Children}{children}
+%   \SetKwFunction{Add}{add}
+%   \SetKwFunction{Map}{map}
+%   \SetKwFunction{NewNode}{new-node}
 
-% Uniqueness of submatches is guaranteed by (3) and (4).
-% (3) guarantees that the output of each worker is disjoint wrt the others.
-% (4) guarantees that the output of a worker is disjoint.
+%   \Procedure{\MCEE{$\mathcal{C}_{V}$, $\mathcal{P}$}}{
+%     $\mathcal{K} \leftarrow \emptyset$\;
+%     \For{$C_{V} \in \mathcal{C}_{V}$}{\label{algo:mcee:line:for:1}
+%         $\mathcal{K} \leftarrow \mathcal{K} \cup \textsc{Configurations}(C_{V}).\Map{$\lambda K \to \langle K, C_{V} \rangle$}$\;
+%     }
+%     $D \leftarrow $\GroupBy{$\mathcal{K}, (\lambda \langle K, \_ \rangle \to K)$}\;\label{algo:mcee:line:groupby}
+%     $\textsc{Distribute}(\mathcal{P}, D)$\;
+%   }
+%   \;
 
-% The complexity of the algorithm remains the same if we accomplish linear time enumeration in each worker (this is the tricky part).
+%   \Procedure{\Enumerate{$D$}}{
+%     \For{$\langle K, \mathcal{C_{V}} \rangle \in D$}{\label{algo:mcee:line:for:2}
+%       $T \leftarrow$ \text{\NewNode{}}\;\label{algo:mcee:line:new-node}
+%       \For{$C_{V} \in \mathcal{C}_{V}$}{\label{algo:mcee:line:for:3}
+%         $\mathcal{G} \leftarrow \textsc{Partition}(C_V)$\;
+%         $\textsc{Enumerate'}(T, \mathcal{G}, \emptyset, \bot, K)$\;
+%         }
+%     }
+%   }
+%   \;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-\begin{algorithm}[H]
-  \setstretch{0.9} % space between lines
-  \DontPrintSemicolon
-  \SetAlgoNoEnd % don't print end
-  \SetAlgoNoLine % no vertical lines
-  \LinesNumbered
-  \SetKwProg{Procedure}{procedure}{}{}
-  \SetKwFunction{MCEE}{\textsc{MaximalComplexEventEnumeration}}
-  \SetKwFunction{Enumerate}{\textsc{Enumerate}}
-  \SetKwFunction{Enumeratee}{\textsc{Enumerate'}}
-  \SetKwFunction{Head}{head}
-  \SetKwFunction{Type}{type}
-  \SetKwFunction{Last}{last}
-  \SetKwFunction{Enum}{enum}
-  \SetKwFunction{OrdTypes}{ordered-types}
-  \SetKwFunction{GroupBy}{group-by}
-  \SetKwFunction{Type}{type}
-  \SetKwFunction{Event}{event}
-  \SetKwFunction{Children}{children}
-  \SetKwFunction{Add}{add}
-  \SetKwFunction{NewNode}{new-node}
-
-  \Procedure{\MCEE{$C_{V}$, $W$}}{
-    \KwIn{A set of maximal complex events $\mathcal{C}_{V} := \{C^{1}_{V}, \ldots, C^{n}_{V}\}$ \newline
-      and a set of workers $\mathcal{W} := \{W_{1},\ldots, W_{m}\}$.
-    }
-    \KwResult{Enumerates all \emph{complex events} $C_{V} \subseteq \mathcal{C}_{V}$.}
-    $\mathcal{K} \leftarrow \emptyset$\;
-    \ForEach{$C_{V} \in \mathcal{C}_{V}$}{
-        $\mathcal{K} \leftarrow \mathcal{K} \cup \textsc{Configurations}(C_{V}).map(\lambda K \to ( K, C_{V} ))$\;
-    }
-    $D \leftarrow K.groupBy(\lambda (K, \_ ) \to K)$\;
-    $\textsc{Distribute}(W, D)$\;
-    \tcp{\textsc{Enumerate} is then executed on each worker.}
-  }
-  \;
-
-  \Procedure{\Enumerate{$D$}}{
-    \KwData{A set of tuples $D = \{ \langle K, \mathcal{C}_{V} \rangle \}$ where $K$ is a configuration and $\mathcal{C}_{V}$ is a set of maximal complex events.}
-    \KwOut{The set of all complex events $C_{V} \in D$ without duplicates.}
-    \ForEach{$(K, \mathcal{C_{V}}) \in A$}{
-      $T \leftarrow$ \text{\NewNode{}}\;
-      \ForEach{$C_{V} \in \mathcal{C}_{V}$}{
-        $\mathcal{G} \leftarrow \GroupBy{$M_V$})$\;
-        $\textsc{Enumerate'}(T, \mathcal{G}, \emptyset, \bot, K)$\;
-        }
-    }
-  }
-  \;
-
-  \Procedure{\Enumeratee{$n, \mathcal{G}, S, new, K$}}{
-    \KwData{A node $n$, a set of grouped events $\mathcal{G}$, a partial complex event $C_{V}$, a boolean $new$, and a configuration $K$.}
-    \Switch{$\mathcal{G}$}{
-      \uCase{$\emptyset$}{
-        \If{$new$}{
-          \Return{$C_{V}$}
-        }
-      }
-      \uCase{$G \cup \mathcal{G}$}{
-        $k \leftarrow K(\Type{G})$\;
-        $N \leftarrow \binom{G}{k}$\;
-        \ForEach{$i \in N$}{
-          \eIf{$\exists n' \in \Children{n}. \ \ \Event{n'} = i$}{
-            $\textsc{Enumerate'}(n', \mathcal{G}, C_{V} \cup i, new)$\;
-          }{
-            $n' \leftarrow $\NewNode{$i$}\;
-            $\Add{\Children{n}, n'}$\;
-            \textsc{Enumerate'}$(n', \mathcal{G}, C_{V} \cup i, \top, K)$\;
-          }
-        }
-      }
-    }
-  }
-\caption{Distributed enumeration of a set of maximal complex events $C_{V}$ over a set of workers $W$.}
-\label{algo:mcee}
-\end{algorithm}
+%   \Procedure{\Enumeratee{$n, \mathcal{G}, C_{V}, new, K$}}{
+%     \Switch{$\mathcal{G}$}{\label{algo:mcee:line:switch}
+%       \uCase{$\emptyset$}{\label{algo:mcee:line:case:1}
+%         \If{$new$}{\label{algo:mcee:line:if:1}
+%           \Return{$C_{V}$}
+%         }
+%       }
+%       \uCase{$G \cup \mathcal{G}$}{\label{algo:mcee:line:case:2}
+%         $k \leftarrow K(\Type{G})$\;
+%         $N \leftarrow \binom{G}{k}$\;
+%         \For{$i \in N$}{
+%           \eIf{$\exists n' \in \Children{n}. \ \ \Event{n'} = i$}{\label{algo:mcee:line:if:2}
+%             $\textsc{Enumerate'}(n', \mathcal{G}, C_{V} \cup i, new)$\;
+%           }{
+%             $n' \leftarrow $\NewNode{$i$}\;
+%             $\Add{\Children{n}, n'}$\;
+%             \textsc{Enumerate'}$(n', \mathcal{G}, C_{V} \cup i, \top, K)$\;
+%           }
+%         }
+%       }
+%     }
+%   }
+% \caption{Distributed enumeration of a set of maximal complex events $C_{V}$ over a set of workers $W$.}
+% \label{algo:mcee}
+% \end{algorithm}
 
 A priori, this distribution strategy seems to increase the performance of the recognition process: (1) the automata enumerates a smaller set of complex events, (2) less data has to be sent through the network incurring in a smaller communication overhead, and (3) the possibly exponential cost of the enumeration is distributed among the $n - 1$ slaves nodes. However, under in-depth analysis, (1) and (3) do not hold:
 
 \begin{itemize}
   \item[] \textbf{(1)}. Theorem~7.2 \cite{formal-framework-cer} shows that the compilation of the selection strategies has an exponential blow-up in the size of the automaton. In other words, the number of states and transitions increases exponentially resulting in a larger evaluation time for CEA.
 
-  \item[] \textbf{(3)}. To guarantee duplicate-free results the algorithm needs to enumerate all complex events, \emph{including the duplicated ones}, and detect repeated complex events. This incurs, per complex event, linear factor overhead in the size of the complex event that undermines the gains from the distribution.
+  \item[] \textbf{(3)}. To guarantee duplicate-free results the algorithm needs to enumerate all complex events, \emph{including the duplicated ones}, and remove the repeated ones. This incurs, per complex event, in a linear factor overhead in the size of the complex event that undermines the gains from the distribution.
 \end{itemize}
 
 For completeness, we implemented this selection and empirically verified our hypothesis that this strategy does not perform well in practice.
