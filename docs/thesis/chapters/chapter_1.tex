@@ -54,9 +54,9 @@ In this thesis, we embark on the task of giving a new distributed framework for 
 Our contributions are as follows:
 
 \begin{enumerate}[label=(\roman*)]
-  \item We present a novel distributed evaluation algorithm for CEA. The proposed algorithm tackles (1) the super-linear complexity of non-unary predicates, and (2) the exponential complexity of the enumeration phase. Our work includes a proof of correctness of this algorithm.
+  \item We present a distributed framework for CER. This framework circumvents the filtering limitations of CORE while preserving optimal throughput. Based on this framework, we implemented two different architectures: DCERE and DCORE. DCORE uses the novel distributed evaluation algorithm for CER presented in this work.
 
-  \item We present a distributed framework for CER. This framework circumvents the filtering limitations of CORE while preserving optimal throughput. To achieve this, the framework uses our novel distributed evaluation algorithm.
+  \item We present a novel distributed evaluation algorithm for CER. The proposed algorithm tackles (1) the super-linear complexity of non-unary predicates, and (2) the exponential complexity of the enumeration phase. Our work includes a proof of correctness of this algorithm.
 
   \item We show that our distributed framework is practical. Our experiments show that, in the presence of Big Data requirements, our distributed framework outperforms CORE on processing queries with complex predicates.
 \end{enumerate}
