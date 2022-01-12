@@ -1,4 +1,4 @@
-\chapter{Proofs of \cref{chapter:algorithm}}\label{appendix:A}
+\chapter{}\label{appendix:A}
 
 \section{Proof of Theorem~\ref{theorem:isomorphism}}\label{appendix:A:sec:1}
 
@@ -22,3 +22,53 @@
   Finally, by ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longmapsto paths_{\ge j - \epsilon}(n)$ and $paths_{\ge j - \epsilon}(n) \longmapsto {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$ proofs, ${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) \longleftrightarrow paths_{\ge j - \epsilon}(n)$ immediately holds.
 
 \end{proof}
+
+\section{Auxiliary procedures of Algorithm~\ref{algo:mcee}}\label{appendix:A:sec:2}
+
+\begin{algorithm}[H]
+  \setstretch{0.9} % space between lines
+  \DontPrintSemicolon
+  \SetAlgoNoEnd % don't print end
+  \SetAlgoNoLine % no vertical lines
+  \LinesNumbered
+  \SetKwProg{Procedure}{procedure}{}{}
+  \SetKwFunction{Configurations}{\textsc{Configurations}}
+  \SetKwFunction{Head}{head}
+  \SetKwFunction{Type}{type}
+  \SetKwFunction{Last}{last}
+  \SetKwFunction{Enum}{enum}
+  \SetKwFunction{OrdTypes}{ordered-types}
+  \Procedure{\Configurations{$C_{V}$}}{
+    \KwIn{A complex event $C_{V} = \{i, \ldots, j\}$ with $C_{V} \subseteq 2^{\mathbb{N}}$.}
+    \KwOut{A set $\mathcal{K}$ of configurations $K := T \times \mathbb{N}$ where $K$ is the mapping from the event type $t \in T$ to the size of the group of consecutive events of type $t$ in the complex $C_{V}$.}
+    $\mathcal{V} \leftarrow \emptyset$\;
+    $i \cup C_{V}' \leftarrow \Head{$C_{V}$}$\;
+    $A \leftarrow \{ i \}$\;
+    $\Type{$A$} \leftarrow \Type{$i$}$\;
+    \For{$j \in C_{V}'$}{
+      \eIf{$\Type{$j$} = \Type{$A$}$}{
+        $A \leftarrow A \cup j$\;
+        \uIf{$\Last{$C_{V}$} = j$} {
+          $\mathcal{V} \leftarrow \mathcal{V} \cup \Enum{$1, |A|$}$
+        }
+      }{
+        $\mathcal{V} \leftarrow \mathcal{V} \cup \Enum{$1, |A|$}$\;
+        $A \leftarrow \{ j \}$\;
+        $\Type{$A$} \leftarrow \Type{$j$}$\;
+      }
+    }
+    $\mathcal{W} \leftarrow \bigtimes\limits_{V \in \mathcal{V}} V$\;
+    $T \leftarrow \OrdTypes{$C_{V}$}$\tcp*[l]{\scriptsize e.g., $\OrdTypes{$A_{1}A_{2}B_{1}C_{1}$} = \{A,B,C\}$}
+    $\mathcal{K} \leftarrow \emptyset$\;
+    \ForEach{$W \in \mathcal{W}$}{
+      $K \leftarrow \emptyset$\;
+      \For{$i \leftarrow 1$ \KwTo $|W|$}{
+        $K \leftarrow K \cup (T[i], W[i])$\;
+      }
+      $\mathcal{C} \leftarrow \mathcal{C} \cup C$\;
+    }
+    \Return{$\mathcal{C}$}
+  }
+\caption{Configuration of a complex event $C_{V}$.}
+\label{algo:configurations}
+\end{algorithm}
