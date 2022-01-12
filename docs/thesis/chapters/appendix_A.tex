@@ -23,52 +23,139 @@
 
 \end{proof}
 
-% \section{Auxiliary procedures of Algorithm~\ref{algo:mcee}}\label{appendix:A:sec:2}
+\section{Algorithms Chapter~\ref{chapter:distributed-cer}}\label{appendix:A:sec:2}
 
-% \begin{algorithm}[H]
-%   \setstretch{0.9} % space between lines
-%   \DontPrintSemicolon
-%   \SetAlgoNoEnd % don't print end
-%   \SetAlgoNoLine % no vertical lines
-%   \LinesNumbered
-%   \SetKwProg{Procedure}{procedure}{}{}
-%   \SetKwFunction{Configurations}{\textsc{Configurations}}
-%   \SetKwFunction{Head}{head}
-%   \SetKwFunction{Type}{type}
-%   \SetKwFunction{Last}{last}
-%   \SetKwFunction{Enum}{enum}
-%   \SetKwFunction{OrdTypes}{ordered-types}
-%   \Procedure{\Configurations{$C_{V}$}}{
-%     \KwIn{A complex event $C_{V} = \{i, \ldots, j\}$ with $C_{V} \subseteq 2^{\mathbb{N}}$.}
-%     \KwOut{A set $\mathcal{K}$ of configurations $K := T \times \mathbb{N}$ where $K$ is the mapping from the event type $t \in T$ to the size of the group of consecutive events of type $t$ in the complex $C_{V}$.}
-%     $\mathcal{V} \leftarrow \emptyset$\;
-%     $i \cup C_{V}' \leftarrow \Head{$C_{V}$}$\;
-%     $A \leftarrow \{ i \}$\;
-%     $\Type{$A$} \leftarrow \Type{$i$}$\;
-%     \For{$j \in C_{V}'$}{
-%       \eIf{$\Type{$j$} = \Type{$A$}$}{
-%         $A \leftarrow A \cup j$\;
-%         \uIf{$\Last{$C_{V}$} = j$} {
-%           $\mathcal{V} \leftarrow \mathcal{V} \cup \Enum{$1, |A|$}$
-%         }
-%       }{
-%         $\mathcal{V} \leftarrow \mathcal{V} \cup \Enum{$1, |A|$}$\;
-%         $A \leftarrow \{ j \}$\;
-%         $\Type{$A$} \leftarrow \Type{$j$}$\;
-%       }
-%     }
-%     $\mathcal{W} \leftarrow \bigtimes\limits_{V \in \mathcal{V}} V$\;
-%     $T \leftarrow \OrdTypes{$C_{V}$}$\;
-%     $\mathcal{K} \leftarrow \emptyset$\;
-%     \ForEach{$W \in \mathcal{W}$}{
-%       $K \leftarrow \emptyset$\;
-%       \For{$i \leftarrow 1$ \KwTo $|W|$}{
-%         $K \leftarrow K \cup (T[i], W[i])$\;
-%       }
-%       $\mathcal{C} \leftarrow \mathcal{C} \cup C$\;
-%     }
-%     \Return{$\mathcal{C}$}
-%   }
-% \caption{Configuration of a complex event $C_{V}$.}
-% \label{algo:configurations}
-% \end{algorithm}
+\subsection{Maximal Complex Event Enumeration}\label{appendix:A:sec:2:subsec:1}
+
+\begin{algorithm}[H]
+  \setstretch{0.9} % space between lines
+  \DontPrintSemicolon
+  \SetAlgoNoEnd % don't print end
+  \SetAlgoNoLine % no vertical lines
+  \LinesNumbered
+  \SetKwProg{Procedure}{procedure}{}{}
+  \SetKwFunction{MCEE}{\textsc{Mcee}}
+  \SetKwFunction{Enumerate}{\textsc{Enumerate}}
+  \SetKwFunction{Loop}{\textsc{Loop}}
+  \SetKwFunction{Configurations}{\textsc{Configurations}}
+  \SetKwFunction{Distribute}{\textsc{Distribute}}
+  \SetKwFunction{Partition}{\textsc{Partition}}
+  \SetKwFunction{Head}{head}
+  \SetKwFunction{Type}{type}
+  \SetKwFunction{Last}{last}
+  \SetKwFunction{Enum}{enum}
+  \SetKwFunction{GroupBy}{\textsc{GroupBy}}
+  \SetKwFunction{Type}{type}
+  \SetKwFunction{Event}{event}
+  \SetKwFunction{Children}{children}
+  \SetKwFunction{Add}{add}
+  \SetKwFunction{Map}{\textsc{Map}}
+  \SetKwFunction{NewNode}{new-node}
+
+  \Procedure{\MCEE{$\mathcal{C}_{V}$, $\mathcal{P}$}}{
+    $\mathcal{K} \leftarrow \emptyset$\;
+    \For{$C_{V} \in \mathcal{C}_{V}$}{\label{algo:mcee:line:for:1}
+        $\mathcal{K} \leftarrow \mathcal{K} \cup \Configurations{$C_{V}$}.\Map{$\lambda K \to \langle K, C_{V} \rangle$}$\;
+    }
+    $D \leftarrow $\GroupBy{$\mathcal{K}, \lambda \langle K, \_ \rangle \to K$}\;\label{algo:mcee:line:groupby}
+    \Distribute{$\mathcal{P}, D$}\;
+  }
+  \;
+
+  \Procedure{\Enumerate{$D$}}{
+    \For{$\langle K, \mathcal{C_{V}} \rangle \in D$}{\label{algo:mcee:line:for:2}
+      $T \leftarrow$ \text{\NewNode{}}\;\label{algo:mcee:line:new-node}
+      \For{$C_{V} \in \mathcal{C}_{V}$}{\label{algo:mcee:line:for:3}
+        $\mathcal{G} \leftarrow \Partition{$C_V$}$\;
+        \Loop{$T, \mathcal{G}, \emptyset, \bot, K$}\;
+        }
+    }
+  }
+  \;
+
+  \Procedure{\Loop{$n, \mathcal{G}, C_{V}, new, K$}}{
+    \Switch{$\mathcal{G}$}{\label{algo:mcee:line:switch}
+      \uCase{$\emptyset$}{\label{algo:mcee:line:case:1}
+        \If{$new$}{\label{algo:mcee:line:if:1}
+          \Return{$C_{V}$}
+        }
+      }
+      \uCase{$G \cup \mathcal{G}$}{\label{algo:mcee:line:case:2}
+        $k \leftarrow K(\Type{G})$\;
+        $N \leftarrow \binom{G}{k}$\;
+        \For{$i \in N$}{
+          \eIf{$\exists n' \in \Children{n}. \ \ \Event{n'} = i$}{\label{algo:mcee:line:if:2}
+            \Loop{$n', \mathcal{G}, C_{V} \cup i, new$}\;
+          }{
+            $n' \leftarrow $\NewNode{$i$}\;
+            $\Add{\Children{n}, n'}$\;
+            \Loop{$n', \mathcal{G}, C_{V} \cup i, \top, K$}\;
+          }
+        }
+      }
+    }
+  }
+\caption{Distributed enumeration of a set of maximal complex events $C_{V}$ over a set of workers $W$.}
+\label{algo:mcee}
+\end{algorithm}
+
+Algorithm~\ref{algo:mcee} consist of two procedures: \textsc{Mcee} and \textsc{Enumerate}. The main procedure is \textsc{Mcee}, which is executed in the master actor, while \textsc{Enumerate} is executed on each slave actor. It receives as an input a set of \emph{maximal} complex events $\mathcal{C}_{V} := \{C^{1}_{V}, \ldots, C^{n}_{V}\}$ and a set of processing unit $\mathcal{P} := \{P_{1},\ldots, P_{n}\}$, and outputs all \emph{complex events} $C_{V}' \subseteq \mathcal{C}_{V}$ distributedly. The \code{for} (lines~3-4) compute the set of \emph{configurations} corresponding to each maximal complex event in $\mathcal{C}_{V}$ (see Algorithm~\ref{algo:configurations}) and pairs each configuration with its maximal complex event. A \emph{configuration} is a binary relation $T \times \mathbb{N}$ from data-tuples $t \in T$ to natural numbers. For example, given maximal complex event $C_{V} := \{T, T, H, H, H\}$, then $\code{Configurations}(C_{V}) = \{ \{T, 2\}, \{H, 3\}\}$.
+
+
+\begin{algorithm}[H]
+  \setstretch{0.9} % space between lines
+  \DontPrintSemicolon
+  \SetAlgoNoEnd % don't print end
+  \SetAlgoNoLine % no vertical lines
+  \LinesNumbered
+  \SetKwProg{Procedure}{procedure}{}{}
+  \SetKwFunction{Configurations}{\textsc{Configurations}}
+  \SetKwFunction{Head}{head}
+  \SetKwFunction{Type}{type}
+  \SetKwFunction{Last}{last}
+  \SetKwFunction{Enum}{enum}
+  \SetKwFunction{OrdTypes}{ordered-types}
+  \Procedure{\Configurations{$C_{V}$}}{
+    \KwIn{A complex event $C_{V} = \{i, \ldots, j\}$ with $C_{V} \subseteq 2^{\mathbb{N}}$.}
+    \KwOut{A set $\mathcal{K}$ of configurations $K := T \times \mathbb{N}$ where $K$ is the mapping from the event type $t \in T$ to the size of the group of consecutive events of type $t$ in the complex $C_{V}$.}
+    $\mathcal{V} \leftarrow \emptyset$\;
+    $i \cup C_{V}' \leftarrow \Head{$C_{V}$}$\;
+    $A \leftarrow \{ i \}$\;
+    $\Type{$A$} \leftarrow \Type{$i$}$\;
+    \For{$j \in C_{V}'$}{
+      \eIf{$\Type{$j$} = \Type{$A$}$}{
+        $A \leftarrow A \cup j$\;
+        \uIf{$\Last{$C_{V}$} = j$} {
+          $\mathcal{V} \leftarrow \mathcal{V} \cup \Enum{$1, |A|$}$
+        }
+      }{
+        $\mathcal{V} \leftarrow \mathcal{V} \cup \Enum{$1, |A|$}$\;
+        $A \leftarrow \{ j \}$\;
+        $\Type{$A$} \leftarrow \Type{$j$}$\;
+      }
+    }
+    $\mathcal{W} \leftarrow \bigtimes\limits_{V \in \mathcal{V}} V$\;
+    $T \leftarrow \OrdTypes{$C_{V}$}$\;
+    $\mathcal{K} \leftarrow \emptyset$\;
+    \ForEach{$W \in \mathcal{W}$}{
+      $K \leftarrow \emptyset$\;
+      \For{$i \leftarrow 1$ \KwTo $|W|$}{
+        $K \leftarrow K \cup (T[i], W[i])$\;
+      }
+      $\mathcal{C} \leftarrow \mathcal{C} \cup C$\;
+    }
+    \Return{$\mathcal{C}$}
+  }
+\caption{Configuration of a complex event $C_{V}$.}
+\label{algo:configurations}
+\end{algorithm}
+
+
+\textsc{GroupBy} of line~\ref{algo:mcee:line:groupby} groups the set of tuples $\mathcal{K} := \{\langle C_{V}, K \rangle, \ldots\}$ by their configuration resulting in the set of tuples $D := \{\langle K, \mathcal{C}_{V}\} \rangle, \ldots \}$, where $\mathcal{C}_{V} := \{C^{1}_{V}, \ldots, C^{m}_{V}\}$. Then, the set $D$ is distributed among the $|\mathcal{P}|$ processing units using a generic load-balancing algorithm \textsc{Distribute}. The choice of implementation does not affect the correctness of the algorithm.
+
+The procedure \textsc{Enumerate} receives the set of tuples $D := \{\langle K, \mathcal{C}_{V}\} \rangle, \ldots \}$ and enumerates all complex events included in each $\mathcal{C}_{V}$ filtered by $K$. $K$ is a configuration and for each event type $T$, it returns the exact number of complex event of that type that must be present in the resulting complex events. This is what allows us to control the load-balancing of the process, by distributing the configurations assigned to each process. For each tuple $\langle K, \mathcal{C}_{V} \rangle$, lines~10-13 are executed. First, a new \emph{tree} root $T$ is created on line~\ref{algo:mcee:line:new-node}. This $n$-ary tree will be used through the algorithm to detect which complex events have been outputted before to avoid duplicates. Then, for each maximal complex event $C_{V} \in \mathcal{C}_{V}$, the procedure \textsc{Partition} is executed and the result is given to procedure \textsc{Enumerate'}.
+
+The procedure \textsc{Partition} partitions the complex event $C_{V}$ in sets of consecutive positions of events of the same type. For example, \newline
+\hspace*{60pt}$\textsc{Partition}(\{T, T, H, H, H\}) = \{\{T,T\}, \{H,H,H\}\}$
+
+Procedure \textsc{Loop} receives as input a node $n$, a grouped complex event $\mathcal{G}$, a partial complex event $C_{V}$, a boolean $new$, and a configuration $K$ corresponding to complex event $C_{V}' \equiv \mathcal{G}$. On each iteration, \textsc{Loop} extends $C_{V}$ with the next group in $\mathcal{G}$ and the configuration $K$ associated to that group. The \code{switch} from line~\ref{algo:mcee:line:switch} is split in two cases. Case 1 (lines~17-19) corresponds to the base case when $\mathcal{G}$ is empty. If the complex event $C_{V}$ has not been outputted before (i.e., $new = \top$), then we output the complex event $C_{V}$ and stop, otherwise, we just stop. Case 2 (lines~20-29) corresponds to the inductive step when $\mathcal{G}$ has at least a group of events of the same type in the corresponding complex event $C_{V}'$. Notice, that $\mathcal{G}$ on each iteration is smaller, ergo the algorithm terminates. For each group of events of the same type $G$, $k \in \mathbb{N}$ is retrieved from the configuration $K$, which corresponds to the size assigned to that processing unit for the group $G$. Different processing units will have different sizes assigned to each group, resulting in disjoint complex events enumerated by each unit. The $k$-combination set $N := \binom{G}{k}$ is computed, where $N$ contains complex event positions. Then, for each $k$-combinations of events, lines~23-29 are executed. In both cases, $C_{V}$ is extended with positions $i \subseteq 2^{\mathbb{N}}$. If there exists a children node $n'$ in $n$ that contains events $i$, then we recursively call \textsc{Loop} with extended complex even $C_{V} \cup i$, but we do not update $new$ since an event such as $C_{V} \cup i$ has already been outputted before. Otherwise, we create a new node $n'$ with events $i$, extend our current node $n$ with $n'$, and, as before, we call \textsc{Loop}, but this time with argument $new = \top$ indicating that complex event $C_{V}$ has not been enumerated before.
