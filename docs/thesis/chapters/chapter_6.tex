@@ -1,6 +1,6 @@
 \chapter{Experimental evaluation}\label{chapter:experimental_evaluation}
 
-In this chapter we propose a set of experiments to study the performance and scalability of both our distributed framework for CER and our distributed evaluation algorithm. This study aims to show that the claims of our work empirically hold. This chapter is organized as follows. First, we describe our implementation. Then, we describe the design and set up of our experiments, including how we generated the synthetic data and the characteristics of the system. Then, for each experiment, we describe the experiment and discuss the results. Finally, we summarise the main conclusions of the chapter.
+In this chapter we propose a set of experiments to study the performance and scalability of both our distributed framework for CER and our distributed evaluation algorithm. The designed experiments focus on the evaluation of complex predicates. This chapter is organized as follows. First, we describe our implementation. Then, we describe the design and set up of our experiments, including how we generated the synthetic data and the characteristics of the system. Then, for each experiment, we describe the experiment and discuss the results. Finally, we summarise the main conclusions of the chapter.
 
 \section{DCORE in a nutshell}\label{chapter:dcore}
 
@@ -36,6 +36,7 @@ As far as we are concerned, there does not exist a standard benchmark for comple
       FROM S
       WHERE P
       FILTER A[id] = B[id]
+      WITHIN 100 events
     \end{minted}
   \end{subfigure}
   \begin{subfigure}[t]{0.49\textwidth}
@@ -51,8 +52,9 @@ As far as we are concerned, there does not exist a standard benchmark for comple
   \end{subfigure}
 \end{figure}
 
-% Talk about all queries contain binary predicate.
+where the pattern \textrm{P} is different on each query. We remark that our queries contain a \emph{binary predicate} (i.e., \code{A[id] = B[id]}). We generated three different input streams, one for each query, that guarantee that the number of complex events matched is the same for each query. Otherwise, the results wouldn't be comparable.
 
+Next sections will be dedicated to describing each specific experiment. For each section, we will state the question under evaluation, describe the experiment, and discuss the results.
 
 \section{Experiments on the evaluation of complex predicates}\label{sec:predicates}
 
