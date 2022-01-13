@@ -15,15 +15,17 @@ In this section, we review some implementation details of DCORE. We implemented 
 % In this section we describe the common settings to all the experiments and refer to each experiment for its particularities.
 
 We have compared our framework's implementation DCERE and DCORE against the leading CER system: CORE \cite{core}.
-We do not compare experimentally against other proposals (e.g., SASE \cite{sase}, Esper \cite{esper}, FlinkCEP \cite{flink-cep}, TESLA/T-REX \cite{tesla}) because CORE throughput is three orders of magnitudes higher than the rest of CER systems. CORE, DCERE, and CORE are semantically comparable since they all use the same query language. Unfortunately, CORE cannot evaluate non-unary predicates, so we had to extend the system with an ad-hoc rewrite and refine algorithms, similar to how DCERE is implemented, but without the distributed part.
+We do not compare experimentally against other proposals (e.g., SASE \cite{sase}, Esper \cite{esper}, FlinkCEP \cite{flink-cep}, TESLA/T-REX \cite{tesla}) because CORE throughput is three orders of magnitudes higher than the rest of CER systems serving as a baseline to overcome. CORE, DCERE, and CORE are semantically comparable since they all use the same query language. Unfortunately, CORE cannot evaluate non-unary predicates, so we had to extend the system with an ad-hoc rewrite and refine algorithms, similar to how DCERE is implemented, but without the distributed part.
 
 \textbf{Hardware.} We run our experiments on a server equipped with a 6-core (2 threads per core) i7-8700 processor running at stock frequency, 32GB of RAM, Arch Linux operating system, 5.15.7-arch1-1 kernel version, OpenJDK Runtime 11.0.12, and the OpenJDK 64-Bit Server Virtual Machine build 11.0.12. The Virtual Machine is restarted with 1024MB of freshly allocated memory before each experiment.
 
+\textbf{Note.} All the experiments are run on a single server instead of a cluster of servers. We speculate that the results of our experiments in a cluster would be similar, with small differences due to the overhead of network communication. Validating this hypothesis is left for future work.
+
 We compare systems with respect to their performance. All reported numbers are averages taken over three repetitions of each experiment. We measure the performance of each system, expressed as the execution time of the experiment in milliseconds, as follows. To avoid measuring the data loading time of each system, we first load the input stream completely in main memory. We then start the timer, run the experiment, and stop the timer as soon as the last output is enumerated. Recognized complex events are written to /dev/null device to guarantee that the events are enumerated (avoiding \emph{dead call optimization}), but at the same time not measuring writing costs. The \emph{null device} is a virtual device present in all Linux systems that results in zero cost on writing operations. For consistency reasons, we have verified that all systems produced the same set of complex events.
 
-% Explain stream
+\textbf{ACM SIGMOD 2022 Availability \& Reproducibility}. Our work complies with ACM SIGMOD 2022 Availability \& Reproducibility criteria \cite{acm-reprodocubility} : (1) our prototype is provided as a white box, (2) the process to generate the input data is available, (3) the experiments can be reproduced in order to generate the experimental data, and (4) the script/spreadsheet to transform the raw data into the plots is provided.
 
-% Explain queries
+As far as we are concerned, there does not exist a standard benchmark for complex event recognition. For this reason, we experiment with a set of queries over synthetic data. We considered sequence queries and iteration queries for our experiments, which have been used for benchmarking in CER before (for example \cite{cayuga}~and~\cite{experiment-example}). Specifically, we have considered the following three queries:
 
 \begin{figure}[H]
   \centering
@@ -49,12 +51,7 @@ We compare systems with respect to their performance. All reported numbers are a
   \end{subfigure}
 \end{figure}
 
-% Explain setup as in CORE
-
-\textbf{Reproducibility}. Explain that this is open-source, https://reproducibility.sigmod.org/
-
-% - Comment that we run the experiments on a single physical machine because there should be noticeable differences.
-% But we should validate this hypothesis in future work.
+% Talk about all queries contain binary predicate.
 
 
 \section{Experiments on the evaluation of complex predicates}\label{sec:predicates}
