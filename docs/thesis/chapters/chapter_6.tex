@@ -54,13 +54,47 @@ As far as we are concerned, there does not exist a standard benchmark for comple
 
 where the pattern \textrm{P} is different on each query. We remark that our queries contain a \emph{binary predicate} (i.e., \code{A[id] = B[id]}). We generated three different input streams, one for each query, that guarantee that the number of complex events matched is the same for each query. Otherwise, the results wouldn't be comparable.
 
+\begin{figure}[H]
+  \centering
+  \begin{tabular}{l c}
+    \hline
+    $S_{1}:$ & A,A$\ldots$B,B$\ldots$C\\
+    \hline
+    $S_{2}:$ & A,B,B,B$\ldots$C\\
+    \hline
+    $S_{3}:$ & A,B,A,B$\ldots$C\\
+    \hline
+  \end{tabular}
+\end{figure}
+
+In $S_{1}$, we generate as many events of type $A$ as events of type $B$, and only a single closing event $C$, which forces the partial open events to close. In $S_{2}$, we generated a single event of type $A$, followed by many events of type $B$, and a closing event $C$. In $S_{3}$, we generated a stream of pairs $A, B$ and a single closing event $C$. The $id$ attribute has been uniformly at random assigned with values $\{1, 2, 3\}$. The length of each stream is different for a particular size of set of complex events. For example, to generate $100$ complex events, $S_{1}$ requires a stream containing $10$ events of type $A$ and $10$ events of type $B$, while $S_{2}$ only requires a stream containing $7$ events of type $B$.
+
 Next sections will be dedicated to describing each specific experiment. For each section, we will state the question under evaluation, describe the experiment, and discuss the results.
 
 \section{Experiments on the evaluation of complex predicates}\label{sec:predicates}
 
-% Subfigure and place them together ?
+\begin{figure}
+     \centering
+     \begin{subfigure}[b]{0.3\textwidth}
+         \centering
+         \includegraphics[width=\textwidth]{experiment_1_chart_1}
+         \caption{$Q_{1}$.}
+         \label{fig:experiment:1:subfigure:1}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.3\textwidth}
+         \centering
+         \includegraphics[width=\textwidth]{experiment_1_chart_1}
+         \caption{$Q_{1}$.}
+         \label{fig:experiment:1:subfigure:1}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.3\textwidth}
+     \end{subfigure}
+     \caption{The performance of evaluating queries $Q_{1}$, $Q_{2}$, and $Q_{3}$ over }
+     \label{fig:experiment:1}
+\end{figure}
 
-% A;B;C
 \begin{figure}[H]
   \centering
   \includegraphics[scale=0.5]{experiment_1_chart_3}
@@ -68,7 +102,6 @@ Next sections will be dedicated to describing each specific experiment. For each
   \label{fig:???}
 \end{figure}
 
-% A;B+;C
 \begin{figure}[H]
   \centering
   \includegraphics[scale=0.5]{experiment_1_chart_2}
@@ -76,7 +109,6 @@ Next sections will be dedicated to describing each specific experiment. For each
   \label{fig:???}
 \end{figure}
 
-% A+;B+;C
 \begin{figure}[H]
   \centering
   \includegraphics[scale=0.5]{experiment_1_chart_1}
@@ -89,7 +121,6 @@ Next sections will be dedicated to describing each specific experiment. For each
 
 \section{Experiments on the scalability of the framework}\label{sec:scalability}
 
-% A;B;C
 \begin{figure}[H]
   \centering
   \includegraphics[scale=0.5]{experiment_2_chart_3}
@@ -97,7 +128,6 @@ Next sections will be dedicated to describing each specific experiment. For each
   \label{fig:???}
 \end{figure}
 
-% A;B+;C
 \begin{figure}[H]
   \centering
   \includegraphics[scale=0.5]{experiment_2_chart_2}
@@ -105,7 +135,6 @@ Next sections will be dedicated to describing each specific experiment. For each
   \label{fig:???}
 \end{figure}
 
-% A+;B+;C
 \begin{figure}[H]
   \centering
   \includegraphics[scale=0.5]{experiment_2_chart_1}
@@ -133,21 +162,18 @@ Next sections will be dedicated to describing each specific experiment. For each
 
 \section{Experiments on the novel evaluation algorithm}\label{sec:new-algorithm}
 
-% A;B;C
 \begin{figure}[H]
   \centering
   \includegraphics[scale=0.5]{experiment_4_chart_3}
   \caption{$Q_{1}$.}
   \label{fig:???}
 \end{figure}
-% A;B+;C
 \begin{figure}[H]
   \centering
   \includegraphics[scale=0.5]{experiment_4_chart_2}
   \caption{$Q_{2}$.}
   \label{fig:???}
 \end{figure}
-% A+;B+;C
 \begin{figure}[H]
   \centering
   \includegraphics[scale=0.5]{experiment_4_chart_3}
