@@ -4,7 +4,14 @@ In this chapter we propose a novel framework for distributed CER based on the fo
 
 \section{Distributed CER framework}\label{sec:framework}
 
-In this section we describe our proposal for a framework for distributed CER. Our framework uses CEQL as its query language, but we allow $n$-ary CEL predicates inside the \code{WHERE} clause. It receives a stream of data-tuples and a query as an input.  The query is parsed using any context free grammar parsing algorithm (e.g., Earley's algorithm \cite{earley}). The resulting abstract syntax tree (AST) is applied to the \emph{rewrite algorithm}. The rewrite algorithm translates the non-unary CEL predicate of a CEQL query into a unary CEL predicate, and additionally outputs a data structure encoding the corresponding non-unary predicates, if any, to be applied later. The resulting CEQL query is compiled into a CEA by \cite[Theorem~6.2]{formal-framework-cer}. Then, this CEA is evaluated using one of the efficient evaluation algorithms presented in \cite{formal-framework-cer, core}. Notice, the result of this evaluation is not yet a valid output since we still need to apply the \code{FILTER} clause for the non-unary predicates, if present. Afterwards, the resulting set of complex events is filtered distributedly. Each processing unit applies the \emph{refine algorithm} to its assigned complex events. The refine algorithm uses the non-unary predicates to filter the complex events. Finally, each processing unit enumerates the set of complex events corresponding to the input query.
+\begin{figure}[t]
+  \centering
+  \inputtikz{framework}
+  \caption{Distributed CER framework.}
+  \label{fig:framework}
+\end{figure}
+
+In this section we describe our proposal of a framework for distributed CER (see Figure~\ref{fig:framework}). Our framework uses CEQL as its query language, but we allow $n$-ary CEL predicates inside the \code{WHERE} clause. It receives a stream of data-tuples $S$ and a query $Q$ as text. The query is parsed using a context free grammar parsing algorithm (e.g., Earley's algorithm \cite{earley}). The \emph{rewrite algorithm} is applied to the resulting abstract syntax tree of the query $\mathcal{Q}$. The rewrite algorithm translates the non-unary CEL predicate of a CEQL query into a unary CEL predicate $\mathcal{Q}^{FO}$, and a data structure encoding the corresponding non-unary predicates $\mathcal{P}^{SO}$ to be applied later. The resulting unary CEQL query $\mathcal{Q}^{FO}$ is compiled into a CEA $\mathcal{A}$ by \cite[Theorem~6.2]{formal-framework-cer}. Then, this CEA is evaluated by the efficient evaluation algorithm presented in \cite{core}, which takes, under \emph{data complexity}, constant time per input event to maintain a data structure representing the set of partial complex events. Notice, the result of this evaluation ${\llbracket \mathcal{A} \rrbracket}(S)$ is not yet a valid output since we still need to apply the \code{FILTER} clause for the non-unary predicates. The \emph{refine algorithm} is applied distributedly to the set of complex events ${\llbracket \mathcal{A} \rrbracket}(S)$. The refine algorithm uses the non-unary predicates $\mathcal{P}^{SO}$ to filter the set of complex events (denoted as ${\llbracket \mathcal{A} \rrbracket}(S) \models \mathcal{P}^{SO}$ in Figure~\ref{fig:framework}). Finally, the set of complex events corresponding to the input query is enumerated.
 
 \textbf{Note}. We implemented a rewrite and refine algorithm that only works for very specific queries. Implementing a generic rewrite and refine algorithm is outside of the scope of this thesis and it is left for future work.
 
@@ -15,7 +22,7 @@ The rest of this chapter is dedicated to explaining in detail both systems.
 
 \section{Distributed CER Engine}\label{sec:dcere}
 
-\begin{figure}[H]
+\begin{figure}[t]
   \centering
   \inputtikz{dcere}
   \caption{Distributed CER Engine architecture.}
@@ -24,7 +31,7 @@ The rest of this chapter is dedicated to explaining in detail both systems.
 
 In this section we discuss \emph{Distributed CER Engine (DCERE)}, an implementation of the framework proposed in Section~\ref{sec:framework}.
 
-This implementation is built on top of a distributed actor model. We emphasize that actor models can be used to either encode parallelism by considering each core of a processor as an actor, or distributed programming by considering each processing unit in the network as an actor. Indeed, in the implementation from Chapter~\ref{chapter:experimental_evaluation}, we consider as many actors as the product of the number of processing units in our cluster by the number of cores of each processor.
+This implementation (illustrated in Figure~\ref{fig:dcere}) is built on top of a distributed actor model. We emphasize that actor models can be used to either encode parallelism by considering each core of a processor as an actor, or distributed programming by considering each processing unit in the network as an actor. Indeed, in the implementation from Chapter~\ref{chapter:experimental_evaluation}, we consider as many actors as the product of the number of processing units in our cluster by the number of cores of each processor.
 
 We will differentiate between two roles of actors: master actors and slave actors. There will be a single master actor in the cluster, and as many slave actors as processing units left. The master actor will act as the leader of the cluster and will orchestrate the rest of the slave actors. The master actor receives a stream of data-tuples and a query as an input. It parses and rewrite the input query to unary CEL. Then, it compiles the query to CEA, and evaluate it to retrieve the corresponding set of complex events. For the compilation and evaluation, we will use CORE \cite{core} which guarantees constant update of the data structure and output-linear delay enumeration, and outperforms the other automaton-based engines. Then, we apply one of the selection strategies (explained below) to distribute the set of complex events among the slave actors. Asynchronously and independently, each processing unit receives its corresponding subset of complex events and it applies the refine algorithm to the complex events. Afterwards, once the refine algorithm is finished, the actor returns the resulting subset of complex events to the master node. Finally, once the master has received the output of all processing units, it executes the configured response (e.g., write the complex events to disk, send an email, activate an alarm).
 
@@ -56,14 +63,14 @@ For completeness, we implemented this selection and empirically verified our hyp
 
 \section{Distributed CORE}\label{sec:dcore}
 
-\begin{figure}[H]
+\begin{figure}[t]
   \centering
   \inputtikz{dcore}
   \caption{Distributed CORE architecture.}
   \label{fig:dcore}
 \end{figure}
 
-In this section we discuss \emph{Distributed CORE (DCORE)}, an implementation of the framework proposed in Section~\ref{sec:framework}. This implementation is also built on top of a distributed actor model, but the master actor plays a secondary role. It is only used to retrieve the complex events from the rest of the slave actors in order to execute the configured response. Indeed, if the response can be executed on the slaves actors (e.g., writing to an output stream), then the master actor can be removed from the system. We assume that the system can duplicate the input data. Otherwise, assume that the master node receives as an input a stream and a query, and \emph{broadcasts} them to the rest of the actors (illustrated in Figure~\ref{fig:dcore}).
+In this section we discuss \emph{Distributed CORE (DCORE)}, an implementation of the framework proposed in Section~\ref{sec:framework}. This implementation (illustrated Figure~\ref{fig:dcore}) is also built on top of a distributed actor model, but the master actor plays a secondary role. It is only used to retrieve the complex events from the rest of the slave actors in order to execute the configured response. Indeed, if the response can be executed on the slaves actors (e.g., writing to an output stream), then the master actor can be removed from the system. We assume that the system can duplicate the input data. Otherwise, assume that the master node receives as an input a stream and a query, and \emph{broadcasts} them to the rest of the actors.
 
 The following steps are all execute asynchronously and independently on each node of the distributed system, and there is no communication between the nodes throughout this process. Each node in the system: receives an input stream and a query, parses and rewrites the input query to unary CEL, compiles the query to CEA, and finally evaluates the CEA, applies the refine algorithm and enumerates the resulting complex events.
 
