@@ -52,7 +52,7 @@ As far as we are concerned, there does not exist a standard benchmark for comple
   \end{subfigure}
 \end{figure}
 
-where the pattern \textrm{P} is different on each query. We remark that our queries contain a \emph{binary predicate} (i.e., \code{A[id] = B[id]}). We generated three different input streams, one for each query, that guarantee that the number of complex events matched is the same for each query. Otherwise, the results wouldn't be comparable.
+where the pattern \textrm{P} is different on each query. We remark that our queries contain a \emph{binary predicate} (i.e., \code{A[id] = B[id]}). Indeed, it would be interesting to evaluate other types of complex predicates, but this would require an actual implementation of the rewrite and refine algorithm, which is outside of the scope of this work. We generated three different input streams, one for each query, that guarantee that the number of complex events matched is the same for each query. Otherwise, the results wouldn't be comparable.
 
 \begin{figure}[H]
   \centering
@@ -73,7 +73,7 @@ Next sections will be dedicated to describing each specific experiment. For each
 
 \section{Experiments on the evaluation of complex predicates}\label{sec:predicates}
 
-\begin{figure}[H]
+\begin{figure}[t]
      \begin{adjustbox}{max width=1.5\linewidth,center}
      \centering
      \begin{subfigure}[b]{0.45\textwidth}
@@ -101,12 +101,11 @@ Next sections will be dedicated to describing each specific experiment. For each
      \label{fig:experiment:1}
 \end{figure}
 
-\textbf{Experimental results}.
+The first experiment is designed to measure the performance of CORE, DCERE, and DCORE under queries with complex predicates. At the same time, we evaluate the performance of the different distributions strategies from Section~\ref{subsec:dcere:distribution-strategies}. In Figure~\ref{fig:experiment:1}, we display the results of evaluating queries $Q_{1}$, $Q_{2}$, and $Q_{3}$ for an increasing number of complex events. The recognition time of all system increases as the number of complex event grows. Nevertheless, the degrading behaviour of CORE is more evident in this plot. Surprisingly, all distribution strategies have similar performance. The results of this experiment, validate our hypothesis that distribution strategy \emph{Maximal Complex Event Enumeration} does not perform well in practise, as discussed in Section~\ref{subsec:dcere:distribution-strategies}. We conclude that DCORE performs better than both CORE and DCERE. Furthermore, in the presence of complex and large streams, our novel distributed evaluation algorithm outperforms its sequential predecessor.
 
 \section{Experiments on the scalability of the framework}\label{sec:scalability}
 
-
-\begin{figure}[H]
+\begin{figure}[t]
      \begin{adjustbox}{max width=1.5\linewidth,center}
      \centering
      \begin{subfigure}[b]{0.45\textwidth}
@@ -132,7 +131,7 @@ Next sections will be dedicated to describing each specific experiment. For each
      \label{fig:experiment:2}
 \end{figure}
 
-\begin{figure}[H]
+\begin{figure}[t]
      \begin{adjustbox}{max width=1.2\linewidth,center}
      \centering
      \begin{subfigure}[b]{0.7\textwidth}
@@ -152,11 +151,9 @@ Next sections will be dedicated to describing each specific experiment. For each
      \label{fig:experiment:3:2}
 \end{figure}
 
-\textbf{Experimental results}.
-
 \section{Experiments on the novel evaluation algorithm}\label{sec:new-algorithm}
 
-\begin{figure}[H]
+\begin{figure}[t]
      \begin{adjustbox}{max width=1.5\linewidth,center}
      \centering
      \begin{subfigure}[b]{0.45\textwidth}
@@ -183,14 +180,14 @@ Next sections will be dedicated to describing each specific experiment. For each
 \end{figure}
 
 
-\begin{figure}[H]
+\begin{figure}[t]
   \centering
   \includegraphics[scale=0.5]{experiment_5_chart_1}
   \caption{???}
   \label{fig:experiment:5}
 \end{figure}
 
-\begin{figure}[H]
+\begin{figure}[t]
      \begin{subfigure}[b]{0.49\textwidth}
          \centering
          \includegraphics[width=\textwidth]{experiment_5_chart_2}
@@ -218,7 +215,5 @@ Next sections will be dedicated to describing each specific experiment. For each
      \caption{???}
      \label{fig:experiment:6}
 \end{figure}
-
-\textbf{Experimental results}.
 
 \section{Chapter summary}
