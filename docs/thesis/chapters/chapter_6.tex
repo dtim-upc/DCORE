@@ -10,19 +10,52 @@ In this section, we review some implementation details of DCORE. We implemented 
 
 \textbf{DCORE.} DCORE is implemented in Scala 2.12 \cite{scala}. Scala \cite{scala} is a statically typed programming language that fuses object-oriented and functional programming, which can freely interoperate with Java. DCORE is built on top of Akka \cite{akka} (Akka Cluster in particular). Akka is a set of open-source libraries for designing scalable, resilient system that span processor cores and networks. Akka’s use of the actor model provides a level of abstraction that makes it easier to write correct concurrent, parallel and distributed systems. DCORE depend on several libraries that are downloaded and compiled using Sbt \cite{sbt}. Sbt is a typesafe and parallel build tool for Scala and Java projects. Sbt guarantees reproducibility of the compilation of the project. As mentioned before, DCORE depends on our own fork of CORE that implements the novel distributed evaluation algorithm. DCORE is built as a Command-line interface program and has many available parameters. The landing page of the project has a detailed explanation on how to compile and run the project. We remark that we made an effort to guarantee that the implementation is correct and outputs the expected result. We designed several automated tests to validate that the implementation is close to the specification.
 
-\section{Experimental setting}\label{sec:setup}
+\section{Experimental setup}\label{sec:setup}
 
-% Comment that we run the experiments on a single physical machine because there should be noticeable differences.
-% But we should validate this hypothesis in future work.
+% In this section we describe the common settings to all the experiments and refer to each experiment for its particularities.
 
-% Explain how the queries and the workload is generated.
+We have compared our framework's implementation DCERE and DCORE against the leading CER system: CORE \cite{core}.
+We do not compare experimentally against other proposals (e.g., SASE \cite{sase}, Esper \cite{esper}, FlinkCEP \cite{flink-cep}, TESLA/T-REX \cite{tesla}) because CORE throughput is three orders of magnitudes higher than the rest of CER systems. CORE, DCERE, and CORE are semantically comparable since they all use the same query language. Unfortunately, CORE cannot evaluate non-unary predicates, so we had to extend the system with an ad-hoc rewrite and refine algorithms, similar to how DCERE is implemented, but without the distributed part.
 
-% Explain the three queries (like in CORE).
-% Q1: A;B;C
-% Q2: A;B+;C
-% Q3: A+;B+;C
+\textbf{Hardware.} We run our experiments on a server equipped with a 6-core (2 threads per core) i7-8700 processor running at stock frequency, 32GB of RAM, Arch Linux operating system, 5.15.7-arch1-1 kernel version, OpenJDK Runtime 11.0.12, and the OpenJDK 64-Bit Server Virtual Machine build 11.0.12. The Virtual Machine is restarted with 1024MB of freshly allocated memory before each experiment.
+
+We compare systems with respect to their performance. All reported numbers are averages taken over three repetitions of each experiment. We measure the performance of each system, expressed as the execution time of the experiment in milliseconds, as follows. To avoid measuring the data loading time of each system, we first load the input stream completely in main memory. We then start the timer, run the experiment, and stop the timer as soon as the last output is enumerated. Recognized complex events are written to /dev/null device to guarantee that the events are enumerated (avoiding \emph{dead call optimization}), but at the same time not measuring writing costs. The \emph{null device} is a virtual device present in all Linux systems that results in zero cost on writing operations. For consistency reasons, we have verified that all systems produced the same set of complex events.
+
+% Explain stream
+
+% Explain queries
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[c]{0.49\textwidth}
+    \centering
+    \begin{minted}[fontsize=\footnotesize, linenos=false, autogobble]{text}
+      SELECT *
+      FROM S
+      WHERE P
+      FILTER A[id] = B[id]
+    \end{minted}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.49\textwidth}
+    \begin{tabular}{l l}
+      \hline
+      $Q_{1}:$ & $P = A;B;C$ \\
+      \hline
+      $Q_{2}:$ & $P = A;B+;C$ \\
+      \hline
+      $Q_{3}:$ & $P = A+;B+;C$ \\
+      \hline
+    \end{tabular}
+  \end{subfigure}
+\end{figure}
+
+% Explain setup as in CORE
 
 \textbf{Reproducibility}. Explain that this is open-source, https://reproducibility.sigmod.org/
+
+% - Comment that we run the experiments on a single physical machine because there should be noticeable differences.
+% But we should validate this hypothesis in future work.
+
 
 \section{Experiments on the evaluation of complex predicates}\label{sec:predicates}
 
