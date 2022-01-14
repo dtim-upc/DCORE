@@ -74,29 +74,29 @@ Next sections will be dedicated to describing each specific experiment. For each
 \section{Experiments on the evaluation of complex predicates}\label{sec:predicates}
 
 \begin{figure}[t]
-     \begin{adjustbox}{max width=1.5\linewidth,center}
+     \begin{adjustbox}{max width=1.3\linewidth,center}
      \centering
-     \begin{subfigure}[b]{0.45\textwidth}
+     \begin{subfigure}[b]{0.7\textwidth}
          \centering
          \includegraphics[width=\textwidth]{experiment_1_chart_1}
          \caption{$Q_{1}$}
          \label{fig:experiment:1:subfigure:1}
      \end{subfigure}
-     \hfill
-     \begin{subfigure}[b]{0.45\textwidth}
+     \begin{subfigure}[b]{0.7\textwidth}
          \centering
          \includegraphics[width=\textwidth]{experiment_1_chart_2}
          \caption{$Q_{2}$}
          \label{fig:experiment:1:subfigure:2}
      \end{subfigure}
-     \hfill
-     \begin{subfigure}[b]{0.45\textwidth}
-         \centering
-         \includegraphics[width=\textwidth]{experiment_1_chart_3}
-         \caption{$Q_{3}$}
-         \label{fig:experiment:1:subfigure:3}
-     \end{subfigure}
      \end{adjustbox}
+     \begin{center}
+      \begin{subfigure}[b]{0.7\textwidth}
+          \centering
+          \includegraphics[width=\textwidth]{experiment_1_chart_3}
+          \caption{$Q_{3}$}
+          \label{fig:experiment:1:subfigure:3}
+      \end{subfigure}
+     \end{center}
      \caption{The performance of evaluating queries $Q_{1}$, $Q_{2}$, and $Q_{3}$ over stream $S_{1}$, $S_{2}$, $S_{3}$, respectively.}
      \label{fig:experiment:1}
 \end{figure}
@@ -105,7 +105,7 @@ In this section, we designed an experiment to measure the performance characteri
 
 \section{Experiments on the scalability of the framework}\label{sec:scalability}
 
-\begin{figure}[t]
+\begin{figure}[b]
      \begin{adjustbox}{max width=1.5\linewidth,center}
      \centering
      \begin{subfigure}[b]{0.45\textwidth}
@@ -149,7 +149,6 @@ In this section, we study the scalability of DCERE and DCORE. For this reason, w
          \label{fig:experiment:3:subfigure:1}
      \end{subfigure}
      \end{adjustbox}
-     \caption{???}
      \caption{The horizontal scalability of DCERE and DCORE evaluating query $Q_{2}$ over increasing number of processing units.}
      \label{fig:experiment:3}
 \end{figure}
@@ -158,33 +157,38 @@ The second experiment studies the horizontal scalability of the systems. In Figu
 
 \section{Experiments on DCORE's evaluation algorithm under Big Data requirements}\label{sec:new-algorithm}
 
+In this last section, we study the performance of the distributed evaluation algorithm of DCORE under heavy loads. For this reason, we designed three experiments. In the first experiment, we run DCORE with number of processing units = $1, 2, 4, 6, 8, 10$ over queries $Q_{1}$, $Q_{2}$, and $Q_{3}$. For each configuration, we run the experiment on an increasing number of complex events. Notice, the number of complex events in this experiment is \emph{orders of magnitudes (OOM)} larger than in previous ones. In Figure~\ref{fig:experiment:4}, we show the execution time of the processing of queries $Q_{1}$, $Q_{2}$, and $Q_{3}$ under different number of processing units. The results show that under small loads, the sequential version of the algorithm (corresponding to DCORE with a single processing unit) performs better than the distributed version. Under heavy loads (i.e., more than 1 million of complex events), the distribution pays off. The optimal number of processing units depend on the scale of the problem. For example, under a load of $10^{6}$ complex events the best configuration is 4 workers. We see that depending on the query, the performance of the system changes. We conclude that under small loads distributing the system only degrades performance, while under heavy loads the distribution speeds up the evaluation of complex queries.
+
 \begin{figure}[t]
-     \begin{adjustbox}{max width=1.5\linewidth,center}
+     \begin{adjustbox}{max width=1.3\linewidth,center}
      \centering
-     \begin{subfigure}[b]{0.45\textwidth}
+     \begin{subfigure}[b]{0.7\textwidth}
          \centering
          \includegraphics[width=\textwidth]{experiment_4_chart_1}
          \caption{$Q_{1}$}
          \label{fig:experiment:4:subfigure:1}
      \end{subfigure}
-     \begin{subfigure}[b]{0.45\textwidth}
+     \begin{subfigure}[b]{0.7\textwidth}
          \centering
          \includegraphics[width=\textwidth]{experiment_4_chart_2}
          \caption{$Q_{2}$}
          \label{fig:experiment:4:subfigure:2}
      \end{subfigure}
-     \begin{subfigure}[b]{0.45\textwidth}
+     \end{adjustbox}
+     \begin{center}
+     \begin{subfigure}[b]{0.7\textwidth}
          \centering
          \includegraphics[width=\textwidth]{experiment_4_chart_3}
          \caption{$Q_{3}$}
          \label{fig:experiment:4:subfigure:3}
      \end{subfigure}
-     \end{adjustbox}
+     \end{center}
      \caption{The horizontal scalability of DCORE under increasing number of processing units.}
      \label{fig:experiment:4}
 \end{figure}
 
-In this last section, we study the performance of the distributed evaluation algorithm of DCORE under heavy loads. For this reason, we designed three experiments. In the first experiment, we run DCORE with number of processing units = $1, 2, 4, 6, 8, 10$ over queries $Q_{1}$, $Q_{2}$, and $Q_{3}$. For each configuration, we run the experiment on an increasing number of complex events. Notice, the number of complex events in this experiment is \emph{orders of magnitudes (OOM)} larger than in previous ones. In Figure~\ref{fig:experiment:4}, we show the execution time of the processing of queries $Q_{1}$, $Q_{2}$, and $Q_{3}$ under different number of processing units. The results show that under small loads, the sequential version of the algorithm (corresponding to DCORE with a single processing unit) performs better than the distributed version. Under heavy loads (i.e., more than 1 million of complex events), the distribution pays off. The optimal number of processing units depend on the scale of the problem. For example, under a load of $10^{6}$ complex events the best configuration is 4 workers. We see that depending on the query, the performance of the system changes. We conclude that under small loads distributing the system only degrades performance, while under heavy loads the distribution speeds up the evaluation of complex queries.
+
+In the second experiment, we study the execution time of each processing unit during the evaluation of queries $Q_{1}$, $Q_{2}$, and $Q_{3}$. The goal of this experiment is to analyse the amount of work of each processing unit. A balanced distribution of work loads would result in overall performance of the system. In Figure~\ref{fig:experiment:5}, we show the results of the second experiment on $8$ processing units over a fixed length of stream. The results show no evidence of significant differences between the execution time on each processing unit. We conclude that this is a relevant factor on the performance of DCORE.
 
 \begin{figure}[t]
   \centering
@@ -193,9 +197,8 @@ In this last section, we study the performance of the distributed evaluation alg
   \label{fig:experiment:5}
 \end{figure}
 
-In the second experiment, we study the execution time of each processing unit during the evaluation of queries $Q_{1}$, $Q_{2}$, and $Q_{3}$. The goal of this experiment is to analyse the amount of work of each processing unit. A balanced distribution of work loads would result in overall performance of the system. In Figure~\ref{fig:experiment:5}, we show the results of the second experiment on $8$ processing units over a fixed length of stream. The results show no evidence of significant differences between the execution time on each processing unit. We conclude that this is a relevant factor on the performance of DCORE.
 
-\begin{figure}[t]
+\begin{figure}[H]
      \begin{subfigure}[b]{0.49\textwidth}
          \centering
          \includegraphics[width=\textwidth]{experiment_5_chart_2}
