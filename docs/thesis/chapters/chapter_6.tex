@@ -156,7 +156,7 @@ In this section, we study the scalability of DCERE and DCORE. For this reason, w
 
 The second experiment studies the horizontal scalability of the systems. In Figure~\ref{fig:experiment:3}, we show the execution time of the processing of query $Q_{2}$ on an increasing number of processing units (from $1$ to $10$). This experiment is run on two different streams. At the left, we executed the experiment with an stream that contained $1024$ complex events. At the right, the number of complex events is doubled, $2048$. This will allow us to study the impact of an increase of complexity in the scalability of the system. The results show that the system scales \emph{almost linearly} in the number of processing units until threshold $\tau$ of diminishing returns. DCERE's diminishing returns threshold is around $\tau = 8$, while DCORE's diminishing returns threshold is outside of the range of this experiment.
 
-\section{Experiments on the novel evaluation algorithm}\label{sec:new-algorithm}
+\section{Experiments on DCORE's evaluation algorithm under Big Data requirements}\label{sec:new-algorithm}
 
 \begin{figure}[t]
      \begin{adjustbox}{max width=1.5\linewidth,center}
@@ -184,17 +184,18 @@ The second experiment studies the horizontal scalability of the systems. In Figu
      \label{fig:experiment:4}
 \end{figure}
 
-The second experiment studies the horizontal scalability of the systems. In Figure~\ref{fig:experiment:3}, we show the execution time of the processing of query $Q_{2}$ on an increasing number of processing units (from $1$ to $10$). This experiment is run on two different streams. At the left, we executed the experiment with an stream that contained $1024$ complex events. At the right, the number of complex events is doubled, $2048$. This will allow us to study the impact of an increase of complexity in the scalability of the system. The results show that the system scales \emph{almost linearly} in the number of processing units until threshold $\tau$ of diminishing returns. DCERE's diminishing returns threshold is around $\tau = 8$, while DCORE's diminishing returns threshold is outside of the range of this experiment.
+In this last section, we study the performance of the distributed evaluation algorithm of DCORE under heavy loads. For this reason, we designed three experiments. In the first experiment, we run DCORE with number of processing units = $1, 2, 4, 6, 8, 10$ over queries $Q_{1}$, $Q_{2}$, and $Q_{3}$. For each configuration, we run the experiment on an increasing number of complex events. Notice, the number of complex events in this experiment is \emph{orders of magnitudes (OOM)} larger than in previous ones. In Figure~\ref{fig:experiment:4}, we show the execution time of the processing of queries $Q_{1}$, $Q_{2}$, and $Q_{3}$ under different number of processing units. The results show that under small loads, the sequential version of the algorithm (corresponding to DCORE with a single processing unit) performs better than the distributed version. Under heavy loads (i.e., more than 1 million of complex events), the distribution pays off. The optimal number of processing units depend on the scale of the problem. For example, under a load of $10^{6}$ complex events the best configuration is 4 workers. We see that depending on the query, the performance of the system changes. We conclude that under small loads distributing the system only degrades performance, while under heavy loads the distribution speeds up the evaluation of complex queries.
 
-
-\begin{figure}[H]
+\begin{figure}[t]
   \centering
   \includegraphics[scale=0.5]{experiment_5_chart_1}
   \caption{The execution time on each processing unit of DCORE evaluating queries $Q_{1}$, $Q_{2}$, and $Q_{3}$.}
   \label{fig:experiment:5}
 \end{figure}
 
-\begin{figure}[H]
+In the second experiment, we study the execution time of each processing unit during the evaluation of queries $Q_{1}$, $Q_{2}$, and $Q_{3}$. The goal of this experiment is to analyse the amount of work of each processing unit. A balanced distribution of work loads would result in overall performance of the system. In Figure~\ref{fig:experiment:5}, we show the results of the second experiment on $8$ processing units over a fixed length of stream. The results show no evidence of significant differences between the execution time on each processing unit. We conclude that this is a relevant factor on the performance of DCORE.
+
+\begin{figure}[t]
      \begin{subfigure}[b]{0.49\textwidth}
          \centering
          \includegraphics[width=\textwidth]{experiment_5_chart_2}
@@ -222,5 +223,7 @@ The second experiment studies the horizontal scalability of the systems. In Figu
      \caption{Comparison of the execution time of an optimal distributed system based on CORE against DCORE.}
      \label{fig:experiment:6}
 \end{figure}
+
+In this last experiment, we compare the performance of DCORE against an hypothetical optimal distributed system based on CORE. The goal of this experiment is to analyse how close is DCORE from an optimal distributed system with same performance characteristics on the evaluation algorithm (e.g., CORE). For this experiment, we evaluated queries $Q_{1}$, $Q_{2}$, and $Q_{3}$ over a stream of fixed length that produced $2 \cdot 10^{6}$ complex events. The experiment is repeated for different number of processes: $2, 4, 6, 8$. In Figure~\ref{fig:experiment:6}, we show the results of this experiment. The blue bars corresponds to the execution time of the experiment for DCORE, while the green bars corresponds to the execution time of CORE divided by the number of processing units of each iteration, which hypothetically corresponds to the best performance DCORE could ever achieve. The results show that DCORE is close to the optimal value when distributed over 2 processing units. However, the gap grows as the number of processing units increases. We conjecture that the cost of enumerating the first complex event in the data structure diminish the performance gains from distributions. In other words, in order to compensate the cost of enumerating the first path on the tECS, which is linear in the size of the complex event, each processing unit requires a reasonable amount of complex events.
 
 \section{Chapter summary}
