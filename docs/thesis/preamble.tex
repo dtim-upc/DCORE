@@ -1,7 +1,6 @@
 %
 % Preamble.tex
 %
-
 \usepackage[utf8]{inputenc} % Input encoding
 
 \usepackage[english]{babel} % use special characters and also translates some elements within the document.
@@ -11,13 +10,22 @@
 \usepackage[nottoc]{tocbibind} % Adds bibliography, figures to ToC
 
 % Hyperlinks \url{url} or \href{url}{name}
-\usepackage[colorlinks = true,
+\usepackage[colorlinks = false,
             linkcolor = blue,
             urlcolor  = blue,
             citecolor = blue,
             anchorcolor = blue]{hyperref}
 
 \usepackage{bm, stmaryrd} % math symbols
+
+\DeclareFontFamily{U}{mathx}{\hyphenchar\font45}
+\DeclareFontShape{U}{mathx}{m}{n}{
+      <5> <6> <7> <8> <9> <10>
+      <10.95> <12> <14.4> <17.28> <20.74> <24.88>
+      mathx10
+      }{}
+\DeclareSymbolFont{mathx}{U}{mathx}{m}{n}
+\DeclareMathSymbol{\bigtimes}{1}{mathx}{"91}
 
 % Defines a new environment to write your or claim - proof
 \newenvironment{claim}[1]{\par\noindent\underline{Claim:}\space#1}{}
@@ -77,7 +85,7 @@
 %\end{listing}
 
 
-\usepackage[vlined,ruled]{algorithm2e} % pseudo-code
+\usepackage[linesnumbered,vlined,ruled]{algorithm2e}
 % \newcommand\commentfont[1]{\footnotesize\ttfamily\colorbox{gray}{\textcolor{white}{#1}}}
 \newcommand\commentfont[1]{\small\ttfamily\textcolor{darkgray}{#1}}
 \SetCommentSty{commentfont}
@@ -92,6 +100,12 @@
 
 \usepackage[titletoc]{appendix}
 
+%%%% Extras
+
+\usepackage{multirow}
+\usepackage{todonotes}
+\usepackage{adjustbox}
+
 %%%% Glossaries & Acronyms
 
 \usepackage{glossaries}
@@ -101,10 +115,8 @@
 
 \newacronym{tecs}{tECS}{\emph{timed Enumerable Compact Set}}
 \newacronym{core}{CORE}{Complex Event Recognition Engine}
-\newacronym{mmde}{\textsc{MMDE}}{\emph{Maximal Match Disjoint Enumeration}}
 \newacronym{dte}{\textsc{DTE}}{\emph{Distributed tECS Enumeration}}
 \newacronym{cea}{CEA}{Complex Event Automata}
-\newacronym{rmi}{RMI}{Remote Method Invocation}
 \newacronym{dag}{DAG}{Directed Acyclic Graph}
 \newacronym{cer}{CER}{Complex Event Recognition}
 \newacronym{cep}{CEP}{Complex Event Processing}
@@ -130,11 +142,14 @@
 
 %%%% New commands
 
-\newcommand{\comment}[1]{} % \comment{this will not appear in the document}
-\newcommand{\cea}{CEA $\mathcal{A} = (Q, \Delta, q_{0}, F)$}
+\newcommand{\InDBrackets}[1]{\llbracket #1 \rrbracket}
+\newcommand{\InSBrackets}[1]{\llceil #1 \rrfloor}
+\newcommand{\cea}{CEA ${\mathcal{A} = (Q, \Delta, q_{0}, F)}$}
+\newcommand{\enumCEAall}{${\llbracket \mathcal{A} \rrbracket}^{\epsilon}(S)$}
 \newcommand{\enumCEA}{${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$}
 \newcommand{\enumNode}{${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$}
-\newcommand{\tecs}{${\mathcal{E}}$}
-\newcommand{\InDoubleBrackets}[1]{\llbracket #1 \rrbracket}
+\newcommand{\enumNodeDef}{${\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) := \{ ([i, j], D) | (i, D) \in {\llbracket \text{n} \rrbracket}_{\mathcal{E}} \ \land \ j - i \leq \epsilon \}$}
 
-\newcommand{\code}[1]{\texttt{#1}} % \code{foo.hs} environment
+\newcommand{\comment}[1]{} % \comment{this will not appear in the document}
+\newcommand{\code}[1]{\texttt{#1}}
+\definecolor{bg}{rgb}{0.95,0.95,0.95}

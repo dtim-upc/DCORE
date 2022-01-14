@@ -61,10 +61,7 @@
   \let\footnotesize\small
   \let\footnoterule\relax
   \let \footnote \thanks
-  % \begin{center}
-  %   \includegraphics[width=0.7\textwidth]{figures/upc_logo.png}
-  % \end{center}
-  \null\vfil  
+  \null\vfil
   \begin{center}%
     \smallskip
     \hrule % Horizontal line
@@ -82,6 +79,9 @@
     \vskip 1em%
     {\large \@@date \par}%       % Set date in \large size.
   \vfil
+  % \begin{center}
+  %   \includegraphics[width=0.7\textwidth]{figures/upc_logo.png}
+  % \end{center}
   {\normalsize FACULTAT D’INFORMÀTICA DE BARCELONA (FIB)\\}
   {\normalsize UNIVERSITAT POLITÈCNICA DE CATALUNYA (UPC) – BarcelonaTech}
   \vskip 0.1em%
@@ -139,6 +139,7 @@
 \theoremstyle{plain}
 \newtheorem{example}{Example}[chapter]
 \newtheorem{complexity}{Complexity}[chapter]
+\newtheorem*{theorem*}{Theorem}
 \newtheorem{theorem}{Theorem}[chapter]
 \newtheorem{corollary}[theorem]{Corollary}
 \newtheorem{lemma}[theorem]{Lemma}
@@ -155,11 +156,11 @@
 \newcommand{\eref}[1]{Equation~\ref{#1}}
 \newcommand{\cref}[1]{Chapter~\ref{#1}}
 \newcommand{\sref}[1]{Section~\ref{#1}}
-\newcommand{\aref}[1]{Appendix~\ref{#1}}
-\newcommand{\lref}[1]{Source Code~\ref{#1}}
+\newcommand{\lref}[1]{Listing~\ref{#1}}
 \newcommand{\dref}[1]{Definition~\ref{#1}}
 \newcommand{\pref}[1]{Proposition~\ref{#1}}
-\newcommand{\qref}[1]{Research Questions~\ref{#1}}
+\newcommand{\aref}[1]{Algorithm~\ref{#1}}
+\newcommand{\apref}[1]{Appendix~\ref{#1}}
 \renewcommand{\topfraction}{0.85}
 \renewcommand{\bottomfraction}{.85}
 \renewcommand{\textfraction}{0.1}
@@ -180,8 +181,46 @@
 }
 
 \newcommand\acknowledgements[1]{
+\cleardoublepage
 \thispagestyle{plain}
+% \setlength{\parindent}{20pt}
+% \setlength{\parskip}{0pt}
 \begin{center}{\huge{\textit{Acknowledgements}} \par}\end{center}
+\vspace{20pt}
 {\normalsize #1}
 \vfil\vfil\null
+% \setlength{\parindent}{0pt}
+% \setlength{\parskip}{2.0ex plus0.5ex minus0.2ex}
+}
+
+\newenvironment{pagecentered}{%
+\vspace*{\stretch{2}}%
+\begin{center}%
+\begin{minipage}{.8\textwidth}%
+}{%
+\end{minipage}%
+\end{center}%
+\vspace*{\stretch{3}}\clearpage}
+
+\newcommand{\license}{%
+  \thispagestyle{empty}
+  \begin{pagecentered}
+
+  \doublespacing
+
+  DISTRIBUTED COMPLEX EVENT RECOGNITION \\
+  COPYRIGHT \\
+  2022 \\
+  Arnau Abella \bigskip
+
+  \singlespacing
+
+  This work is licensed under a \href{https://www.gnu.org/licenses/gpl-3.0.en.html}{GNU General Public License v3.0}. To view a copy of this license, visit \bigskip
+
+  \url{https://www.gnu.org/licenses/gpl-3.0.en.html} \bigskip
+
+  The complete source code for this document is available from \bigskip
+
+  \url{https://github.com/dtim-upc/DCORE}
+  \end{pagecentered}
 }

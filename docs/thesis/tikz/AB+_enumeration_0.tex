@@ -12,7 +12,7 @@
 \tikzstyle{initial}= [black!70]
 \tikzstyle{every state}=[inner sep=0pt, minimum size=10pt]
 
-\node[draw, align=left, scale=0.5] at (0,5) {$p_{0}:$\\\quad$s = 0$\\\quad$a = 3$};
+% \node[draw, align=left, scale=0.5] at (0,5) {$p_{0}:$\\\quad$s = 0$\\\quad$a = 3$};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Nodes
 
@@ -27,7 +27,7 @@
 \node (3r) [state, right = of 2r] {$3$\color{red}{\tiny{1}}};
 \node (v3) [state, above right = of v2, right = of 3l] {$\lor$\color{red}{\tiny{6}}};
 \node (v4) [state, above right = of v3] {$\lor$\color{red}{\tiny{7}}};
-\node (4l) [state, above = of v4] {$4$\color{red}{\tiny{7}}};
+\node (4l) [state, above = of v4, draw = green!80!black] {$4$\color{red}{\tiny{7}}};
 \node (4r) [state, right = of 3r] {$4$\color{red}{\tiny{1}}};
 
 \path [-stealth, thick, green!80!black]
@@ -52,18 +52,6 @@
     (v1) edge node {} (1)
     (v3) edge node {} (v2)
     (4r) edge node {} (0)
-    ;
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% States/ul
-
-\node (q2)  [state, above left= of 0, draw=none]   [color=blue] {$q_{2}$};
-\node (q3)  [state, above right = of 4r, draw=none] [color=blue] {$q_{3}$};
-
-\path [-stealth, thick, color=blue]
-    (q2) edge [bend right] node {} (0)
-    (q3) edge [bend left] node {} (4r)
-    (4r) edge [bend right] node {} (4l)
-    (4l) edge [bend right] node {} (v4)
     ;
 
 \end{tikzpicture}

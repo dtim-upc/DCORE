@@ -1,0 +1,26 @@
+% \documentclass[border=0.2cm]{standalone}
+
+% \usepackage{tikz, amsmath, amssymb}
+% \usetikzlibrary{automata, arrows.meta, positioning, shapes}
+
+% \begin{document}
+\begin{tikzpicture}[node distance = 2cm,
+  on grid,
+  auto,
+  every initial by arrow/.style={-stealth, thick},
+  every loop/.style={stealth-},
+]
+
+\node (q1) [state, initial, initial left, initial text={CEA $\mathcal{A:}$}] {$q_{1}$};
+\node (q2) [state, right = of q1] {$q_{2}$};
+\node (q3) [state, accepting, right = of q2] {$q_{3}$};
+
+\path [-stealth, thick]
+    (q1) edge node [above = .2cm] {$\big[\substack{\text{A}\\< 30\\}\big]| \bullet$} (q2)
+    (q2) edge node [above = .2cm] {$\big[\substack{\text{B}\\> 30\\}\big]| \bullet$} (q3)
+         edge [loop below] node {\tiny TRUE $|\circ$} ()
+    (q3) edge [loop above] node {$\big[\substack{\text{B}\\> 30\\}\big] | \bullet$} ()
+         edge [loop below] node {\tiny TRUE $|\circ$} ()
+    ;
+\end{tikzpicture}
+% \end{document}

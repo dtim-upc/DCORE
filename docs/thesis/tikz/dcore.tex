@@ -1,0 +1,43 @@
+% \documentclass[border=0.2cm]{standalone}
+
+% \usepackage{tikz, amsmath, amssymb}
+% \usetikzlibrary{automata, arrows.meta, positioning, shapes, calc}
+
+% \begin{document}
+\begin{tikzpicture}[node distance = 2cm,
+  on grid,
+  auto,
+  every initial by arrow/.style={-stealth, thick},
+  every loop/.style={stealth-},
+]
+
+\tikzstyle{every state}=[inner sep=0pt, minimum size=10pt]
+
+\node (master) [state] {\tiny\textsc{ Master } };
+
+\node (invis) [state, below of = master, draw=none, node distance = 3cm] {$$};
+\node (dots) [state, right of = invis, draw=none, node distance = 1cm] {$\ldots$};
+\node (s2) [state, left of = invis, node distance = 2cm] {$\substack{\textsc{Slave 2}\\ \\ \langle S, \mathcal{Q} \rangle \to \mathcal{A}\\ \mathcal{A} \to C'_2}$};
+\node (s1) [state, left of = s2, node distance = 3cm] {$\substack{\textsc{Slave 1}\\ \\ \langle S, \mathcal{Q} \rangle \to \mathcal{A}\\ \mathcal{A} \to C'_1}$};
+\node (sn) [state, right of = dots, node distance = 3cm] {$\substack{\textsc{Slave n}\\ \\ \langle S, \mathcal{Q} \rangle \to \mathcal{A}\\ \mathcal{A} \to C'_n}$};
+
+\node (stream) [state, draw=none, above left of = master] {$\langle S, \mathcal{Q} \rangle$};
+\node (ce) [state, draw=none, above right of = master] {$\substack{Complex\\Events}$};
+
+\path [-stealth, thick, color=teal]
+  (stream) edge [] node {} (master)
+  (master) edge [bend right=2] node [left] {\tiny$\langle S, \mathcal{Q} \rangle$} (s1)
+  (master) edge [bend right=2] node [left] {\tiny$\langle S, \mathcal{Q} \rangle$} (s2)
+  (master) edge [bend right=2] node [left] {} (dots)
+  (master) edge [bend right=2] node [left=0.2cm] {\tiny$\langle S, \mathcal{Q} \rangle$} (sn)
+  ;
+
+\path [-stealth, thick, color=red]
+  (master) edge [] node {} (ce)
+  (s1) edge [bend right=2] node [below=0.2cm] {\tiny$C'_1 \subseteq \mathcal{C}$} (master)
+  (s2) edge [bend right=2] node [below=0.5cm] {\tiny$C'_2 \subseteq \mathcal{C}$} (master)
+  (dots) edge [bend right=2] node [] {} (master)
+  (sn) edge [bend right=2] node [above=0.2cm] {\tiny$C'_n \subseteq \mathcal{C}$} (master)
+  ;
+\end{tikzpicture}
+% \end{document}
