@@ -101,7 +101,7 @@ Next sections will be dedicated to describing each specific experiment. For each
      \label{fig:experiment:1}
 \end{figure}
 
-The first experiment is designed to measure the performance of CORE, DCERE, and DCORE under queries with complex predicates. At the same time, we evaluate the performance of the different distributions strategies from Section~\ref{subsec:dcere:distribution-strategies}. In Figure~\ref{fig:experiment:1}, we display the results of evaluating queries $Q_{1}$, $Q_{2}$, and $Q_{3}$ for an increasing number of complex events. The recognition time of all system increases as the number of complex event grows. Nevertheless, the degrading behaviour of CORE is more evident in this plot. Surprisingly, all distribution strategies have similar performance. The results of this experiment, validate our hypothesis that distribution strategy \emph{Maximal Complex Event Enumeration} does not perform well in practise, as discussed in Section~\ref{subsec:dcere:distribution-strategies}. We conclude that DCORE performs better than both CORE and DCERE. Furthermore, in the presence of complex and large streams, our novel distributed evaluation algorithm outperforms its sequential predecessor.
+In this section, we designed an experiment to measure the performance characteristics of CORE, DCERE, and DCORE under queries with complex predicates. This experiment also evaluates the performance of DCERE under different distributions strategies. In Figure~\ref{fig:experiment:1}, we display the results of evaluating queries $Q_{1}$, $Q_{2}$, and $Q_{3}$ for an increasing number of complex events. The recognition time of all system increases as the number of complex event grows. Nevertheless, the degrading behaviour of CORE is more evident in this plot. Surprisingly, all distribution strategies have similar performance. The results of this experiment, validate our hypothesis that distribution strategy \emph{Maximal Complex Event Enumeration} does not perform well in practise, as discussed in Section~\ref{subsec:dcere:distribution-strategies}. We conclude that DCORE performs better than both CORE and DCERE. Furthermore, in the presence of complex and large streams, our novel distributed evaluation algorithm outperforms its sequential predecessor.
 
 \section{Experiments on the scalability of the framework}\label{sec:scalability}
 
@@ -127,11 +127,13 @@ The first experiment is designed to measure the performance of CORE, DCERE, and 
          \label{fig:experiment:2:subfigure:3}
      \end{subfigure}
      \end{adjustbox}
-     \caption{???}
+     \caption{The coefficient of variation of evaluating queries $Q_{1}$, $Q_{2}$, and $Q_{3}$ under distributions strategies RR, PoTC, ES, and MCEE.}
      \label{fig:experiment:2}
 \end{figure}
 
-\begin{figure}[t]
+In this section, we study the scalability of DCERE and DCORE. For this reason, we designed two different experiments. The first experiment studies the quality on the load-balancing of the different distribution strategies, including DCORE. For this experiment, we compute the \emph{coefficient of variation} of the load of each processing unit during the evaluation of the queries $Q_{1}$, $Q_{2}$, and $Q_{3}$. The coefficient of variation (CV) is a standarized measure of \emph{dispersion} of a frequency distribution and it is defined as the ratio of the \emph{standard deviation} to the \emph{mean}. The lower the CV the less variability among the loads of the processing units; hence, a better scalability of the system on uniform processing units. In Figure~\ref{fig:experiment:2}, we show the coefficient of variation of the different distribution strategies (i.e. RR, PoTC, ES, and MCEE) and DCORE. The results show that all systems have a low coefficient of variation ($< 0.3$), with almost optimal CV on DCORE.
+
+\begin{figure}[H]
      \begin{adjustbox}{max width=1.2\linewidth,center}
      \centering
      \begin{subfigure}[b]{0.7\textwidth}
@@ -148,8 +150,11 @@ The first experiment is designed to measure the performance of CORE, DCERE, and 
      \end{subfigure}
      \end{adjustbox}
      \caption{???}
-     \label{fig:experiment:3:2}
+     \caption{The horizontal scalability of DCERE and DCORE evaluating query $Q_{2}$ over increasing number of processing units.}
+     \label{fig:experiment:3}
 \end{figure}
+
+The second experiment studies the horizontal scalability of the systems. In Figure~\ref{fig:experiment:3}, we show the execution time of the processing of query $Q_{2}$ on an increasing number of processing units (from $1$ to $10$). This experiment is run on two different streams. At the left, we executed the experiment with an stream that contained $1024$ complex events. At the right, the number of complex events is doubled, $2048$. This will allow us to study the impact of an increase of complexity in the scalability of the system. The results show that the system scales \emph{almost linearly} in the number of processing units until threshold $\tau$ of diminishing returns. DCERE's diminishing returns threshold is around $\tau = 8$, while DCORE's diminishing returns threshold is outside of the range of this experiment.
 
 \section{Experiments on the novel evaluation algorithm}\label{sec:new-algorithm}
 
@@ -175,19 +180,21 @@ The first experiment is designed to measure the performance of CORE, DCERE, and 
          \label{fig:experiment:4:subfigure:3}
      \end{subfigure}
      \end{adjustbox}
-     \caption{???}
+     \caption{The horizontal scalability of DCORE under increasing number of processing units.}
      \label{fig:experiment:4}
 \end{figure}
 
+The second experiment studies the horizontal scalability of the systems. In Figure~\ref{fig:experiment:3}, we show the execution time of the processing of query $Q_{2}$ on an increasing number of processing units (from $1$ to $10$). This experiment is run on two different streams. At the left, we executed the experiment with an stream that contained $1024$ complex events. At the right, the number of complex events is doubled, $2048$. This will allow us to study the impact of an increase of complexity in the scalability of the system. The results show that the system scales \emph{almost linearly} in the number of processing units until threshold $\tau$ of diminishing returns. DCERE's diminishing returns threshold is around $\tau = 8$, while DCORE's diminishing returns threshold is outside of the range of this experiment.
 
-\begin{figure}[t]
+
+\begin{figure}[H]
   \centering
   \includegraphics[scale=0.5]{experiment_5_chart_1}
-  \caption{???}
+  \caption{The execution time on each processing unit of DCORE evaluating queries $Q_{1}$, $Q_{2}$, and $Q_{3}$.}
   \label{fig:experiment:5}
 \end{figure}
 
-\begin{figure}[t]
+\begin{figure}[H]
      \begin{subfigure}[b]{0.49\textwidth}
          \centering
          \includegraphics[width=\textwidth]{experiment_5_chart_2}
@@ -212,7 +219,7 @@ The first experiment is designed to measure the performance of CORE, DCERE, and 
          \caption{$8$ processes}
          \label{fig:experiment:6:subfigure:4}
      \end{subfigure}
-     \caption{???}
+     \caption{Comparison of the execution time of an optimal distributed system based on CORE against DCORE.}
      \label{fig:experiment:6}
 \end{figure}
 
