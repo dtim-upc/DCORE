@@ -141,4 +141,4 @@ The usefulness of CEA comes from the fact that CEL cab be translated into CEA \c
 
 Our evaluation algorithm will compute the right-hand side of this equation. It requires that the input CEA $\mathcal{A}$ is \emph{I/O deterministic}: for every pair of transitions $q \xrightarrow[]{P_{1}/m_{1}} q_{1}$ and $q \xrightarrow[]{P_{2}/m_{2}} q_{2}$ from the state $q$, if $P_{1} \cap P_{2} \ne \emptyset$ then $m_{1} \ne m_{2}$. To put it another way, an event $t$ may trigger both transitions at the same time only if one transition marks the event, but the other does not. In \cite{formal-framework-cep,formal-framework-cer}, it was shown that any CEA can be I/O-determinized, with a possibly exponential blow-up in the size of the automaton.
 
-\todo[inline]{falta introduir l'enumeració de complex events i la propietat de constant delay enumeration}
+\todo[inline]{falta introduir la data structure, l'enumeració de complex events i la propietat de constant delay enumeration}
