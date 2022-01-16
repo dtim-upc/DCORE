@@ -1,0 +1,78 @@
+\documentclass[xcolor=pdftex,dvipsnames,table]{beamer}
+
+\mode<presentation>
+{
+  \usetheme{metropolis}
+  \usecolortheme{default}
+}
+
+\usepackage[utf8]{inputenc}
+
+\usepackage[english]{babel}
+
+\usepackage{amsmath,amsfonts,amssymb,amscd,amsthm, bm, stmaryrd}
+
+\usepackage{minted}
+
+\usepackage{enumitem}
+
+\usepackage{tikz}
+\usetikzlibrary{external, automata, arrows.meta, positioning, calc}
+\tikzexternalize[shell escape=-shell-escape,mode=graphics if exists, prefix=tikz/cache/]
+\newcommand{\inputtikz}[1]{%
+  \tikzsetnextfilename{#1}%
+  \input{tikz/#1.tex}
+}
+
+\usepackage{graphicx}
+\graphicspath{{./figures/}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{Distributed Complex Event Recognition}
+\subtitle{Master's Thesis\\
+  \tiny Master in Innovation and Research in Informatics
+}
+\author{Arnau Abella}
+\institute[UPC]{%
+  {\tiny %
+   \textit{Supervisors:}
+   \begin{itemize}[leftmargin=5pt]
+     \item[] Sergi Nadal, Universitat Politècnica de Catalunya
+     \item[] Stijn Vansummeren, UHasselt – Hasselt University
+   \end{itemize}
+  }
+  \vspace{10pt}
+  \textrm{\scriptsize%
+    Facultat d’Informàtica de Barcelona (FIB)\\
+    Universitat Politècnica de Catalunya (UPC)\\
+  }
+}
+\date{\tiny \today}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\AtBeginSection[]
+{
+  \begin{frame}<beamer>
+      \frametitle{Table of Contents}
+      \tableofcontents[currentsection]
+  \end{frame}
+}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}{Foo}
+  \cite{core}
+\end{frame}
+
+\begin{frame}[allowframebreaks]
+  \frametitle{Bibliography}
+  \bibliographystyle{unsrtnat}
+  \bibliography{bibliography}
+\end{frame}
+
+\end{document}
+

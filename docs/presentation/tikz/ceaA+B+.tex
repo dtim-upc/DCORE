@@ -1,0 +1,27 @@
+% \documentclass[border=0.2cm]{standalone}
+
+% \usepackage{tikz}
+% \usetikzlibrary{automata, arrows.meta, positioning, shapes}
+
+% \begin{document}
+\begin{tikzpicture}[node distance = 2cm,
+  on grid,
+  auto,
+  every initial by arrow/.style={-stealth, thick},
+  every loop/.style={stealth-},
+]
+
+\node (q1) [state, initial, initial left, initial text={CEA $\mathcal{A:}$}, ] {$q_{1}$};
+\node (q2) [state, right = of q1] {$q_{2}$};
+\node (q3) [state, accepting, right = of q2] {$q_{3}$};
+
+\path [-stealth, thick]
+    (q1) edge node {A $| \ \bullet$} (q2)
+    (q2) edge node {B $| \ \bullet$} (q3)
+         edge [loop below] node {TRUE $| \ \circ$} ()
+         edge [loop above] node {A $| \ \bullet$} ()
+    (q3) edge [loop above] node {B $| \ \bullet$} ()
+         edge [loop below] node {TRUE $| \ \circ$} ()
+    ;
+\end{tikzpicture}
+% \end{document}

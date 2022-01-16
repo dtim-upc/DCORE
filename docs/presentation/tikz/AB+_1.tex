@@ -1,0 +1,37 @@
+% \documentclass[border=0.2cm]{standalone}
+
+% \usepackage{tikz}
+% \usetikzlibrary{automata, arrows.meta, positioning, shapes}
+
+% \begin{document}
+\begin{tikzpicture}[node distance = 0.8cm,
+  on grid,
+  auto,
+]
+
+\tikzstyle{initial}= [black!70]
+\tikzstyle{every state}=[inner sep=0pt, minimum size=10pt]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Nodes
+
+\node (0') [state, initial] {$0$\color{red}{\tiny{1}}};
+\node (0)  [state, above = of 0'] {$0$\color{red}{\tiny{1}}};
+\node (1)  [state, above = of 0] {$1$\color{red}{\tiny{1}}};
+
+\path [-stealth, thick]
+    (0) edge node {} (0')
+    (1) edge node {} (0)
+    ;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% States/ul
+
+\node (q2)  [state, above left= of 0, draw=none] [color=blue] {$q_{2}$};
+\node (q3)  [state, above left= of 1, draw=none] [color=blue] {$q_{3}$};
+
+\path [-stealth, thick, color=blue]
+    (q2) edge [bend right] node {} (0)
+    (q3) edge [bend right] node {} (1)
+    ;
+
+\end{tikzpicture}
+% \end{document}
