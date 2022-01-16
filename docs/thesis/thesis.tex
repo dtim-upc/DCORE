@@ -14,7 +14,7 @@
   Stijn Vansummeren, UHasselt – Hasselt University
 }
 
-\date{\today}
+\date{January, 2022}
 
 \begin{document}
 
@@ -32,7 +32,7 @@
 }
 
 \abstract{%
-  Complex Event Recognition (CER) has emerged as a prominent technology for detecting situations of interest, in the form of query patterns, over large streams of data in real-time. Thus, having query evaluation mechanisms that minimize latency is a shared desiderata. Nonetheless, the evaluation of CER queries is well known to be computationally expensive. Indeed, such evaluation requires the maintenance of a set of partial matches which grows super-linearly in the number of processed events. While most prominent solutions for CER run in a centralized setting, this has proved inefficient for Big Data requirements, where it is necessary to scale the system to cope with an increasing arrival rate of events while maintaining the throughput. To overcome these issues, we propose a novel distributed CER system that focuses on the efficient evaluation of a large class of complex event queries, including $n$-ary predicates, time windows, and partition-by event correlation operator. This system uses a state-of-the-art automaton-based distributed algorithm that circumvents the super-linear partial match problem. Moreover, in the presence of heavy workloads, the system can scale-out by increasing the number of processing units with little overhead. We additionally provide a proof of correctness of the algorithm. We experimentally compare our system against the state-of-the-art sequential CER engine that inspired our work and show that our system outperform its predecessor in the presence of queries with complex predicates. Furthermore, we show that, in the presence of Big Data requirements, our system performance is overall better.
+  Complex Event Recognition (CER) has emerged as a prominent technology for detecting situations of interest, in the form of query patterns, over large streams of data in real-time. Thus, having query evaluation mechanisms that minimize latency is a shared desiderata. Nonetheless, the evaluation of CER queries is well known to be computationally expensive. Indeed, such evaluation requires maintaining a set of partial matches which grows super-linearly in the number of processed events. While most prominent solutions for CER run in a centralized setting, this has proved inefficient for Big Data requirements, where it is necessary to scale the system to cope with an increasing arrival rate of events while maintaining a stable throughput. To overcome these issues, we propose a novel distributed CER system that focuses on the efficient evaluation of a large class of complex event queries, including $n$-ary predicates, time windows, and partition-by event correlation operator. This system uses a state-of-the-art automaton-based distributed algorithm that circumvents the super-linear partial match problem. Moreover, in the presence of heavy workloads, the system can scale-out by increasing the number of processing units with little overhead. We additionally provide a proof of correctness of the algorithm. We experimentally compare our system against the state-of-the-art sequential CER engine that inspired our work and show that our system outperform its predecessor in the presence of queries with complex predicates. Furthermore, we show that, in the presence of Big Data requirements, our system performance is overall better.
 }
 
 \rhead{\thepage}

@@ -25,7 +25,6 @@ We compare systems with respect to their performance. All reported numbers are a
 
 As far as we are concerned, there does not exist a standard benchmark for complex event recognition. For this reason, we experiment with a set of queries over synthetic data. We considered sequence queries and iteration queries for our experiments, which have been used for benchmarking in CER before (for example \cite{cayuga}~and~\cite{experiment-example}). Specifically, we have considered the three queries depicted in Figure \ref{fig:queriesExperiments} where the pattern \textrm{P} is different on each query. We remark that the considered experimental queries contain a \emph{binary predicate} (i.e., \code{A[id] = B[id]}). Indeed, it would be interesting to evaluate other types of complex predicates, but this would require an actual implementation of the rewrite and refine algorithm, which is outside of the scope of this work. 
 
-
 \begin{figure}[H]
   \centering
   \begin{subfigure}[c]{0.49\textwidth}
