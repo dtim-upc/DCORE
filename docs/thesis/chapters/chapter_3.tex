@@ -47,10 +47,6 @@ Let \textbf{X} be a set of \emph{variables}, which includes all event types, $\t
 We write $C_{V}$ for the complex event that is obtained from valuation $V$ by forgetting the variables in $V$: $C_{V}(time) = V(time)$ and $C_{V}(data) = \bigcup\limits_{X \in \textbf{X}} V(X)$. The semantics of CEQL will be defined in terms of valuations, which are subsequently transformed into complex events as explained.
 
 \textbf{Predicates}. A (unary) \emph{predicate} is a possibly infinite set $P$ of data-tuples. A data-tuple $t$ \emph{satisfies} predicate $P$, denote $t \Vdash P$, if, and only if, $t \in P$. We generalize this definition from data-tuples to sets by taking a ``for all'' extension: a set of data-tuples $T$ satisfies $P$, denoted by $T \Vdash P$, if, and only if, $\displaystyle\mathop{\forall}_{t \in T} t \vDash P$.
-\todo[inline]{Un predicat es defineix com un conjunt de data-tuples?}
-
-\textbf{Syntax}. The abstract syntax of CEQL is as follows:
-
 \begin{figure}[H]
   \begin{minted}[xleftmargin=0pt, linenos=false, fontsize=\footnotesize]{text}
     SELECT        [selection strategy] <list of variables>
@@ -106,9 +102,9 @@ In this grammar, $R$ is an event type in \textbf{T}, $X$ is a variable in \textb
 
 \section{Computational model}\label{sec:cea}
 
-As explained in Section~\ref{sec:ceql}, evaluating a CEQL query corresponds to evaluating the query's \code{SELECT-WHERE-WITHIN} clauses on either a single stream, or multiple different substreams. In our work, the \code{SELECT-WHERE} part of a query is compiled into a \emph{Complex Event Automaton} \cite{formal-framework-cep,formal-framework-cer}, which is a form of finite automaton that produces complex events. Our evaluation algorithm is then defined in terms of CEA: it takes as input a CEA $\mathcal{A}$, the time-window $\epsilon$ specified in the \code{WITHIN} clause, and a stream $S$, and uses this to compute $\InDBrackets{\varphi}(S)$.
+As explained in Section~\ref{sec:ceql}, evaluating a CEQL query corresponds to evaluating the query's \code{SELECT-WHERE-WITHIN} clauses on either a single stream, or multiple different substreams. In our work, the \code{SELECT-WHERE} part of a query is compiled into a \emph{Complex Event Automaton} \cite{formal-framework-cep,formal-framework-cer}, which is a form of finite automaton that produces complex events. Our evaluation algorithm is then defined in terms of CEA: it takes as input a CEA $\mathcal{A}$, the time-window $\epsilon$ specified in the \code{WITHIN} clause, and a stream $S$, and uses this to compute $\InDBrackets{\varphi}(S)$. Formally, a \emph{Complex Event Automaton (CEA)} is a tuple $\mathcal{A} = (Q, \Delta, q_{0}, F)$ where $Q$ is a finite set of states, $\Delta \subseteq Q \times \textbf{P} \times \{\bullet, \circ\} \times (Q \setminus \{ q_{0} \})$ is a finite transition, $q_{0} \in Q$ is the initial state, and $F \subseteq Q$ is the set of final states. We will denote transitions in $\Delta$ by $q \xrightarrow[]{P/m} q'$. A \emph{run} of $\mathcal{A}$ over stream $S$ from positions $i$ to $j$ is a sequence $\rho := q_{i} \xrightarrow[]{P_{i}/m_{i}} q_{i+1} \xrightarrow[]{P_{i+1}/m_{i+1}} \ldots \xrightarrow[]{P_{j}/m_{j}} q_{j+1}$ such that $q_{i}$ is the initial state of $\mathcal{A}$ and for every $k \in [i,j]$ it holds that $q_{k} \xrightarrow[]{P_{k}/m_{k}} q_{k+1} \in \Delta$ and $t_{k} \vDash P_{k}$. A run $\rho$ is \emph{accepting} if $q_{j+1} \in F$. An accepting run of $\mathcal{A}$ over $S$ from $i$ to $j$ naturally defines the complex event $C_{\rho} := ([i, j], \{ k \ | \ i \le k \le j \land m_{k} = \bullet \})$. Finally, we define the semantics of $\mathcal{A}$ over a stream $S$ as $\InDBrackets{\mathcal{A}}(S) := \{ C_{\rho} \ | \ \rho \text{ is an accepting run of } \mathcal{A} \text{ over } S\}$.
 
-\begin{figure}[h]
+\begin{figure}[t]
   \centering
   \begin{subfigure}[b]{\textwidth}
     \centering
@@ -128,8 +124,6 @@ As explained in Section~\ref{sec:ceql}, evaluating a CEQL query corresponds to e
   In Figure~\ref{fig:cea} we show the compilation of the query from Figure~\ref{fig:query:2} into an equivalent CEA $\mathcal{A}$. We depict predicates by listing, in array notation, the event type, and the constraint on the temperature attribute. The initial state is $q_{1}$ and there is only one final state: $q_{4}$. The figure also includes an example stream $S$, where the values correspond to the event type, the identifier attribute, and the temperature attribute, in that order.
 \end{example}
 
-Formally, a \emph{Complex Event Automaton (CEA)} is a tuple $\mathcal{A} = (Q, \Delta, q_{0}, F)$ where $Q$ is a finite set of states, $\Delta \subseteq Q \times \textbf{P} \times \{\bullet, \circ\} \times (Q \setminus \{ q_{0} \})$ is a finite transition, $q_{0} \in Q$ is the initial state, and $F \subseteq Q$ is the set of final states. We will denote transitions in $\Delta$ by $q \xrightarrow[]{P/m} q'$. A \emph{run} of $\mathcal{A}$ over stream $S$ from positions $i$ to $j$ is a sequence $\rho := q_{i} \xrightarrow[]{P_{i}/m_{i}} q_{i+1} \xrightarrow[]{P_{i+1}/m_{i+1}} \ldots \xrightarrow[]{P_{j}/m_{j}} q_{j+1}$ such that $q_{i}$ is the initial state of $\mathcal{A}$ and for every $k \in [i,j]$ it holds that $q_{k} \xrightarrow[]{P_{k}/m_{k}} q_{k+1} \in \Delta$ and $t_{k} \vDash P_{k}$. A run $\rho$ is \emph{accepting} if $q_{j+1} \in F$. An accepting run of $\mathcal{A}$ over $S$ from $i$ to $j$ naturally defines the complex event $C_{\rho} := ([i, j], \{ k \ | \ i \le k \le j \land m_{k} = \bullet \})$. Finally, we define the semantics of $\mathcal{A}$ over a stream $S$ as $\InDBrackets{\mathcal{A}}(S) := \{ C_{\rho} \ | \ \rho \text{ is an accepting run of } \mathcal{A} \text{ over } S\}$.
-
 The usefulness of CEA comes from the fact that CEL cab be translated into CEA \cite{formal-framework-cep,formal-framework-cer}. Because the \code{SELECT-WHERE} part of a CEQL query is in essence a CEL formula, this reduces the evaluation problem of the \code{SELECT-WHERE-WITHIN} part of CEQL query into the evaluation problem for CEA.
 
 \begin{theorem}[Theorem~1 \cite{core}]\label{theorem:cea}
@@ -141,4 +135,6 @@ The usefulness of CEA comes from the fact that CEL cab be translated into CEA \c
 
 Our evaluation algorithm will compute the right-hand side of this equation. It requires that the input CEA $\mathcal{A}$ is \emph{I/O deterministic}: for every pair of transitions $q \xrightarrow[]{P_{1}/m_{1}} q_{1}$ and $q \xrightarrow[]{P_{2}/m_{2}} q_{2}$ from the state $q$, if $P_{1} \cap P_{2} \ne \emptyset$ then $m_{1} \ne m_{2}$. To put it another way, an event $t$ may trigger both transitions at the same time only if one transition marks the event, but the other does not. In \cite{formal-framework-cep,formal-framework-cer}, it was shown that any CEA can be I/O-determinized, with a possibly exponential blow-up in the size of the automaton.
 
-\todo[inline]{falta introduir la data structure, l'enumeració de complex events i la propietat de constant delay enumeration}
+\section{Chapter summary}
+
+In this chapter we have presented the preliminary work that has been published on the related fields of our work. First, we introduced the concept of distributed computing. Then, we described the syntax and semantics of CEQL and CEL. Afterwards, we presented the selection strategies, and explained the semantics of \textsc{max}. Finally, we introduced the computational model CEA, which is used to evaluate CEQL.
