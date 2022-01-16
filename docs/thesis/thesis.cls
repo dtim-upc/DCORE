@@ -82,8 +82,8 @@
   % \begin{center}
   %   \includegraphics[width=0.7\textwidth]{figures/upc_logo.png}
   % \end{center}
-  {\normalsize FACULTAT D’INFORMÀTICA DE BARCELONA (FIB)\\}
-  {\normalsize UNIVERSITAT POLITÈCNICA DE CATALUNYA (UPC) – BarcelonaTech}
+  {\normalsize FACULTAT D’INFORMÀTICA DE BARCELONA\\}
+  {\normalsize UNIVERSITAT POLITÈCNICA DE CATALUNYA}
   \vskip 0.1em%
   {\normalsize Advisors: \@supervisor}
   \end{center}
