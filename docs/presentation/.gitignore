@@ -16,4 +16,5 @@ _minted-*
 *.lot
 *.nav
 *.snm
-slides.pdf
+*.vrb
+*.pdf

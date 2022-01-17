@@ -14,9 +14,12 @@
 
 \usepackage{amsmath,amsfonts,amssymb,amscd,amsthm, bm, stmaryrd}
 
-\usepackage{minted}
+\usepackage{listings}
+\usepackage[cache=false,section]{minted}
 
 \usepackage{enumitem}
+
+\usepackage{multirow}
 
 \usepackage{tikz}
 \usetikzlibrary{external, automata, arrows.meta, positioning, calc}
@@ -28,6 +31,14 @@
 
 \usepackage{graphicx}
 \graphicspath{{./figures/}}
+
+\usepackage{xcolor,colortbl}
+\definecolor{Red}{rgb}{0.89, 0.0, 0.13}
+\definecolor{Pink}{rgb}{1.0, 0.65, 0.79}
+\definecolor{lightgreen}{rgb}{0.56, 0.93, 0.56}
+\newcolumntype{a}{>{\columncolor{lightgreen}}c}
+\newcolumntype{b}{>{\columncolor{Red}}c}
+
 
 %%%%%%%%%%%%% TITLE %%%%%%%%%%%%%%%%%
 
@@ -68,6 +79,104 @@
 
 \section{Introduction}
 % Explain CER with example 1.1.
+
+\begin{frame}[allowframebreaks, fragile]{Complex Event Recognition}
+  \begin{example}
+    A stream produced by wireless sensors placed in a warehouse, whose main objective is to detect fires.
+    \begin{figure}[H]
+      \centering
+      \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c}\hline
+        type  &$H$&$T$&$H$&$H$&$T$&$H$&$H$&$T$&$T$ & \ldots \\ \hline
+        id  & 1 & 1 & 2 & 1 & 2 & 2 & 1 & 1 & 1 & \multirow{2}{*}{\ldots} \\
+        val & 50 & 24& 49& 24& 24& 42& 23& 40& 45\\ \hline
+        timestamp & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & \ldots \\ \hline
+      \end{tabular}
+      \caption{Exemplary stream of events measuring temperature ($T$) and relative humidity ($H$)}
+      \label{fig:stream}
+    \end{figure}
+  \end{example}
+  \begin{block}{}
+
+    When the temperature of a storage room increases from below 30 celsius degrees to above 40 celsius degrees and the humidity is below 25\% there is a high probability of fire.
+
+    \begin{figure}[H]
+      \begin{minted}[xleftmargin=60pt, linenos=false, fontsize=\footnotesize]{text}
+SELECT t2.id FROM warehouse
+WHERE (T as t1; H as h1; T as t2)
+FILTER t1[val < 30] AND h1[val < 25]
+  AND t2[val > 40] AND t1[id] = h1[id]
+  AND h1[id] = t2[id]
+WITHIN 10 events
+      \end{minted}
+      \caption{Query on a wireless sensors network stream, which goal is to detect fires.}
+      \label{fig:query:1}
+    \end{figure}
+  \end{block}
+
+ \begin{block}{}
+    \begin{figure}[H]
+      \centering
+      \begin{tabular}{|c|c|a|c|a|c|c|c|a|c|c}\hline
+        type  &$H$&$T$&$H$&$H$&$T$&$H$&$H$&$T$&$T$ & \ldots \\ \hline
+        id  & 1 & 1 & 2 & 1 & 2 & 2 & 1 & 1 & 1 & \multirow{2}{*}{\ldots} \\
+        val & 50 & 24& 49& 24& 24& 42& 23& 40& 45\\ \hline
+        timestamp & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & \ldots \\ \hline
+      \end{tabular}
+      \caption{Exemplary stream of events measuring temperature ($T$) and relative humidity ($H$)}
+      \label{fig:stream}
+    \end{figure}
+ \end{block}
+
+ \begin{block}{}
+    \begin{figure}[H]
+      \centering
+      \begin{tabular}{|c|c|a|c|c|c|c|a|a|c|c}\hline
+        type  &$H$&$T$&$H$&$H$&$T$&$H$&$H$&$T$&$T$ & \ldots \\ \hline
+        id  & 1 & 1 & 2 & 1 & 2 & 2 & 1 & 1 & 1 & \multirow{2}{*}{\ldots} \\
+        val & 50 & 24& 49& 24& 24& 42& 23& 40& 45\\ \hline
+        timestamp & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & \ldots \\ \hline
+      \end{tabular}
+      \caption{Exemplary stream of events measuring temperature ($T$) and relative humidity ($H$)}
+      \label{fig:stream}
+    \end{figure}
+ \end{block}
+
+ \begin{block}{}
+    \begin{figure}[H]
+      \centering
+      \begin{tabular}{|c|c|a|c|a|c|c|c|c|a|c}\hline
+        type  &$H$&$T$&$H$&$H$&$T$&$H$&$H$&$T$&$T$ & \ldots \\ \hline
+        id  & 1 & 1 & 2 & 1 & 2 & 2 & 1 & 1 & 1 & \multirow{2}{*}{\ldots} \\
+        val & 50 & 24& 49& 24& 24& 42& 23& 40& 45\\ \hline
+        timestamp & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & \ldots \\ \hline
+      \end{tabular}
+      \caption{Exemplary stream of events measuring temperature ($T$) and relative humidity ($H$)}
+      \label{fig:stream}
+    \end{figure}
+ \end{block}
+
+ \begin{block}{}
+    \begin{figure}[H]
+      \centering
+      \begin{tabular}{|c|c|a|c|c|c|c|a|c|a|c}\hline
+        type  &$H$&$T$&$H$&$H$&$T$&$H$&$H$&$T$&$T$ & \ldots \\ \hline
+        id  & 1 & 1 & 2 & 1 & 2 & 2 & 1 & 1 & 1 & \multirow{2}{*}{\ldots} \\
+        val & 50 & 24& 49& 24& 24& 42& 23& 40& 45\\ \hline
+        timestamp & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & \ldots \\ \hline
+      \end{tabular}
+      \caption{Exemplary stream of events measuring temperature ($T$) and relative humidity ($H$)}
+      \label{fig:stream}
+    \end{figure}
+ \end{block}
+\end{frame}
+
+
+
+
+
+
+
+
 % Explain issue with CER
 % Introduce CORE
 % Explain issues with CORE
