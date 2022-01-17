@@ -2,10 +2,12 @@
 
 \mode<presentation>
 {
-  \usetheme{metropolis}
-  \usecolortheme{default}
+  \usetheme{Madrid}
+  \usecolortheme{seagull}
+  \setbeamercovered{dynamic} %invisible,transparent,dynamic,highly dynamic
 }
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%% PACKAGES %%%%%%%%%%%%%%%%%%
 
 \usepackage[utf8]{inputenc}
@@ -17,7 +19,6 @@
 \usepackage{listings}
 \usepackage[cache=false,section]{minted}
 
-\usepackage{enumitem}
 
 \usepackage{multirow}
 
@@ -39,30 +40,29 @@
 \newcolumntype{a}{>{\columncolor{lightgreen}}c}
 \newcolumntype{b}{>{\columncolor{Red}}c}
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%% TITLE %%%%%%%%%%%%%%%%%
 
 \title{Distributed Complex Event Recognition}
-\subtitle{Master's Thesis\\
-  \tiny Master in Innovation and Research in Informatics
-}
+\subtitle{Master's Thesis}
 \author{Arnau Abella}
 \institute[UPC]{%
   {\tiny %
-   \textit{Supervisors:}
-   \begin{itemize}[leftmargin=5pt]
-     \item[] Sergi Nadal, Universitat Politècnica de Catalunya
-     \item[] Stijn Vansummeren, UHasselt – Hasselt University
-   \end{itemize}
+    \textit{Supervisors:}\\
+    Sergi Nadal, Universitat Politècnica de Catalunya\\
+    Stijn Vansummeren, UHasselt – Hasselt University\\
   }
   \vspace{10pt}
   \textrm{\scriptsize%
+    Master in innovation and research in informatics\\
+    \vspace{5pt}
     Facultat d’Informàtica de Barcelona (FIB)\\
     Universitat Politècnica de Catalunya (UPC)\\
   }
 }
 \date{\tiny \today}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%% DOCUMENT %%%%%%%%%%%%%%%%%%
 
 \AtBeginSection[]
@@ -77,10 +77,16 @@
 
 \frame{\titlepage}
 
-\section{Introduction}
-% Explain CER with example 1.1.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}[allowframebreaks, fragile]{Complex Event Recognition}
+\section{Introduction}
+
+\begin{frame}[fragile, allowframebreaks]{Complex Event Recognition}
+  \begin{block}{\emph{Complex Event Recognition (CER)}}
+    Identifying collections of events that collectively satisfy some pattern in high-velocity streams.
+  \end{block}
+  \framebreak
   \begin{example}
     A stream produced by wireless sensors placed in a warehouse, whose main objective is to detect fires.
     \begin{figure}[H]
@@ -91,14 +97,11 @@
         val & 50 & 24& 49& 24& 24& 42& 23& 40& 45\\ \hline
         timestamp & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & \ldots \\ \hline
       \end{tabular}
-      \caption{Exemplary stream of events measuring temperature ($T$) and relative humidity ($H$)}
-      \label{fig:stream}
     \end{figure}
   \end{example}
+
   \begin{block}{}
-
     When the temperature of a storage room increases from below 30 celsius degrees to above 40 celsius degrees and the humidity is below 25\% there is a high probability of fire.
-
     \begin{figure}[H]
       \begin{minted}[xleftmargin=60pt, linenos=false, fontsize=\footnotesize]{text}
 SELECT t2.id FROM warehouse
@@ -108,12 +111,44 @@ FILTER t1[val < 30] AND h1[val < 25]
   AND h1[id] = t2[id]
 WITHIN 10 events
       \end{minted}
-      \caption{Query on a wireless sensors network stream, which goal is to detect fires.}
-      \label{fig:query:1}
     \end{figure}
   \end{block}
 
  \begin{block}{}
+    \begin{figure}[H]
+      \begin{minted}[xleftmargin=80pt, linenos=false, fontsize=\footnotesize]{text}
+SELECT t2.id FROM warehouse
+WHERE (T as t1; H as h1; T as t2)
+FILTER t1[val < 30] AND h1[val < 25]
+  AND t2[val > 40] AND t1[id] = h1[id]
+  AND h1[id] = t2[id]
+WITHIN 10 events
+      \end{minted}
+    \end{figure}
+    \begin{figure}[H]
+      \centering
+      \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c}\hline
+        type  &$H$&$T$&$H$&$H$&$T$&$H$&$H$&$T$&$T$ & \ldots \\ \hline
+        id  & 1 & 1 & 2 & 1 & 2 & 2 & 1 & 1 & 1 & \multirow{2}{*}{\ldots} \\
+        val & 50 & 24& 49& 24& 24& 42& 23& 40& 45\\ \hline
+        timestamp & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & \ldots \\ \hline
+      \end{tabular}
+    \end{figure}
+ \end{block}
+
+ \framebreak
+
+ \begin{block}{}
+    \begin{figure}[H]
+      \begin{minted}[xleftmargin=80pt, linenos=false, fontsize=\footnotesize]{text}
+SELECT t2.id FROM warehouse
+WHERE (T as t1; H as h1; T as t2)
+FILTER t1[val < 30] AND h1[val < 25]
+  AND t2[val > 40] AND t1[id] = h1[id]
+  AND h1[id] = t2[id]
+WITHIN 10 events
+      \end{minted}
+    \end{figure}
     \begin{figure}[H]
       \centering
       \begin{tabular}{|c|c|a|c|a|c|c|c|a|c|c}\hline
@@ -122,12 +157,22 @@ WITHIN 10 events
         val & 50 & 24& 49& 24& 24& 42& 23& 40& 45\\ \hline
         timestamp & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & \ldots \\ \hline
       \end{tabular}
-      \caption{Exemplary stream of events measuring temperature ($T$) and relative humidity ($H$)}
-      \label{fig:stream}
     \end{figure}
  \end{block}
 
+ \framebreak
+
  \begin{block}{}
+    \begin{figure}[H]
+      \begin{minted}[xleftmargin=80pt, linenos=false, fontsize=\footnotesize]{text}
+SELECT t2.id FROM warehouse
+WHERE (T as t1; H as h1; T as t2)
+FILTER t1[val < 30] AND h1[val < 25]
+  AND t2[val > 40] AND t1[id] = h1[id]
+  AND h1[id] = t2[id]
+WITHIN 10 events
+      \end{minted}
+    \end{figure}
     \begin{figure}[H]
       \centering
       \begin{tabular}{|c|c|a|c|c|c|c|a|a|c|c}\hline
@@ -136,12 +181,22 @@ WITHIN 10 events
         val & 50 & 24& 49& 24& 24& 42& 23& 40& 45\\ \hline
         timestamp & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & \ldots \\ \hline
       \end{tabular}
-      \caption{Exemplary stream of events measuring temperature ($T$) and relative humidity ($H$)}
-      \label{fig:stream}
     \end{figure}
  \end{block}
 
+ \framebreak
+
  \begin{block}{}
+    \begin{figure}[H]
+      \begin{minted}[xleftmargin=80pt, linenos=false, fontsize=\footnotesize]{text}
+SELECT t2.id FROM warehouse
+WHERE (T as t1; H as h1; T as t2)
+FILTER t1[val < 30] AND h1[val < 25]
+  AND t2[val > 40] AND t1[id] = h1[id]
+  AND h1[id] = t2[id]
+WITHIN 10 events
+      \end{minted}
+    \end{figure}
     \begin{figure}[H]
       \centering
       \begin{tabular}{|c|c|a|c|a|c|c|c|c|a|c}\hline
@@ -150,12 +205,22 @@ WITHIN 10 events
         val & 50 & 24& 49& 24& 24& 42& 23& 40& 45\\ \hline
         timestamp & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & \ldots \\ \hline
       \end{tabular}
-      \caption{Exemplary stream of events measuring temperature ($T$) and relative humidity ($H$)}
-      \label{fig:stream}
     \end{figure}
  \end{block}
 
+ \framebreak
+
  \begin{block}{}
+    \begin{figure}[H]
+      \begin{minted}[xleftmargin=80pt, linenos=false, fontsize=\footnotesize]{text}
+SELECT t2.id FROM warehouse
+WHERE (T as t1; H as h1; T as t2)
+FILTER t1[val < 30] AND h1[val < 25]
+  AND t2[val > 40] AND t1[id] = h1[id]
+  AND h1[id] = t2[id]
+WITHIN 10 events
+      \end{minted}
+    \end{figure}
     \begin{figure}[H]
       \centering
       \begin{tabular}{|c|c|a|c|c|c|c|a|c|a|c}\hline
@@ -164,29 +229,88 @@ WITHIN 10 events
         val & 50 & 24& 49& 24& 24& 42& 23& 40& 45\\ \hline
         timestamp & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & \ldots \\ \hline
       \end{tabular}
-      \caption{Exemplary stream of events measuring temperature ($T$) and relative humidity ($H$)}
-      \label{fig:stream}
     \end{figure}
  \end{block}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%
 
-
-
-
-
-
-
-% Explain issue with CER
-% Introduce CORE
-% Explain issues with CORE
-% Contributions
-
-\begin{frame}{Foo}
-  \begin{block}{}
-
-  \end{block}
+\begin{frame}{Partial Matches Problem}
+ \begin{block}<1->{}
+   Problem:
+   \begin{itemize}
+     \item<1-> $\Omega(N^{3})$ operation is required to complete the processing of the complex event.
+     \item<2-> Under the default \emph{skip-till-any-match} \cite{skip-till-any-match} policy, the set of partial matches grow \emph{exponentially} in $N$.
+   \end{itemize}
+ \end{block}
+ \begin{block}<3->{}
+   Given the computational challenges of CER query evaluation, there has been ongoing research on this field.
+ \end{block}
+ \begin{block}<4->{}
+   All of these system still suffer from:
+   \begin{itemize}
+     \item<4-> Overhead \emph{super-linear} in the size of the stream.
+     \item<5-> Scalability is limited to queries over short time windows.
+   \end{itemize}
+ \end{block}
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{CORE}
+  \begin{block}{}
+   \emph{COmplex event Recognition Engine (CORE)\cite{core}}:
+   \begin{itemize}
+     \pause
+     \item \emph{Complex Event Logic (CEL)}
+     \pause
+     \item \emph{Complex Event Query Language (CEQL)}
+     \pause
+     \item \emph{Complex Event Automaton (CEA)}
+     \pause
+     \item CORE's evaluation algorithm, under \emph{data complexity}:
+      \begin{itemize}
+        \pause
+        \item Update in constant time per input.
+        \pause
+        \item \emph{Output-linear delay} enumeration.
+      \end{itemize}
+   \end{itemize}
+ \end{block}
+\end{frame}
+
+\begin{frame}{CORE}
+  \begin{block}{}
+    Downsides of CORE:
+   \begin{enumerate}
+     \pause
+     \item Limited to \emph{unary} predicates.
+     \pause
+     \item The enumeration may be exponential in cost.
+   \end{enumerate}
+ \end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Contributions}
+  \begin{block}{}
+   \begin{itemize}
+     \item A distributed framework for CER that circumvents the filtering limitations of many CER systems.
+      \begin{itemize}
+        \pause
+        \item Distributed CER Engine (DCERE)
+        \pause
+        \item Distributed CORE (DCORE)
+      \end{itemize}
+     \pause
+     \item A novel distributed evaluation algorithm based on CORE.
+   \end{itemize}
+ \end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Preliminaries}
 % Introduce Events, complex events, valuations, etc.
@@ -196,11 +320,18 @@ WITHIN 10 events
 % Explain selection strategies
 % Introduce CEA
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{Distributed CER}
 % Introduce distributed CER framework (figure would be enough)
 % Introduce DCERE
 % Introduce distribution strategies
 % Introduce DCORE
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Distributed Evaluation Algorithm}
 % Explain goal
@@ -211,25 +342,37 @@ WITHIN 10 events
 % Explain enumeration procedure by means of figures
 % Do not mention theorems nor pseudocode
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{Experiments}
 % Explain CORE and DCORE implementation
 % Explain settings of the experiments
 % Explain experiments and results
 % Maybe CV can be removed
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{Conclusions and Future Work}
 % Just copy/paste Contributions I and II
 % Explain future work with a list
 
-\begin{frame}{Remove me}
-  \begin{block}{Remove me}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+  \begin{block}{}
     \cite{core}
-  \end{block}
+ \end{block}
 \end{frame}
 
 \begin{frame}[allowframebreaks]
   \frametitle{Bibliography}
-  \bibliographystyle{unsrtnat}
+  \bibliographystyle{unsrt}
   \bibliography{bibliography}
 \end{frame}
 

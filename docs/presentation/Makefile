@@ -27,6 +27,7 @@ clean:
 	rm -f *.eps
 	rm -f *.aux *.log *.out *.bbl *.blg *~ *.bak *.ps
 	rm -f *.brf *.lof *.lot *.toc *.glo *.ist *.fdb_latexmk *.fls *.lol *.loa
+	rm -f *.nav *.snm *.vrb *.pyg
 	rm -rf _minted-* .auctex-auto
 	rm -rf *.auxlock *.synctex.gz
 
