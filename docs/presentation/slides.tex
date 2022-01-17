@@ -24,14 +24,14 @@
 
 \usepackage{tikz}
 \usetikzlibrary{external, automata, arrows.meta, positioning, calc}
-\tikzexternalize[shell escape=-shell-escape,mode=graphics if exists, prefix=tikz/cache/]
+\tikzexternalize[shell escape=-shell-escape,mode=graphics if exists, prefix=../thesis/tikz/cache/]
 \newcommand{\inputtikz}[1]{%
   \tikzsetnextfilename{#1}%
-  \input{tikz/#1.tex}
+  \input{../thesis/tikz/#1.tex}
 }
 
 \usepackage{graphicx}
-\graphicspath{{./figures/}}
+\graphicspath{{../thesis/figures/}}
 
 \usepackage{xcolor,colortbl}
 \definecolor{Red}{rgb}{0.89, 0.0, 0.13}
@@ -39,6 +39,8 @@
 \definecolor{lightgreen}{rgb}{0.56, 0.93, 0.56}
 \newcolumntype{a}{>{\columncolor{lightgreen}}c}
 \newcolumntype{b}{>{\columncolor{Red}}c}
+
+\newcommand{\code}[1]{\texttt{#1}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%% TITLE %%%%%%%%%%%%%%%%%
@@ -313,12 +315,92 @@ WITHIN 10 events
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Preliminaries}
-% Introduce Events, complex events, valuations, etc.
-% Introduce CEQL syntax
-% Introduce CEL
-% Explain evaluation of CEQL
-% Explain selection strategies
-% Introduce CEA
+
+\begin{frame}{Event, stream, and complex event}
+  \begin{block}{Event}
+    Named mapping between attributes and values.
+  \end{block}
+  \begin{block}{Stream}
+    Possibly infinite sequence $S = t_{0}t_{1}t_{2}\ldots$ of events.
+  \end{block}
+  \begin{block}{Complex Event}
+    A pair $C = ([i,j], D)$ where $i \le j \in \mathbb{N}$ and $D$ is a subset of $\{i, \ldots, j\}$.
+  \end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{CEL: syntax and semantics}
+  \begin{block}{Complex Event Logic}
+    Formal logic that is built from the common operators in the literature of CER.
+    \begin{equation*}
+      \varphi := R    \ | \ \varphi \ \text{AS} \ X    \ | \    \varphi \ \text{FILTER} \ X[P]  \ | \   \varphi \ \text{OR} \ \varphi   \ | \  \varphi ; \varphi    \ | \  \varphi+ \ | \ \pi_{L}(\varphi).
+    \end{equation*}
+  \end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[allowframebreaks, fragile]{CEQL: syntax and semantics}
+  \begin{block}{Complex Event Query Language (CEQL)}
+    CEQL is a practical CER language based on \emph{Complex Event Logic (CEL)}.
+  \end{block}
+  \begin{block}{Syntax}
+    \begin{figure}[H]
+      \begin{minted}[xleftmargin=0pt, linenos=false, fontsize=\footnotesize]{text}
+        SELECT        [selection strategy] <list of variables>
+        FROM          <list of streams>
+        WHERE         <CEL formula>
+        (PARTITION BY <list of attributes>)?
+        (WHITHIN      <time>)?
+      \end{minted}
+    \end{figure}
+  \end{block}
+  \begin{block}{Semantics}
+    \begin{figure}[H]
+      \begin{minted}[xleftmargin=0pt, linenos=false, fontsize=\footnotesize]{text}
+        SELECT        [selection strategy] <list of variables>
+        FROM          <list of streams>
+        WHERE         <CEL formula>
+        (PARTITION BY <list of attributes>)?
+        (WHITHIN      <time>)?
+      \end{minted}
+    \end{figure}
+    \begin{enumerate}
+      \item \code{FROM}
+      \item \code{PARTITION BY}
+      \item \code{WHERE}
+      \item \code{SELECT}
+      \item \code{WITHIN}
+    \end{enumerate}
+  \end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[allowframebreaks, fragile]{Computational model}
+  \begin{block}{Complex Event Automaton (CEA)}
+     A form of finite automaton that produces complex events.
+  \end{block}
+  \begin{definition}
+  A tuple $\mathcal{A} = (Q, \Delta, q_{0}, F)$ where $Q$ is a finite set of states, $\Delta \subseteq Q \times \textbf{P} \times \{\bullet, \circ\} \times (Q \setminus \{ q_{0} \})$ is a finite transition, $q_{0} \in Q$ is the initial state, and $F \subseteq Q$ is the set of final states. We will denote transitions in $\Delta$ by $q \xrightarrow[]{P/m} q'$.
+  \end{definition}
+  \begin{example}
+    \begin{figure}[H]
+      \begin{minted}[xleftmargin=0pt, linenos=false, fontsize=\footnotesize]{text}
+    SELECT *
+    FROM warehouse
+    WHERE (T as t1; T+ as ts)
+    FILTER t1[val < 30]
+      AND ts[val > 30]
+      \end{minted}
+    \end{figure}
+    \begin{figure}[H]
+      \centering
+      \inputtikz{cea}
+    \end{figure}
+  \end{example}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
