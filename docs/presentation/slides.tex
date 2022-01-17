@@ -22,6 +22,9 @@
 
 \usepackage{multirow}
 
+\usepackage{caption}
+\usepackage{subcaption}
+
 \usepackage{tikz}
 \usetikzlibrary{external, automata, arrows.meta, positioning, calc}
 \tikzexternalize[shell escape=-shell-escape,mode=graphics if exists, prefix=../thesis/tikz/cache/]
@@ -406,11 +409,84 @@ WITHIN 10 events
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Distributed CER}
-% Introduce distributed CER framework (figure would be enough)
-% Introduce DCERE
-% Introduce distribution strategies
-% Introduce DCORE
 
+\begin{frame}{Distributed CER framework}
+  \begin{block}{Observations}
+    \begin{itemize}
+        \pause
+        \item CORE's sequential evaluation of CEA is \emph{fast}.
+          \begin{itemize}
+            \item Big overhead when distributed.
+          \end{itemize}
+        \pause
+        \item The automaton model is \emph{limited to unary predicates}.
+          \begin{itemize}
+            \item Binary predicates: \code{t1[id] = h1[id]}
+            \item Second-order predicates: the sequence of \code{t[val]} must monotonically increase
+          \end{itemize}
+        \pause
+        \item The \emph{enumeration} process is still slow.
+   \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{Distributed CER framework}
+  \begin{block}{Ideas}
+    \begin{itemize}
+        \item<1> Evaluate CEA sequentially.
+        \item<2> Filter complex predicates distributedly.
+        \item<3> Enumerate distributedly.
+   \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{Distributed CER framework}
+  \begin{block}{Proposal}
+    \begin{figure}[H]
+      \centering
+      \resizebox{!}{0.7\textheight}{%
+        \inputtikz{framework}
+      }
+    \end{figure}
+  \end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Distributed CER Engine (CER)}
+  \begin{block}{Overview}
+    \begin{figure}[H]
+      \centering
+      \resizebox{\textwidth}{!}{%
+        \inputtikz{dcere}
+      }
+    \end{figure}
+  \end{block}
+\end{frame}
+
+\begin{frame}{Distributed CER Engine (CER)}
+  \begin{block}{Selection Strategies}
+    \begin{itemize}
+        \item<1> Round Robin (RR)
+        \item<2> Power of Two Choices (PoTC)
+        \item<3> Exact Search (ES)
+        \item<4> Maximal Complex Event Enumeration (MCEE)
+   \end{itemize}
+  \end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Distributed CORE (DCORE)}
+  \begin{block}{Overview}
+    \begin{figure}[H]
+      \centering
+      \resizebox{\textwidth}{!}{%
+        \inputtikz{dcore}
+      }
+    \end{figure}
+  \end{block}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -429,10 +505,92 @@ WITHIN 10 events
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Experiments}
-% Explain CORE and DCORE implementation
-% Explain settings of the experiments
-% Explain experiments and results
+
+\begin{frame}{DCORE in a nutshell}
+  \begin{block}{Overview}
+    \begin{itemize}
+      \item To run on the JVM.
+      \item Open source and available at \url{https://github.com/dtim-upc/DCORE}.
+      \item Depends on our fork of CORE \url{https://github.com/dtim-upc/CORE2/tree/distributed_enumeration}.
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{DCORE in a nutshell}
+  \begin{block}{DCORE}
+    \begin{itemize}
+      \item Implemented in Scala 2.12.
+      \item Built on top of Akka Cluster.
+      \item Compiled with Sbt.
+      \item Provided as a white box.
+      \item Rigorously tested.
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}[allowframebreaks,fragile]{Experimental setup}
+  \begin{block}{Goal}
+    Compare DCERE, DCORE, and CORE.
+  \end{block}
+  \begin{block}{Settings}
+    Server equipped with a 12 cores Intel i7-8700, 32Gb of RAM, Linux 5.15.
+  \end{block}
+  \begin{block}{Setup}
+    \begin{itemize}
+      \item We compare systems with respect to their performance.
+      \item Reported numbers are averages taken over three repetitions of each experiment.
+      \item Synthetic datasets.
+    \end{itemize}
+  \end{block}
+  \begin{block}{Datasets}
+    \begin{figure}[H]
+      \centering
+      \begin{subfigure}[c]{0.32\textwidth}
+        \centering
+        \begin{minted}[fontsize=\footnotesize, linenos=false, autogobble]{text}
+          SELECT *
+          FROM S
+          WHERE P
+          FILTER A[id] = B[id]
+          WITHIN 100 events
+        \end{minted}
+      \end{subfigure}
+      \begin{subfigure}[t]{0.32\textwidth}
+        \begin{tabular}{l l}
+          \hline
+          $Q_{1}:$ & $P = A;B;C$ \\
+          \hline
+          $Q_{2}:$ & $P = A;B+;C$ \\
+          \hline
+          $Q_{3}:$ & $P = A+;B+;C$ \\
+          \hline
+        \end{tabular}
+      \end{subfigure}
+      \hfill
+      \begin{subfigure}[c]{0.32\textwidth}
+        \centering
+        \begin{tabular}{l c}
+          \hline
+          $S_{1}:$ & A,A$\ldots$B,B$\ldots$C\\
+          \hline
+          $S_{2}:$ & A,B,B,B$\ldots$C\\
+          \hline
+          $S_{3}:$ & A,B,A,B$\ldots$C\\
+          \hline
+        \end{tabular}
+      \end{subfigure}
+    \end{figure}
+  \end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%
+
 % Maybe CV can be removed
+
+\begin{frame}{Experiments}
+\end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -445,12 +603,6 @@ WITHIN 10 events
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-  \begin{block}{}
-    \cite{core}
- \end{block}
-\end{frame}
 
 \begin{frame}[allowframebreaks]
   \frametitle{Bibliography}
