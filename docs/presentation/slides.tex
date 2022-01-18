@@ -87,11 +87,23 @@
 
 \section{Introduction}
 
-\begin{frame}[fragile, allowframebreaks]{Complex Event Recognition}
+\begin{frame}[fragile]{Introduction}
   \begin{block}{\emph{Complex Event Recognition (CER)}}
     Identifying collections of events that collectively satisfy some pattern in high-velocity streams.
   \end{block}
-  \framebreak
+
+  \begin{block}{Features}
+    Allow expressing patterns based on:
+   \begin{itemize}
+     \item Content
+     \item Position in the stream
+     \item Order w.r.t other events
+     \item More constraints
+   \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Introduction}
   \begin{example}
     A stream produced by wireless sensors placed in a warehouse, whose main objective is to detect fires.
     \begin{figure}[H]
@@ -104,8 +116,10 @@
       \end{tabular}
     \end{figure}
   \end{example}
+\end{frame}
 
-  \begin{block}{}
+\begin{frame}[fragile]{Introduction}
+  \begin{example}{}
     When the temperature of a storage room increases from below 30 celsius degrees to above 40 celsius degrees and the humidity is below 25\% there is a high probability of fire.
     \begin{figure}[H]
       \begin{minted}[xleftmargin=60pt, linenos=false, fontsize=\footnotesize]{text}
@@ -114,12 +128,14 @@ WHERE (T as t1; H as h1; T as t2)
 FILTER t1[val < 30] AND h1[val < 25]
   AND t2[val > 40] AND t1[id] = h1[id]
   AND h1[id] = t2[id]
-WITHIN 10 events
+WITHIN 5 minutes
       \end{minted}
     \end{figure}
-  \end{block}
+  \end{example}
+\end{frame}
 
- \begin{block}{}
+\begin{frame}[fragile]{Introduction}
+ \begin{example}{}
     \begin{figure}[H]
       \begin{minted}[xleftmargin=80pt, linenos=false, fontsize=\footnotesize]{text}
 SELECT t2.id FROM warehouse
@@ -139,11 +155,11 @@ WITHIN 10 events
         timestamp & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & \ldots \\ \hline
       \end{tabular}
     \end{figure}
- \end{block}
+ \end{example}
+\end{frame}
 
- \framebreak
-
- \begin{block}{}
+\begin{frame}[fragile]{Introduction}
+ \begin{example}{}
     \begin{figure}[H]
       \begin{minted}[xleftmargin=80pt, linenos=false, fontsize=\footnotesize]{text}
 SELECT t2.id FROM warehouse
@@ -163,11 +179,11 @@ WITHIN 10 events
         timestamp & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & \ldots \\ \hline
       \end{tabular}
     \end{figure}
- \end{block}
+ \end{example}
+\end{frame}
 
- \framebreak
-
- \begin{block}{}
+\begin{frame}[fragile]{Introduction}
+ \begin{example}{}
     \begin{figure}[H]
       \begin{minted}[xleftmargin=80pt, linenos=false, fontsize=\footnotesize]{text}
 SELECT t2.id FROM warehouse
@@ -187,11 +203,11 @@ WITHIN 10 events
         timestamp & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & \ldots \\ \hline
       \end{tabular}
     \end{figure}
- \end{block}
+ \end{example}
+\end{frame}
 
- \framebreak
-
- \begin{block}{}
+\begin{frame}[fragile]{Introduction}
+ \begin{example}{}
     \begin{figure}[H]
       \begin{minted}[xleftmargin=80pt, linenos=false, fontsize=\footnotesize]{text}
 SELECT t2.id FROM warehouse
@@ -211,11 +227,11 @@ WITHIN 10 events
         timestamp & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & \ldots \\ \hline
       \end{tabular}
     \end{figure}
- \end{block}
+ \end{example}
+\end{frame}
 
- \framebreak
-
- \begin{block}{}
+\begin{frame}[fragile]{Introduction}
+ \begin{example}{}
     \begin{figure}[H]
       \begin{minted}[xleftmargin=80pt, linenos=false, fontsize=\footnotesize]{text}
 SELECT t2.id FROM warehouse
@@ -235,58 +251,43 @@ WITHIN 10 events
         timestamp & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & \ldots \\ \hline
       \end{tabular}
     \end{figure}
- \end{block}
+ \end{example}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}{Partial Matches Problem}
- \begin{block}<1->{}
+\begin{frame}{Introduction}
+ \begin{block}<1->{Partial Matches Problem}
    Problem:
    \begin{itemize}
-     \item<1-> $\Omega(N^{3})$ operation is required to complete the processing of the complex event.
-     \item<2-> Under the default \emph{skip-till-any-match} \cite{skip-till-any-match} policy, the set of partial matches grow \emph{exponentially} in $N$.
+     \item Under the default \emph{skip-till-any-match} \cite{skip-till-any-match} policy, the set of partial matches grow \emph{exponentially} in $N$.
    \end{itemize}
  \end{block}
- \begin{block}<3->{}
-   Given the computational challenges of CER query evaluation, there has been ongoing research on this field.
- \end{block}
- \begin{block}<4->{}
-   All of these system still suffer from:
-   \begin{itemize}
-     \item<4-> Overhead \emph{super-linear} in the size of the stream.
-     \item<5-> Scalability is limited to queries over short time windows.
-   \end{itemize}
- \end{block}
+ \begin{block}<2->{Related Work}
+    CER systems (e.g., Cayuga, Esper, SASE, TESLA/T-REX) still suffer from:
+    \begin{itemize}
+      \item Overhead \emph{super-linear} in the size of the stream.
+      \item Scalability is limited to queries over short time windows.
+    \end{itemize}
+  \end{block}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}{CORE}
-  \begin{block}{}
+\begin{frame}{Introduction}
+  \begin{block}{CORE}
    \emph{COmplex event Recognition Engine (CORE)\cite{core}}:
    \begin{itemize}
-     \item \emph{Complex Event Logic (CEL)}
-     \pause
-     \item \emph{Complex Event Query Language (CEQL)}
-     \pause
-     \item \emph{Complex Event Automaton (CEA)}
-     \pause
-     \item CORE's evaluation algorithm, under \emph{data complexity}:
-      \begin{itemize}
-        \item Update in constant time per input.
-        \pause
-        \item \emph{Output-linear delay} enumeration.
-      \end{itemize}
+      \item Update in constant time per input.
+      \item \emph{Output-linear delay} enumeration.
    \end{itemize}
  \end{block}
 \end{frame}
 
-\begin{frame}{CORE}
-  \begin{block}{}
+\begin{frame}{Introduction}
+  \begin{block}{CORE}
     Downsides of CORE:
    \begin{enumerate}
-     \pause
      \item Limited to \emph{unary} predicates.
      \pause
      \item The enumeration may be exponential in cost.
@@ -296,8 +297,8 @@ WITHIN 10 events
 
 %%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}{Contributions}
-  \begin{block}{}
+\begin{frame}{Introduction}
+  \begin{block}{Contributions}
    \begin{itemize}
      \item A distributed framework for CER that circumvents the filtering limitations of many CER systems.
       \begin{itemize}
@@ -317,21 +318,21 @@ WITHIN 10 events
 
 \section{Preliminaries}
 
-\begin{frame}{Event, stream, and complex event}
-  \begin{block}{Event}
-    Named mapping between attributes and values.
-  \end{block}
-  \begin{block}{Stream}
-    Possibly infinite sequence $S = t_{0}t_{1}t_{2}\ldots$ of events.
-  \end{block}
-  \begin{block}{Complex Event}
-    A pair $C = ([i,j], D)$ where $i \le j \in \mathbb{N}$ and $D$ is a subset of $\{i, \ldots, j\}$.
-  \end{block}
-\end{frame}
+% \begin{frame}{Preliminaries}
+%   \begin{block}{Event}
+%     Named mapping between attributes and values.
+%   \end{block}
+%   \begin{block}{Stream}
+%     Possibly infinite sequence $S = t_{0}t_{1}t_{2}\ldots$ of events.
+%   \end{block}
+%   \begin{block}{Complex Event}
+%     A pair $C = ([i,j], D)$ where $i \le j \in \mathbb{N}$ and $D$ is a subset of $\{i, \ldots, j\}$.
+%   \end{block}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}{CEL: syntax and semantics}
+\begin{frame}{Preliminaries}
   \begin{block}{Complex Event Logic}
     Formal logic that is built from the common operators in the literature of CER.
     \begin{equation*}
@@ -342,7 +343,7 @@ WITHIN 10 events
 
 %%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}[allowframebreaks, fragile]{CEQL: syntax and semantics}
+\begin{frame}[fragile]{Preliminaries}
   \begin{block}{Complex Event Query Language (CEQL)}
     CEQL is a practical CER language based on \emph{Complex Event Logic (CEL)}.
   \end{block}
@@ -357,6 +358,9 @@ WITHIN 10 events
       \end{minted}
     \end{figure}
   \end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Preliminaries}
   \begin{block}{Semantics}
     \begin{figure}[H]
       \begin{minted}[xleftmargin=0pt, linenos=false, fontsize=\footnotesize]{text}
@@ -379,13 +383,16 @@ WITHIN 10 events
 
 %%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}[allowframebreaks, fragile]{Computational model}
+\begin{frame}[fragile]{Preliminaries}
   \begin{block}{Complex Event Automaton (CEA)}
      A form of finite automaton that produces complex events.
   \end{block}
   \begin{definition}
   A tuple $\mathcal{A} = (Q, \Delta, q_{0}, F)$ where $Q$ is a finite set of states, $\Delta \subseteq Q \times \textbf{P} \times \{\bullet, \circ\} \times (Q \setminus \{ q_{0} \})$ is a finite transition, $q_{0} \in Q$ is the initial state, and $F \subseteq Q$ is the set of final states. We will denote transitions in $\Delta$ by $q \xrightarrow[]{P/m} q'$.
   \end{definition}
+\end{frame}
+
+\begin{frame}[fragile]{Preliminaries}
   \begin{example}
     \begin{figure}[H]
       \begin{minted}[xleftmargin=0pt, linenos=false, fontsize=\footnotesize]{text}
@@ -408,7 +415,7 @@ WITHIN 10 events
 
 \section{Distributed CER}
 
-\begin{frame}{Distributed CER framework}
+\begin{frame}{Distributed CER}
   \begin{block}{Observations}
     \begin{itemize}
         \item CORE's sequential evaluation of CEA is \emph{fast}.
@@ -427,7 +434,7 @@ WITHIN 10 events
   \end{block}
 \end{frame}
 
-\begin{frame}{Distributed CER framework}
+\begin{frame}{Distributed CER}
   \begin{block}{Ideas}
     \begin{itemize}
         \item<1> Evaluate CEA sequentially.
@@ -437,8 +444,8 @@ WITHIN 10 events
   \end{block}
 \end{frame}
 
-\begin{frame}{Distributed CER framework}
-  \begin{block}{Proposal}
+\begin{frame}{Distributed CER}
+  \begin{block}{Distributed CER framework}
     \begin{figure}[H]
       \centering
       \resizebox{!}{0.7\textheight}{%
@@ -450,8 +457,8 @@ WITHIN 10 events
 
 %%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}{Distributed CER Engine (CER)}
-  \begin{block}{Overview}
+\begin{frame}{Distributed CER}
+  \begin{block}{Distributed CER Engine (DCERE)}
     \begin{figure}[H]
       \centering
       \resizebox{\textwidth}{!}{%
@@ -461,7 +468,7 @@ WITHIN 10 events
   \end{block}
 \end{frame}
 
-\begin{frame}{Distributed CER Engine (CER)}
+\begin{frame}{Distributed CER}
   \begin{block}{Selection Strategies}
     \begin{itemize}
         \item<1> Round Robin (RR)
@@ -474,8 +481,8 @@ WITHIN 10 events
 
 %%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}{Distributed CORE (DCORE)}
-  \begin{block}{Overview}
+\begin{frame}{Distributed CER}
+  \begin{block}{Distributed CORE (DCORE)}
     \begin{figure}[H]
       \centering
       \resizebox{\textwidth}{!}{%
@@ -491,27 +498,20 @@ WITHIN 10 events
 \section{Distributed Evaluation Algorithm}
 
 \begin{frame}{Distributed evaluation algorithm}
-  \begin{block}{Goal}
+  \begin{block}<1->{Goal}
     Distributed evaluation algorithm for CEA $\mathcal{A}$:
    \begin{itemize}
-     \item ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}(S) := \{ C \ | \ C \in {\llbracket \mathcal{A} \rrbracket}(S) \land C(end) - C(start) \le \epsilon\}$.
-     \pause
      \item ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S) := \{ C \ | \ C \in {\llbracket \mathcal{A} \rrbracket}^{\epsilon}(S) \land C(end) = j \}$.
    \end{itemize}
   \end{block}
-\end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}{Distributed evaluation algorithm}
-  \begin{block}{Efficiency}
+  \begin{block}<2->{Efficiency}
      Under data complexity:
       \begin{itemize}
         \item Update the data structure in constant time per input.
+        \item<3-> Output-linear delay enumeration of ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$.
         \pause
-        \item Output-linear delay enumeration of ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$.
-        \pause
-        \item Each process filters and enumerates at most $\frac{|{\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)|}{|\mathcal{P}|}$ complex events.
+        \item<4-> Each process filters and enumerates at most $\frac{|{\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)|}{|\mathcal{P}|}$ complex events.
       \end{itemize}
   \end{block}
 \end{frame}
@@ -542,7 +542,7 @@ WITHIN 10 events
 \begin{frame}{Distributed evaluation algorithm}
   \begin{block}{Operations on tECS}
    \begin{itemize}
-     \item \code{$\text{b} \leftarrow \text{new-botom}(i)$}.
+     \item \code{$\text{b} \leftarrow \text{new-bottom}(i)$}.
      \item \code{$o \leftarrow \text{extend}(\textrm{n}, j)$}.
      \item \code{$\textrm{u} \leftarrow \text{union}(\text{n}_{1},\text{n}_{2})$}.
    \end{itemize}
@@ -762,31 +762,31 @@ WITHIN 10 events
 
 \section{Experiments}
 
-\begin{frame}{DCORE in a nutshell}
-  \begin{block}{Overview}
-    \begin{itemize}
-      \item To run on the JVM.
-      \item Open source and available at \url{https://github.com/dtim-upc/DCORE}.
-      \item Depends on our fork of CORE \url{https://github.com/dtim-upc/CORE2/tree/distributed_enumeration}.
-    \end{itemize}
-  \end{block}
-\end{frame}
+% \begin{frame}{DCORE in a nutshell}
+%   \begin{block}{Overview}
+%     \begin{itemize}
+%       \item To run on the JVM.
+%       \item Open source and available at \url{https://github.com/dtim-upc/DCORE}.
+%       \item Depends on our fork of CORE \url{https://github.com/dtim-upc/CORE2/tree/distributed_enumeration}.
+%     \end{itemize}
+%   \end{block}
+% \end{frame}
 
-\begin{frame}{DCORE in a nutshell}
-  \begin{block}{DCORE}
-    \begin{itemize}
-      \item Implemented in Scala 2.12.
-      \item Built on top of Akka Cluster.
-      \item Compiled with Sbt.
-      \item Provided as a white box.
-      \item Rigorously tested.
-    \end{itemize}
-  \end{block}
-\end{frame}
+% \begin{frame}{DCORE in a nutshell}
+%   \begin{block}{DCORE}
+%     \begin{itemize}
+%       \item Implemented in Scala 2.12.
+%       \item Built on top of Akka Cluster.
+%       \item Compiled with Sbt.
+%       \item Provided as a white box.
+%       \item Rigorously tested.
+%     \end{itemize}
+%   \end{block}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}[allowframebreaks,fragile]{Experimental setup}
+\begin{frame}[fragile]{Experiments}
   \begin{block}{Goal}
     Compare DCERE, DCORE, and CORE.
   \end{block}
@@ -800,6 +800,9 @@ WITHIN 10 events
       \item Synthetic datasets.
     \end{itemize}
   \end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Experiments}
   \begin{block}{Datasets}
     \begin{figure}[H]
       \centering
@@ -921,8 +924,8 @@ WITHIN 10 events
 
 \section{Conclusions and Future Work}
 
-\begin{frame}{Conclusions}
-  \begin{block}{}
+\begin{frame}{Conclusions \& future work}
+  \begin{block}{Conclusions}
    \begin{itemize}
      \item We presented:
         \begin{itemize}
@@ -940,8 +943,8 @@ WITHIN 10 events
 
 %%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}{Future work}
-  \begin{block}{}
+\begin{frame}{Conclusions \& future work}
+  \begin{block}{Future Work}
    \begin{itemize}
      \item Extend our framework with a generic rewrite and refine algorithms.
      \pause
