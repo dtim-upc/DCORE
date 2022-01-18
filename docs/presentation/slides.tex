@@ -413,7 +413,6 @@ WITHIN 10 events
 \begin{frame}{Distributed CER framework}
   \begin{block}{Observations}
     \begin{itemize}
-        \pause
         \item CORE's sequential evaluation of CEA is \emph{fast}.
           \begin{itemize}
             \item Big overhead when distributed.
@@ -660,9 +659,40 @@ WITHIN 10 events
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Conclusions and Future Work}
-% Just copy/paste Contributions I and II
-% Explain future work with a list
 
+\begin{frame}{Conclusions}
+  \begin{block}{}
+   \begin{itemize}
+     \item We presented:
+        \begin{itemize}
+          \item A framework for distributed CER.
+          \pause
+          \item Two implementations: DCERE and DCORE.
+          \pause
+          \item A distributed evaluation algorithm for DCORE.
+        \end{itemize}
+     \pause
+     \item We showed that both implementations of our framework outperform its competitors on queries with complex predicates.
+   \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{Future work}
+  \begin{block}{}
+   \begin{itemize}
+     \item Extend our framework with a generic rewrite and refine algorithms.
+     \pause
+     \item Extend our distributed evaluation algorithm to take into account time windows.
+     \pause
+     \item Explorer the capabilities offered by other automatas (e.g., register and data automata).
+   \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}[c]{ }
+  \centering
+  \huge Questions ?
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
