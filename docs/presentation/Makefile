@@ -18,6 +18,7 @@ ${PDF}: clean $(wildcard *.tex) $(wildcard *.bib)
 	${LATEX}  ${DOC}
 	${BIBTEX} ${DOC}
 	${LATEX}  ${DOC}
+	${LATEX}  ${DOC}
 
 # ----------------------------------------------------------
 

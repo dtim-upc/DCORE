@@ -266,7 +266,6 @@ WITHIN 10 events
   \begin{block}{}
    \emph{COmplex event Recognition Engine (CORE)\cite{core}}:
    \begin{itemize}
-     \pause
      \item \emph{Complex Event Logic (CEL)}
      \pause
      \item \emph{Complex Event Query Language (CEQL)}
@@ -275,7 +274,6 @@ WITHIN 10 events
      \pause
      \item CORE's evaluation algorithm, under \emph{data complexity}:
       \begin{itemize}
-        \pause
         \item Update in constant time per input.
         \pause
         \item \emph{Output-linear delay} enumeration.
@@ -491,14 +489,273 @@ WITHIN 10 events
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Distributed Evaluation Algorithm}
-% Explain goal
-% Explain tECS
-% Explain union lists
-% Explain hash tables
-% Explain evaluation algorithm by means of figures
-% Explain enumeration procedure by means of figures
-% Do not mention theorems nor pseudocode
 
+\begin{frame}{Distributed evaluation algorithm}
+  \begin{block}{Goal}
+    Distributed evaluation algorithm for CEA $\mathcal{A}$:
+   \begin{itemize}
+     \item ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}(S) := \{ C \ | \ C \in {\llbracket \mathcal{A} \rrbracket}(S) \land C(end) - C(start) \le \epsilon\}$.
+     \pause
+     \item ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S) := \{ C \ | \ C \in {\llbracket \mathcal{A} \rrbracket}^{\epsilon}(S) \land C(end) = j \}$.
+   \end{itemize}
+  \end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Distributed evaluation algorithm}
+  \begin{block}{Efficiency}
+     Under data complexity:
+      \begin{itemize}
+        \item Update the data structure in constant time per input.
+        \pause
+        \item Output-linear delay enumeration of ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$.
+        \pause
+        \item Each process filters and enumerates at most $\frac{|{\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)|}{|\mathcal{P}|}$ complex events.
+      \end{itemize}
+  \end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Distributed evaluation algorithm}
+  \begin{block}{The data structure}
+    The data structure is called \emph{timed Enumerable Compact Set (tECS)}.
+
+    A tECS is a directed acyclic graph $\mathcal{E}$ with two kinds of nodes:
+
+   \begin{itemize}
+     \item Union nodes \textrm{u}.
+     \item Non-union nodes:
+      \begin{itemize}
+        \item Bottom nodes \textrm{b}.
+        \item Output nodes \textrm{o}.
+      \end{itemize}
+   \end{itemize}
+
+   Additionally, nodes carry \emph{desceding-paths} attribute.
+
+   A tECS represents sets of \emph{open complex events}.
+  \end{block}
+\end{frame}
+
+\begin{frame}{Distributed evaluation algorithm}
+  \begin{block}{Operations on tECS}
+   \begin{itemize}
+     \item \code{$\text{b} \leftarrow \text{new-botom}(i)$}.
+     \item \code{$o \leftarrow \text{extend}(\textrm{n}, j)$}.
+     \item \code{$\textrm{u} \leftarrow \text{union}(\text{n}_{1},\text{n}_{2})$}.
+   \end{itemize}
+    \begin{figure}[H]
+      \centering
+      \resizebox{0.9\textwidth}{!}{%
+        \begin{subfigure}[b]{0.2\linewidth}
+          \centering
+          \inputtikz{union_a}
+        \end{subfigure}
+        \hfill
+        \begin{subfigure}[b]{0.2\linewidth}
+          \centering
+          \inputtikz{union_b}
+        \end{subfigure}
+        \hfill
+        \begin{subfigure}[b]{0.40\linewidth}
+          \centering
+          \inputtikz{union_c}
+        \end{subfigure}
+        \hfill
+        \begin{subfigure}[b]{0.40\linewidth}
+          \centering
+          \inputtikz{union_d}
+        \end{subfigure}
+      }
+      \caption{Visualisation of the four cases of method union(\textrm{u}). The \textrm{u} are union nodes, where the dashed and bold arrows point to the left and right node, respectively.}
+    \end{figure}
+  \end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Distributed evaluation algorithm}
+  \begin{block}{Evaluation algorithm}
+    \begin{columns}
+
+      \begin{column}{0.5\textwidth}
+        \begin{figure}[H]
+          \centering
+          \begin{subfigure}[b]{\textwidth}
+            \centering
+            \inputtikz{cea}
+          \end{subfigure}
+          \begin{subfigure}[t]{\textwidth}
+            \centering
+            \inputtikz{stream}
+          \end{subfigure}
+        \end{figure}
+      \end{column}
+
+      \begin{column}{0.5\textwidth}
+        \begin{figure}[H]
+          \inputtikz{AB+_0}
+          \caption*{$S[$0$]$}
+        \end{figure}
+      \end{column}
+
+    \end{columns}
+  \end{block}
+\end{frame}
+
+\begin{frame}{Distributed evaluation algorithm}
+  \begin{block}{Evaluation algorithm}
+    \begin{columns}
+
+      \begin{column}{0.5\textwidth}
+        \begin{figure}[H]
+          \centering
+          \begin{subfigure}[b]{\textwidth}
+            \centering
+            \inputtikz{cea}
+          \end{subfigure}
+          \begin{subfigure}[t]{\textwidth}
+            \centering
+            \inputtikz{stream}
+          \end{subfigure}
+        \end{figure}
+      \end{column}
+
+      \begin{column}{0.5\textwidth}
+        \begin{figure}[H]
+          \inputtikz{AB+_1}
+          \caption*{$S[$1$]$}
+        \end{figure}
+      \end{column}
+
+    \end{columns}
+  \end{block}
+\end{frame}
+
+\begin{frame}{Distributed evaluation algorithm}
+  \begin{block}{Evaluation algorithm}
+    \begin{columns}
+
+      \begin{column}{0.5\textwidth}
+        \begin{figure}[H]
+          \centering
+          \begin{subfigure}[b]{\textwidth}
+            \centering
+            \inputtikz{cea}
+          \end{subfigure}
+          \begin{subfigure}[t]{\textwidth}
+            \centering
+            \inputtikz{stream}
+          \end{subfigure}
+        \end{figure}
+      \end{column}
+
+      \begin{column}{0.5\textwidth}
+        \begin{figure}[H]
+          \inputtikz{AB+_2}
+          \caption*{$S[$2$]$}
+        \end{figure}
+      \end{column}
+
+    \end{columns}
+  \end{block}
+\end{frame}
+
+\begin{frame}{Distributed evaluation algorithm}
+  \begin{block}{Evaluation algorithm}
+    \begin{columns}
+
+      \begin{column}{0.5\textwidth}
+        \begin{figure}[H]
+          \centering
+          \begin{subfigure}[b]{\textwidth}
+            \centering
+            \inputtikz{cea}
+          \end{subfigure}
+          \begin{subfigure}[t]{\textwidth}
+            \centering
+            \inputtikz{stream}
+          \end{subfigure}
+        \end{figure}
+      \end{column}
+
+      \begin{column}{0.5\textwidth}
+        \begin{figure}[H]
+          \inputtikz{AB+_3}
+          \caption*{$S[$3$]$}
+        \end{figure}
+      \end{column}
+
+    \end{columns}
+  \end{block}
+\end{frame}
+
+\begin{frame}{Distributed evaluation algorithm}
+  \begin{block}{Evaluation algorithm}
+    \begin{columns}
+
+      \begin{column}{0.5\textwidth}
+        \begin{figure}[H]
+          \centering
+          \begin{subfigure}[b]{\textwidth}
+            \centering
+            \inputtikz{cea}
+          \end{subfigure}
+          \begin{subfigure}[t]{\textwidth}
+            \centering
+            \inputtikz{stream}
+          \end{subfigure}
+        \end{figure}
+      \end{column}
+
+      \begin{column}{0.5\textwidth}
+        \begin{figure}[H]
+          \inputtikz{AB+_4}
+          \caption*{$S[$4$]$}
+        \end{figure}
+      \end{column}
+
+    \end{columns}
+  \end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Distributed evaluation algorithm}
+  \begin{block}{Refine and enumeration procedure}
+    \begin{figure}[H]
+      \inputtikz{AB+_enumeration_0}
+      \caption*{Process $0$}
+    \end{figure}
+  \end{block}
+\end{frame}
+
+\begin{frame}{Distributed evaluation algorithm}
+  \begin{block}{Refine and enumeration procedure}
+    \begin{figure}[H]
+      \begin{subfigure}[b]{0.4\linewidth}
+        \centering
+        \inputtikz{AB+_enumeration_1}
+      \end{subfigure}
+      \begin{subfigure}[b]{0.4\linewidth}
+        \centering
+        \inputtikz{AB+_enumeration_2}
+      \end{subfigure}
+      \caption*{Process $1$}
+    \end{figure}
+  \end{block}
+\end{frame}
+
+\begin{frame}{Distributed evaluation algorithm}
+  \begin{block}{Refine and enumeration procedure}
+    \begin{figure}[H]
+      \inputtikz{AB+_enumeration_3}
+      \caption*{Process $2$}
+    \end{figure}
+  \end{block}
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -611,6 +868,8 @@ WITHIN 10 events
   \end{block}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%
+
 \begin{frame}{Experiments}
   \begin{block}{On the scalability of the framework}
     \begin{figure}[H]
@@ -628,6 +887,8 @@ WITHIN 10 events
     \end{figure}
   \end{block}
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}{Experiments}
   \begin{block}{On DCORE under heavy loads}
@@ -677,6 +938,8 @@ WITHIN 10 events
   \end{block}
 \end{frame}
 
+%%%%%%%%%%%%%%%%%%%%%%
+
 \begin{frame}{Future work}
   \begin{block}{}
    \begin{itemize}
@@ -688,6 +951,8 @@ WITHIN 10 events
    \end{itemize}
   \end{block}
 \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}[c]{ }
   \centering
