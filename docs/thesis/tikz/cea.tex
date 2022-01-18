@@ -16,10 +16,10 @@
 \node (q3) [state, accepting, right = of q2] {$q_{3}$};
 
 \path [-stealth, thick]
-    (q1) edge node [above = .2cm] {$\big[\substack{\text{A}\\< 30\\}\big]| \bullet$} (q2)
-    (q2) edge node [above = .2cm] {$\big[\substack{\text{B}\\> 30\\}\big]| \bullet$} (q3)
+    (q1) edge node [above = .2cm] {$\big[\substack{\text{T}\\< 30\\}\big]| \bullet$} (q2)
+    (q2) edge node [above = .2cm] {$\big[\substack{\text{T}\\> 30\\}\big]| \bullet$} (q3)
          edge [loop below] node {\tiny TRUE $|\circ$} ()
-    (q3) edge [loop above] node {$\big[\substack{\text{B}\\> 30\\}\big] | \bullet$} ()
+    (q3) edge [loop above] node {$\big[\substack{\text{T}\\> 30\\}\big] | \bullet$} ()
          edge [loop below] node {\tiny TRUE $|\circ$} ()
     ;
 \end{tikzpicture}
