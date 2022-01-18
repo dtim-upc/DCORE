@@ -3,7 +3,7 @@
 The goal of this project is to empirically demonstrate the performance gains of the distribution of Complex Event Recognition.
 Particularly, the enumeration process and the evaluation of second order predicates.
 
-This project is based on the work of [A. Grez et al.](https://dl.acm.org/doi/10.1145/3485463), [M. Bucchi et al.](https://arxiv.org/abs/2111.04635), among others.
+You can find a copy of the thesis [here](./Distributed_Complex_Event_Recognition-Arnau_Abela.pdf).
 
 This project depends on [CORE](https://github.com/dtim-upc/CORE) (private) and [CORE2](https://github.com/dtim-upc/CORE2).
 
