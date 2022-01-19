@@ -1,10 +1,6 @@
 \chapter{Preliminaries}\label{chapter:preliminaries}
 
-In this section, we introduce the formal background that support our study.
-First, we introduce the concepts behind \emph{distributed computing}.
-Secondly, we describe CEQL and give a formal description.
-Thirdly, we briefly discuss \emph{selection strategies}.
-Lastly, we introduce the computational model CEA.
+In this section, we introduce the formal background that support our study. It is important to remark that all these ideas are not original from our work, but we are going to use them in the recognition algorithm of Chapter~\ref{chapter:algorithm}.
 
 \section{Distributed computing}\label{sec:distributed_computing}
 
@@ -12,22 +8,22 @@ A \emph{distributed system} is a system whose components are located on differen
 
 A \emph{distributed program} is composed of an ordered-set of $n$ asynchronous processes $\mathcal{P} = \{ P_{1}, P_{2}, \ldots, P_{n}\}$. For a process $P_{i}$ with $1 \le i \le n$, define its \emph{index}, denoted index($P_{i}$), as index($P_{i}$) = $i \in \mathbb{N}$. The index of a process can be used as a \emph{unique} identifier. The processes do not share a global memory and communicate solely by passing messages. Process execution and message transfer are asynchronous. Without loss of generality, we assume that each process is running on a different processor. Let $C_{ij}$ denote the channel from process $P_{i}$ to process $P_{j}$ and let $m_{ij}$ denote a message sent by $P_{i}$ to $P_{j}$. The message transmission delay is finite and unpredictable \cite{distributed-computing-book}.
 
-\section{Complex event logic}\label{sec:ceql}
+\section{Data-tuples, complex events, predicates, and valuations}\label{sec:ceql}
 
-\textbf{Events, complex events, and valuations}. Fix a set of \emph{event types} \textbf{T} (e.g., \code{H} and \code{T}), a set of \emph{attribute names} \textbf{A} (e.g., $id$, and $val$), and a set of \emph{data values} \textbf{D} (e.g., integer values, string values, etc.). A \emph{data-tuple t} is a partial mapping that maps attribute names from \textbf{A} to data values in \textbf{D}. Each data-tuple is associated to an event type. We denote $t(a) \in \textbf{D}$ the value of the attribute $a \in \textbf{A}$ assigned by $t$, and $t(type) \in \textbf{T}$ the event type of $t$. If $t$ is not defined on attribute $a$, then we write $t(a) = \text{NULL}$.
+\textbf{Data-tuples.} A \emph{data-tuple} $t := \textbf{A} \to \textbf{D}$ is a function that maps attribute names to data values, where \textbf{A} is the set of all \emph{attribute names} (e.g., $id$, and $val$) and \textbf{D} is the set of all \emph{data values} (e.g., integer values, string values, etc.). Data-tuples are associated to an \emph{event type} \textbf{T} (e.g., \code{H} and \code{T}).
 
-A \emph{stream} is a possibly infinite sequence $S = t_{0}t_{1}t_{2}\ldots$ of data-tuples. Given a set $D \subseteq \mathbb{N}$, we define the set of data tuples $S[D] = \{ t_{i} \ | \ i \in D\}$. A \emph{complex event} is a pair $C = ([i,j], D)$ where $i \le j \in \mathbb{N}$ and $D$ is a subset of $\{i, \ldots, j\}$. Intuitively, given a stream $S = t_{0}t_{1}\ldots$ the interval $[i, j]$ of $C$ represents the subsequence $t_{i}t_{i+1} \ldots t_{j}$ of $S$ where the complex event $C$ happens and $S[D]$ represents the data-tuples from $S$ that are relevant for $C$. We write $C(data)$ to denote $D$, $C(time)$ to denote the time-interval $[i, j]$, and $C(start)$ and $C(end)$ for $i$ and $j$, respectively.
+\textbf{Complex events.} A \emph{complex event} is a pair $C = ([i,j], D)$ where $i \le j \in \mathbb{N}$ and $D$ is a subset of $\{i, \ldots, j\}$. Given a possibly infinite stream $S = t_{0}t_{1}\ldots$, the time interval $[i, j]$ corresponds to the lower and upper bound where the complex event $C$ happens in the stream $S$, and $D$ represents the position of the events in the stream $S$ that constitute the complex event $D$. We write $C(data)$ to denote $D$, and $C(time)$ to denote the time-interval $[i, j]$.
 
-Let \textbf{X} be a set of \emph{variables}, which includes all event types, $\textbf{T} \subseteq \textbf{X}$. A \emph{valuation} is a pair $V = ([i, j], \mu)$ with $[i,j]$ a time interval as above and $\mu$ a mapping that assigns subsets of $\{i, \ldots, j\}$ to variables in \textbf{X}. We write $V(time)$, $V(start)$, and $V(end)$ for $[i,j]$, $i$, and $j$, respectively, and $V(X)$ for the subset of $\{i,\ldots, j\}$ assigned to X by $\mu$.
+\textbf{Valuations.} A \emph{valuation} is a pair $V = ([i, j], \mu)$ with $[i,j]$ a time interval as above and $\mu$ a partial function that assigns subsets of $\{i, \ldots, j\}$ to variables in \textbf{X}, where \textbf{X} is a fixed set of \emph{variables} s.t. $\textbf{T} \subseteq \textbf{X}$. We write $V(time)$ for $[i,j]$, and $V(X)$ for the subset of $\{i,\ldots, j\}$ assigned to X by $\mu$. We write $C_{V}$ for the complex event that is obtained from valuation $V$: $C_{V}(time) = V(time)$ and $C_{V}(data) = \bigcup\limits_{X \in \textbf{X}} V(X)$.
 
-We write $C_{V}$ for the complex event that is obtained from valuation $V$ by forgetting the variables in $V$: $C_{V}(time) = V(time)$ and $C_{V}(data) = \bigcup\limits_{X \in \textbf{X}} V(X)$. The semantics of CEQL will be defined in terms of valuations, which are subsequently transformed into complex events as explained.
+\textbf{Predicates.} A \emph{predicate} represents a property or a relation of a set of data-tuples. A \emph{unary} predicate is a predicate that represents properties of individual data-tuples. A data-tuple $t$ \emph{satisfies} predicate $P$, denote $t \Vdash P$, iff $t \in P$. Furthermore, a set of data-tuples $T$ satisfies $P$, denoted by $T \Vdash P$, iff $\displaystyle\mathop{\forall}_{t \in T} t \vDash P$.
 
-\textbf{Predicates}. A (unary) \emph{predicate} is a possibly infinite set $P$ of data-tuples. A data-tuple $t$ \emph{satisfies} predicate $P$, denote $t \Vdash P$, if, and only if, $t \in P$. We generalize this definition from data-tuples to sets by taking a ``for all'' extension: a set of data-tuples $T$ satisfies $P$, denoted by $T \Vdash P$, if, and only if, $\displaystyle\mathop{\forall}_{t \in T} t \vDash P$.
+\section{Complex Event Query Language}\label{sec:ceql}
 
-\textbf{CEQL.} \emph{Complex Event Query Language (CEQL)} is a practical CER language based on \emph{Complex Event Logic (CEL)}, which is a formal logic that is built from the common operators in the literature of CER and whose expressiveness and complexity have been diligently studied in \cite{formal-framework-cep,on-the-expressiveness,formal-framework-cer}. We introduce the most relevant features of CEQL by means of an example.
+\emph{Complex Event Query Language (CEQL)} \cite{core} is a CER query language based on \emph{Complex Event Logic (CEL)} \cite{formal-framework-cep}. We introduce the most relevant features of CEQL by means of an example.
 
 \begin{example}
-We retake the previous example which aims on the detection of fires in a stream produced by a network of wireless sensors placed in a warehouse. Suppose that we are interested in all $n$-tuples of \code{T} events where the first has temperature below $30$ Celsius degrees and the rest has temperature above $30$ Celsius degrees, partitioned by the zone of the warehouse where the sensor is placed. The query from Figure~\ref{fig:query:2} expresses this in CEQL.
+We retake the previous example on the detection of fires in a stream produced by a network of wireless sensors placed in a warehouse. Suppose that we are interested in all $n$-tuples of \code{T} events where the first has temperature below $30$ Celsius degrees and the rest has temperature above $30$ Celsius degrees, partitioned by the zone of the warehouse where the sensor is placed. The query from Figure~\ref{fig:query:2} expresses this in CEQL.
 
 \begin{figure}[H]
   \begin{minted}[xleftmargin=120pt, linenos=false, fontsize=\footnotesize]{text}
@@ -43,23 +39,28 @@ We retake the previous example which aims on the detection of fires in a stream 
   \label{fig:query:2}
 \end{figure}
 
-The \code{FROM} clause indicates the input streams. The \code{WHERE} clause indicates the pattern of events that need to be matched in the stream. The pattern can be any \emph{unary} CEL expression \cite{formal-framework-cer}. In our query, the pattern \code{T as t1; T+ as ts} indicates that we want to capture all complex events that consist of an event type \code{T} followed by an arbitrary number of events of type \code{T}. In particular, the operator (;) indicates sequencing and the operator (+) indicates non-empty repeated sequencing (i.e. \emph{kleene plus}). We want to remark that sequencing in CEL is non-contiguous. Consequently, the \code{T} events do not need to be contiguous --- there might be other events in between. The \code{FILTER} clause allows to filter events by unary predicates. The clause \code{PARTITION BY} allows to express correlation among events in the form of equi-joins. The \code{WITHIN} clause specifies the time-window. In our query, the time between the first event \code{T} and the last event \code{T} must be within 5 minutes. Finally, the \code{SELECT} clause allows to project the result.
+The \code{SELECT} clause allows to project the matched complex event. In our query, the \code{*} operator retrieves all events in the complex event. The \code{FROM} clause indicates the input streams (e.g., the \code{warehouse}). The \code{WHERE} clause indicates the pattern of the complex event to capture in \emph{unary} CEL. In our query, the pattern \code{T as t1; T+ as ts} indicates that we want to capture all complex events that consist of an event type \code{T} followed by an arbitrary number of events of type \code{T}. We remark that events do not need to be contiguous under the default policy \emph{skip-till-any-match}. The \code{FILTER} clause allows to filter events by predicates. The clause \code{PARTITION BY} allows to partition the events using equi-joins. In our query, we partition the events by sensors that belong to the same zone of the warehouse. The \code{WITHIN} clause specifies the time window. In our query, the time between the first event \code{T} and the last event \code{T} must be within 5 minutes.
 \end{example}
+
+\newpage
 
 Next, we give the formal syntax and semantics of CEQL.
 
+\textbf{Syntax.}
+
 \begin{figure}[H]
   \begin{minted}[xleftmargin=0pt, linenos=false, fontsize=\footnotesize]{text}
-    SELECT        [selection strategy] <list of variables>
+    SELECT        (selection strategy)? <list of variables>
     FROM          <list of streams>
-    WHERE         <CEL formula>
+    WHERE         CEL formula
     (PARTITION BY <list of attributes>)?
-    (WHITHIN      <time>)?
+    (WHITHIN      time window)?
   \end{minted}
 \end{figure}
 
 \vspace{-30pt}
-We remark that CEL includes \code{FILTER}, and so CEQL does not need a separate \code{FILTER} clause. The \code{WHERE} clause expects a pattern written in Complex Event Logic (CEL) \cite{formal-framework-cer}, whose abstract syntax is represented by the following grammar:
+
+The \code{WHERE} clause expects a pattern written in \emph{Complex Event Logic (CEL)} \cite{formal-framework-cep}. CEL is a formal logic built on top of the common operators of the literature of CER, whose abstract syntax is represented by the following grammar:
 
 \vspace{-20pt}
 \begin{equation*}
@@ -67,9 +68,21 @@ We remark that CEL includes \code{FILTER}, and so CEQL does not need a separate 
 \end{equation*}
 
 \vspace{-10pt}
-In this grammar, $R$ is an event type in \textbf{T}, $X$ is a variable in \textbf{X}, $P$ is a predicate, and $L$ is a subset of variables in \textbf{X}.
+In this grammar, $R$ is an event type in \textbf{T}, $X$ is a variable in \textbf{X}, $P$ is a predicate, and $L$ is a subset of variables in \textbf{X}. We remark that CEL includes \code{FILTER}, and so CEQL does not need a separate \code{FILTER} clause.
 
-The semantics of CEQL is as follows. A CEQL query first evaluates its \code{FROM} clause, then its \code{PARTITION BY} clause, and subsequently its \code{WHERE, SELECT, WITHIN} clauses, in that order. The \code{FROM} clause specifies the list of streams. All these streams are logically merged into a single stream $S$. The optional \code{PARTITION BY} clause logically partitions this stream into multiple substreams $S_{1}, S_{2}\ldots$ and executes the \code{WHERE-SELECT-WITHIN} clauses on each substream. The union of the outputs generated for each substream constitute the final output. Note, the different streams could be evaluated in parallel. CEQL's \code{WHERE} and \code{FILTER} clause are derived from the semantics of CEL in Figure~\ref{fig:cel:semantics}. Specifically, given a stream $S = t_{0}t_{1}t_{2} \ldots $, a CEL formula $\varphi$ evaluates to a set of valuations, denoted $\InSBrackets{\varphi}(S)$. The base case is when $\varphi$ is an event type $R$. In that case $\InSBrackets{\varphi}(S)$ contains all valuations whose time-interval is a single position $i$, such that the data-tuple $t_{i}$ at position $i$ in $S$ is of type $R$. The \code{AS} clause is a variable assignment that takes an existing valuation $V \in \InSBrackets{\varphi}(S)$ and extends it by gathering all positions $\bigcup_{Y}V(Y)$ in variable $X$, keeping all other variables as in $V$. The \code{FILTER} $X[P]$ clause retains only those valuations for which the content of variables $X$ satisfies predicate $P$. The \code{OR} clause takes the union of two sets of valuations. The sequencing operator ($\varphi;\varphi$) uses the time-interval for capturing all pairs of valuations in which the first is chronologically followed by the second. The semantics of iteration ($\varphi+$) is defined as the application of sequencing ($;$) one or more times over the same formula $\varphi$. The projection $\pi_{L}$ modifies valuations by setting all variables that are not in $L$ to empty. Hence, \code{WHERE-FILTER} return a set of valuations when evaluated over a stream. The \code{SELECT} clause, if it does not mention a selection strategy (explained later), corresponds to a projection in CEL. Finally, if $\epsilon$ is a time-interval, then the \code{WITHIN} clause operate on the resulting set of valuations $\InSBrackets{\varphi \ \text{WITHIN} \ \epsilon}(S) = \{ V \in \InSBrackets{S} \ | \ V(end) - V(start) \le \epsilon \}$.
+\textbf{Semantics.} The evaluation of a CEQL is as follows. First, we evaluate the \code{FROM} clause that specifies the list of streams. If more than one stream is specified, the evaluation algorithm will merge them into a single stream $S$. Then, we (optionally) evaluate clause \code{PARTITION BY}, which partitions stream $S$ into multiple substreams and evaluates clauses \code{WHERE, SELECT, WITHIN} on each substream in that order. Note that the evaluation of each substream could be executed in parallel. The semantics of \code{WHERE-SELECT} clauses is derived from the semantics of CEL in Figure~\ref{fig:cel:semantics}. A CEL formula $\varphi$ evaluates to a set of valuations, denoted $\InSBrackets{\varphi}(S)$. Specifically,
+
+\begin{itemize}
+  \item $R$.\quad  Evaluates to the valuation $\InSBrackets{R}(S)$ whose time interval and data is a single event $R$ at position $i$ in stream $S$.
+  \item $\varphi \ \text{AS} \ X$.\quad Corresponds to a variable assignment. It extends a valuation $V \in \InSBrackets{\varphi}(S)$ by mapping $X \to \bigcup_{Y}V(Y)$.
+  \item $\varphi \ \text{FILTER} \ X[P]$.\quad Evaluates to a valuation $([i, j], \mu) \in \InSBrackets{\varphi}(S)$ such that all variables $X \in \mu$ satisfy predicate $P$.
+  \item $\varphi_{1} \ \text{OR} \ \varphi_{2}$.\quad Evaluates to the union of the valuations $\InSBrackets{\varphi_{1}}(S)$ and $\InSBrackets{\varphi_{2}}(S)$.
+  \item $\varphi_{1} ; \varphi_{2}$.\quad Evaluates to all pairs of valuations such that the first element happens before the second element in the stream.
+  \item $\varphi+$.\quad Evaluates to the union of one or more times of the valuation $\InSBrackets{\varphi(S)}$.
+  \item $\pi_{L}(\varphi)$.\quad Evaluates to the valuation $\InSBrackets{\varphi(S)}$ such that all variables that are not in $L$ map to the empty set.
+\end{itemize}
+
+Note, \code{SELECT} clause corresponds to a projection in CEL. Finally, the (optional) clause \code{WITHIN} filters the set of valuations returned by the \code{WHERE-SELECT} clauses such that $\InSBrackets{\varphi \ \text{WITHIN} \ \epsilon}(S) = \{ V \in \InSBrackets{S} \ | \ V(end) - V(start) \le \epsilon \}$.
 
 \begin{figure}[t]
   \begin{align*}
@@ -93,49 +106,141 @@ The semantics of CEQL is as follows. A CEQL query first evaluates its \code{FROM
   \label{fig:cel:semantics}
 \end{figure}
 
-\textbf{Complex event semantics}. The complex event semantics of CEL and CEQL is obtained by first evaluating the query under the valuations semantics, and then removing variables. That is, if $\varphi$ is a CEL formula or CEQL query, its complex event semantics $\InDBrackets{\varphi}(S)$ is defined $\InDBrackets{\varphi}(S) := \{ C_{V} \ | \ V \in \InSBrackets{\varphi}(S)\}$.
+\textbf{Complex event semantics}. Recall that CER systems operate under complex event semantics. However, above we defined CEQL semantics in terms of valuations. We can recover complex events semantics by forgetting the variables in the valuations. That is, if $\varphi$ is a CEL formula, its complex event semantics $\InDBrackets{\varphi}(S)$ is defined as $\InDBrackets{\varphi}(S) := \{ C_{V} \ | \ V \in \InSBrackets{\varphi}(S)\}$.
 
 \section{Selection strategies}\label{sec:selection_strategies}
 
-\emph{Selection strategies} (or \emph{selectors}) are unary operators over CEL formulas that restrict the set of results and speed up query processing. We present four selection strategies \cite{formal-framework-cep,formal-framework-cer}: \emph{strict} (\textsc{strict}), \emph{next} (\textsc{nxt}), \emph{last} (\textsc{last}) and \emph{max} (\textsc{max}). \textsc{strict} and \textsc{nxt} are motivated by the \emph{strict-contiguity} and \emph{skip-till-next-match} selector strategies proposed by SASE \cite{sase}, while \textsc{last} and \textsc{max} are useful selection strategies from a semantic viewpoint \cite{formal-framework-cer}. Next, we describe and formally specify selection strategy \textsc{max}, as it is relevant in our work, and refer the interested reader to \cite{formal-framework-cer} for a definition and discussion of the other selection strategies. For the sake of the discussion, we will define the \emph{support} of a valuation $V$ as the set of all positions appearing in the range of $V$, i.e., $sup(V) = \bigcup\limits_{X \in \textbf{X}}V(X)$.
+\emph{Selection strategies} (or \emph{selectors}) are unary operators over CEL formulas that restrict the set of results and speed up query processing. We present four selection strategies \cite{formal-framework-cep,formal-framework-cer}: \emph{strict} (\textsc{strict}), \emph{next} (\textsc{nxt}), \emph{last} (\textsc{last}) and \emph{max} (\textsc{max}). Next, we describe and formally specify selection strategy \textsc{max}, as it is relevant in our work, and refer the interested reader to \cite{formal-framework-cer} for a definition and discussion of the other selection strategies. For the sake of the discussion, we will define the \emph{support} of a valuation $V$ as the set of all positions appearing in the range of $V$, i.e., $sup(V) = \bigcup\limits_{X \in \textbf{X}}V(X)$.
 
-\textsc{MAX}. This selection strategy keeps the maximal complex events in terms of set inclusion, which could be naturally more useful because these complex events are the \emph{most informative}. Formally, given a CEL formula $\varphi$ we say that $V \in \InSBrackets{\textsc{max}(\varphi)}(S)$ holds iff $V \in \InSBrackets{\varphi}(S)$ and for all $V' \in \InSBrackets{\varphi}(S)$, if $sup(V) \subseteq sup(V')$, then $sup(V) = sup(V')$ (i.e., $V$ is maximal with respect to set containment). For example, given a CEL query $\varphi$, if $\InSBrackets{\varphi}(S)$ returns $\{ 3,6,7\}$, $\{3,4,7\}$, and $\{3,4,6,7\}$. Then, $\textsc{max}(\varphi)$ will only return $\{ 3, 4, 6, 7\}$, which is the maximal complex event.
+\textsc{MAX}. This selection strategy keeps the maximal complex events in terms of set inclusion, which could be naturally more useful because these complex events are the \emph{most informative}. Formally, given a CEL formula $\varphi$ we say that $V \in \InSBrackets{\textsc{max}(\varphi)}(S)$ holds iff $V \in \InSBrackets{\varphi}(S)$ and for all $V' \in \InSBrackets{\varphi}(S)$, if $sup(V) \subseteq sup(V')$, then $sup(V) = sup(V')$ (i.e., $V$ is maximal with respect to set containment). For example, given a CEL query $\varphi$, if $\InSBrackets{\varphi}(S)$ returns $\{ 1,2,4\}$, $\{1,3,4\}$, and $\{1,2,3,4\}$. Then, $\textsc{max}(\varphi)$ will only return $\{ 1, 2, 3, 4\}$, which is the maximal complex event.
 
 \section{Computational model}\label{sec:cea}
 
-As explained in Section~\ref{sec:ceql}, evaluating a CEQL query corresponds to evaluating the query's \code{SELECT-WHERE-WITHIN} clauses on either a single stream, or multiple different substreams. In our work, the \code{SELECT-WHERE} part of a query is compiled into a \emph{Complex Event Automaton} \cite{formal-framework-cep,formal-framework-cer}, which is a form of finite automaton that produces complex events. Our evaluation algorithm is then defined in terms of CEA: it takes as input a CEA $\mathcal{A}$, the time-window $\epsilon$ specified in the \code{WITHIN} clause, and a stream $S$, and uses this to compute $\InDBrackets{\varphi}(S)$. Formally, a \emph{Complex Event Automaton (CEA)} is a tuple $\mathcal{A} = (Q, \Delta, q_{0}, F)$ where $Q$ is a finite set of states, $\Delta \subseteq Q \times \textbf{P} \times \{\bullet, \circ\} \times (Q \setminus \{ q_{0} \})$ is a finite transition, $q_{0} \in Q$ is the initial state, and $F \subseteq Q$ is the set of final states. We will denote transitions in $\Delta$ by $q \xrightarrow[]{P/m} q'$. A \emph{run} of $\mathcal{A}$ over stream $S$ from positions $i$ to $j$ is a sequence $\rho := q_{i} \xrightarrow[]{P_{i}/m_{i}} q_{i+1} \xrightarrow[]{P_{i+1}/m_{i+1}} \ldots \xrightarrow[]{P_{j}/m_{j}} q_{j+1}$ such that $q_{i}$ is the initial state of $\mathcal{A}$ and for every $k \in [i,j]$ it holds that $q_{k} \xrightarrow[]{P_{k}/m_{k}} q_{k+1} \in \Delta$ and $t_{k} \vDash P_{k}$. A run $\rho$ is \emph{accepting} if $q_{j+1} \in F$. An accepting run of $\mathcal{A}$ over $S$ from $i$ to $j$ naturally defines the complex event $C_{\rho} := ([i, j], \{ k \ | \ i \le k \le j \land m_{k} = \bullet \})$. Finally, we define the semantics of $\mathcal{A}$ over a stream $S$ as $\InDBrackets{\mathcal{A}}(S) := \{ C_{\rho} \ | \ \rho \text{ is an accepting run of } \mathcal{A} \text{ over } S\}$.
+We introduce the computational model \emph{Complex Event Automaton (CEA)} \cite{formal-framework-cep}, which is a form of finite automaton that produces complex events. We introduce CEA by means of an example.
+
+\begin{example}
+  In this example we show the compilation of the query from Figure~\ref{fig:query:2} into an equivalent CEA $\mathcal{A}$. There are three states in this automaton $q_{1}$, $q_{2}$, and $q_{3}$. The initial state is $q_{1}$ and the final state is $q_{3}$. There can only be one initial state but multiple final states. The transitions contain a set of predicate \textbf{P} and a marking symbol $m := \{\bullet, \circ\}$. We depict predicates by listing, in array notation, the event type, and the constraint on the temperature attribute. A transition is only traversed if the input event satisfies the predicates in \textbf{P}.
+
+  \begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{\textwidth}
+      \centering
+      \inputtikz{cea}
+      \vspace*{2em}
+    \end{subfigure}
+    \begin{subfigure}[t]{\textwidth}
+      \centering
+      \inputtikz{stream}
+    \end{subfigure}
+
+    \caption{A CEA representing the query from Figure~\ref{fig:query:2} and an example of stream.}
+    \label{fig:cea}
+  \end{figure}
+
+  A run of $\mathcal{A}$ over the stream $S$ from position $i$ to $j$ corresponds to the sequence $\rho := q_{i} \xrightarrow[]{P_{i}/m_{i}} q_{i+1} \xrightarrow[]{P_{i+1}/m_{i+1}} \ldots \xrightarrow[]{P_{j}/m_{j}} q_{j+1}$. A run $\rho$ is \emph{accepting} if $q_{j+1}$ is a final state. An accepting run defines the complex event $C_{\rho} := ([i, j], \{ k \ | \ i \le k \le j \ \land \ m_{k} = \bullet \})$. The figure also includes an example stream $S$, where the values correspond to the event type, the identifier attribute, and the temperature attribute, in that order.
+\end{example}
+
+As explained in Section~\ref{sec:ceql}, evaluating a CEQL query corresponds to evaluating the query's \code{SELECT-WHERE-WITHIN} clauses. The usefulness of CEA comes from the fact that unary CEL can be translated into an equivalent CEA \cite{formal-framework-cep,formal-framework-cer}. Because the \code{SELECT-WHERE} part of a CEQL query is in essence a CEL formula, this reduces the evaluation problem of the \code{SELECT-WHERE-WITHIN} part of CEQL query into the evaluation problem for CEA. Consequently, the evaluation algorithm is then defined in terms of CEA: it takes as input a CEA $\mathcal{A}$, the time-window $\epsilon$ specified in the \code{WITHIN} clause, and a stream $S$, and uses this to compute $\InDBrackets{\varphi}(S)$. We remark that the evaluation algorithm requires that the input CEA $\mathcal{A}$ is \emph{I/O deterministic}: an event $t$ may trigger at most two transitions at the same time only if one transition marks the event, but the other does not. In \cite{formal-framework-cep,formal-framework-cer}, it was shown that any CEA can be I/O-determinized, with a possibly exponential blow-up in the size of the automaton.
+
+\section{Timed Enumerable Compact Set}\label{sec:data_structure}
+
+The data structure that lazily represents the set of partial matches in CORE is called \acrfull{tecs}. A tECS is a \emph{directed acyclic graph (DAG)} $\mathcal{E}$ with two types of nodes: \emph{union nodes} and \emph{non-union nodes}. Union nodes have two children: \code{left} and \code{right}. Non-union nodes are labelled by a stream position and are divided in \emph{output nodes} and \emph{bottom nodes}. The former have exactly one child and the latter have none. To simplify presentation in what follows, we write nodes of any kind as \textrm{n}, bottom, output and union nodes as \textrm{b, o, u}, respectively, and we denote the sets of bottom, output and union nodes by $N_{B}$, $N_{O}$ and $N_{U}$, respectively.
+
+For a node \textrm{n}, define its \emph{descending-paths}, denoted \code{paths(\textrm{n})}, recursively as follows: if \textrm{n} is a bottom node, then \code{paths(\textrm{n})} = 1; if \textrm{n} is an output node, then \code{paths(\textrm{n}) = paths(next(\textrm{n}))}; if \textrm{n} is a union node, \code{paths(\textrm{n}) = paths(left(\textrm{n})) + paths(right(\textrm{n}))}. Every node \textrm{n} carries paths(\textrm{n}) as an extra label; thus the descending-paths can be retrieved in constant time. The descending-paths attribute is going to be used during the enumeration phase of the distributed evaluation algorithm to balance the workload of each processing unit.
+
+An \emph{open complex event}, denoted $(i, D)$, is a complex event $([i, j], D)$, where the closing event $j$ hasn't been reached yet. A \acrshort{tecs} represents sets of open complex events. Let $\bar{p} = n_{1}, n_{2}, \ldots, n_{k}$ be a \emph{full-path} in $\mathcal{E}$ such that $n_{k}$ is a bottom node. Then $\bar{p}$ represents the open complex event ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}} = (i, D)$, where $i = pos(n_{k})$ is the label of bottom node $n_{k}$ and $D$ are the labels of the other non-union nodes in $\bar{p}$. Given a node \textrm{n} in $\mathcal{E}$, ${\llbracket \textrm{n} \rrbracket}_{\mathcal{E}}$ is the set of open complex events represented by \textrm{n} and consists of all open complex events ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}}$ with $\bar{p}$ a full-path in $\mathcal{E}$ starting at \textrm{n}.
+
+In order to enumerate the set of complex events ${\llbracket \textrm{n} \rrbracket}_{\mathcal{E}}(j)$, one by one, without duplicates, and with output-linear delay, it will be necessary to impose three restrictions on the structure of the tECS $\mathcal{E}$.
+
+\textbf{Time-ordered}. Define the \emph{maximum-start} of a node, denoted max(\textrm{n}), as max(\textrm{n}) = max(${ i \ | \ (i, D) \in {\llbracket \textrm{n} \rrbracket}_{\mathcal{E}}}$). Then, a tECS is \emph{time-ordered} if for every union node \textrm{u} it holds that max(left(\textrm{u})) $\ge$ max(right(\textrm{u})). This restriction prevents traversing paths that our outside the time window.
+
+\textbf{$k$-bounded}. Define the \emph{output-depth} of a node, denoted odepth(\textrm{n}), as: if \textrm{n} is a non-union node, then odepth(\textrm{n}) = 0; otherwise, $\text{odepth(\textrm{n})} = \text{odepth(left(\textrm{n}))} + 1$. $\mathcal{E}$ is \emph{k-bounded} if odepth(\textrm{n}) $\leq k$ for every node \textrm{n}. This restriction preserve the output-liner delay because it bounds the maximum number of union nodes between two non-union nodes.
+
+\textbf{Duplicate-free}. A tECS $\mathcal{E}$ is \emph{duplicate-free} if for every node \textrm{n} and for every pair of distinct full-paths $\bar{p}$ and $\bar{q}$ that start at \textrm{n} holds that ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}} \ne {\llbracket \bar{q} \rrbracket}_{\mathcal{E}}$. This restrictions prevents duplicated outputs.
+
+We define three operations on $\mathcal{E}$. In order to ensure that newly created nodes are $3$-bounded, we require that the argument nodes of these operations are safe. A node is \emph{safe} if it is a non-union node or if both $\text{odepth(\textrm{u})} = 1$ and $\text{odepth(right(\textrm{u}))} \le 2$. All three operations on tECS return safe nodes.
+
+\code{$\text{b} \leftarrow \text{new-bottom}(i)$}. This method adds a new bottom node \textrm{b} labelled by $i \in \mathbb{N}$ to $\mathcal{E}$.
+
+\code{$o \leftarrow \text{extend}(\textrm{n}, j)$}. This method adds a new output node \textrm{o} to $\mathcal{E}$ with $\text{pos(\textrm{o})} = j$ and $\text{next(\textrm{o})} = n$.
+
+\code{$\textrm{u} \leftarrow \text{union}(\text{n}_{1},\text{n}_{2})$}. This method returns a union node \textrm{u} such that ${\llbracket u \rrbracket}_{\mathcal{E}} = {\llbracket \textrm{n}_{1} \rrbracket}_{\mathcal{E}} \cup {\llbracket \textrm{n}_{2} \rrbracket}_{\mathcal{E}}$. If $\textrm{n}_{1}$ is a non-union then a new union node \textrm{u} is created which is connected to $\textrm{n}_{1}$ and $\textrm{n}_{2}$ as shown in Figure~\ref{fig:union:a}. If $\textrm{n}_{2}$ is a non-union node, then \textrm{u} is created as shown in Figure~\ref{fig:union:b}. When $\textrm{n}_{1}$ and $\textrm{n}_{2}$ are union nodes: if max(right($\textrm{n}_{1}$)) $\ge$ max(right($\textrm{n}_{2}$)), three new union nodes, \textrm{u}, $\textrm{u}_{1}$, $\textrm{u}_{2}$ are added and connected as show in Figure~\ref{fig:union:c}; otherwise, as in Figure~\ref{fig:union:d}.
 
 \begin{figure}[t]
   \centering
-  \begin{subfigure}[b]{\textwidth}
+  \begin{subfigure}[b]{0.15\linewidth}
     \centering
-    \inputtikz{cea}
-    \vspace*{2em}
+    \inputtikz{union_a}
+    \caption{}
+    \label{fig:union:a}
   \end{subfigure}
-  \begin{subfigure}[t]{\textwidth}
+  \hfill
+  \begin{subfigure}[b]{0.15\linewidth}
     \centering
-    \inputtikz{stream}
+    \inputtikz{union_b}
+    \caption{}
+    \label{fig:union:b}
   \end{subfigure}
-
-  \caption{A CEA representing the query from Figure~\ref{fig:query:2} and an example of stream.}
-  \label{fig:cea}
+  \hfill
+  \begin{subfigure}[b]{0.3\linewidth}
+    \centering
+    \inputtikz{union_c}
+    \caption{}
+    \label{fig:union:c}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.3\linewidth}
+    \centering
+    \inputtikz{union_d}
+    \caption{}
+    \label{fig:union:d}
+  \end{subfigure}
+  \caption{Visualisation of the four cases of method union(\textrm{u}).}
+  \label{fig:union}
 \end{figure}
 
-\begin{example}
-  In Figure~\ref{fig:cea} we show the compilation of the query from Figure~\ref{fig:query:2} into an equivalent CEA $\mathcal{A}$. We depict predicates by listing, in array notation, the event type, and the constraint on the temperature attribute. The initial state is $q_{1}$ and there is only one final state: $q_{4}$. The figure also includes an example stream $S$, where the values correspond to the event type, the identifier attribute, and the temperature attribute, in that order.
-\end{example}
+Note, all these methods take constant time.
 
-The usefulness of CEA comes from the fact that CEL can be translated into CEA \cite{formal-framework-cep,formal-framework-cer}. Because the \code{SELECT-WHERE} part of a CEQL query is in essence a CEL formula, this reduces the evaluation problem of the \code{SELECT-WHERE-WITHIN} part of CEQL query into the evaluation problem for CEA.
-
-\begin{theorem}[Theorem~1 \cite{core}]\label{theorem:cea}
-  For every CEL formula $\varphi$ we can construct a CEA $\mathcal{A}$ of size linear in $\varphi$ such that for every $\epsilon$:
-  \begin{equation*}
-    \InDBrackets{\varphi \code{ WITHIN } \epsilon}(S) = \{ C \ | \ C \in \InDBrackets{\mathcal{A}}(S) \land C(end) - C(start) \le \epsilon \}
-  \end{equation*}
+Remember that the ultimate purpose of constructing a tECS $\mathcal{E}$ is to be able to enumerate the set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$ at every position $j$. If $\mathcal{E}$ is time-ordered, $k$-bounded for $k = 3$, and duplicate-free, then Theorem~\ref{theorem:enumeration} ensures that we enumerate set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$.
+\begin{theorem}\label{theorem:enumeration}
+  Let $\mathcal{E}$ be a time-ordered \acrshort{tecs}, \textrm{n} a duplicate-free node of $\mathcal{E}$, $\epsilon$ a time-window, $\mathcal{P}$ the set of all processes. Let $C_{p}$ be the output of \aref{algo:enumeration} on process $p \in \mathcal{P}$. Then, $\bigcup\limits_{P \in \mathcal{P}} C_{P} = {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
 \end{theorem}
 
-Our evaluation algorithm will compute the right-hand side of this equation. It requires that the input CEA $\mathcal{A}$ is \emph{I/O deterministic}: for every pair of transitions $q \xrightarrow[]{P_{1}/m_{1}} q_{1}$ and $q \xrightarrow[]{P_{2}/m_{2}} q_{2}$ from the state $q$, if $P_{1} \cap P_{2} \ne \emptyset$ then $m_{1} \ne m_{2}$. To put it another way, an event $t$ may trigger both transitions at the same time only if one transition marks the event, but the other does not. In \cite{formal-framework-cep,formal-framework-cer}, it was shown that any CEA can be I/O-determinized, with a possibly exponential blow-up in the size of the automaton.
+\vspace{-10pt}
+In Section~\ref{sec:enumeration}, we describe Algorithm~\ref{algo:enumeration}, and show its correctness.
+
+\section{Auxiliary data structures}\label{sec:auxiliary_data_structure}
+
+In this section, we introduce two auxiliary data structures that are going to be used to incrementally maintain $\mathcal{E}$ during the recognition process.
+
+\textbf{Union-lists and its operations}. A \emph{union-list} is a non-empty sequence of safe nodes, denoted $\textrm{ul} = \textrm{n}_{0}, \textrm{n}_{1}, \ldots, \textrm{n}_{k}$ such that $\textrm{n}_{0}$ is a non-union node, max($\textrm{n}_{0}$) $\ge$ max($\textrm{n}_{i}$), and max($\textrm{n}_{i}$) $>$ max($\textrm{n}_{i+1}$) for every $0 < i \le k$. We define three operations on union-lists.
+
+\code{$\textrm{ul} \leftarrow \text{new-ulist(\textrm{n})}$}. This method creates a union-list with a single non-union node \textrm{n}.
+
+\code{$\text{insert(\textrm{ul, n})}$}. This method mutates, in situ, the union-list $\textrm{ul} = \textrm{n}_{0}, \ldots, \textrm{n}_{k}$ by inserting a safe node \textrm{n} such that max($\textrm{n}$) $\le$ max($\textrm{n}_{0}$). If there is a $i > 0$ such that max($\textrm{n}_{i}$) $=$ max($\textrm{n}$), then it replaces $\textrm{n}_{i}$ in \textrm{ul} by the result of union($\textrm{n}_{i}, \textrm{n}$). Otherwise, we consider two cases: if max($\textrm{n}$) $=$ max($\textrm{n}_{0}$), then \textrm{n} is inserted after $\textrm{n}_{0}$; otherwise,  \textrm{n} is inserted between $\textrm{n}_{i}$ and $\textrm{n}_{i+1}$ with $i > 0$ such that max($\textrm{n}_{i}$) $>$ max($\textrm{n}$) $>$ max($\textrm{n}_{i+1}$).
+
+\code{$\textrm{u} \leftarrow \text{merge(\textrm{ul})}$}. This method takes a union-list \textrm{ul} and returns a node \textrm{u} such that ${\llbracket \textrm{u} \rrbracket}_{\mathcal{E}} = {\llbracket \textrm{n}_{0} \rrbracket}_{\mathcal{E}} \cup \ldots \cup {\llbracket \textrm{n}_{k} \rrbracket}_{\mathcal{E}} $. If $k = 0$, then $\textrm{u} = \textrm{n}_{0}$, or else, we add $k$ union nodes to $\mathcal{E}$, and connect them.
+
+% \begin{figure}[t]
+%   \centering
+%   \inputtikz{merge}
+%   \caption{Visualisation of method merge(\textrm{ul}).}
+%   \label{fig:merge}
+% \end{figure}
+
+We remark that all operations on union-lists take time linear in the length of \textrm{ul}.
+
+\newpage
+
+\textbf{Hash table and its operations}. A \emph{hash table} is an abstract data structure that maps keys to values by the use of a \emph{hash function}. During the evaluation of the algorithm, we will use a hash table to map CEA states to nodes of union-lists. We define two methods on hash tables.
+
+\code{keys($T$)}. The first method returns the set of states $q$ that have a union-list associated with.
+
+\code{ordered-keys($T$)}. The second method returns keys($T$) as a list sorted in the order in which keys have been inserted into $T$. If a key is insert multiple times, then it is the time of the first that is used for sorting.
+
+We assume that hash table lookups and insertions take constant time, and iterating over has constant delay.
+
 
 \section{Chapter summary}
 
-In this chapter we have presented the preliminary work that is required for our work. First, we introduced the concept of distributed computing. Then, we described the syntax and semantics of CEQL and CEL. Afterwards, we presented the selection strategies, and explained the semantics of \textsc{max}. Finally, we introduced the computational model CEA, which is used to evaluate CEQL.
+In this chapter we have presented the preliminary work that is required for our work. First, we introduced the concept of distributed computing. Then, we described the syntax and semantics of CEQL and CEL. Afterwards, we presented the selection strategies, and explained the semantics of \textsc{max}. Then, we introduced the computational model CEA, which is used to evaluate CEQL. Finally, we introduced the data structures used in the evaluation algorithm.
