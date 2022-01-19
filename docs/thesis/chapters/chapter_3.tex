@@ -1,10 +1,6 @@
 \chapter{Preliminaries}\label{chapter:preliminaries}
 
-In this section, we introduce the formal background that support our study.
-First, we introduce the concepts behind \emph{distributed computing}.
-Secondly, we describe CEQL and give a formal description.
-Thirdly, we briefly discuss \emph{selection strategies}.
-Lastly, we introduce the computational model CEA.
+In this section, we introduce the formal background that support our study. It is important to remark that all these ideas are not original from our work, but we introduced them because we are going to them in the recognition algorithm of Chapter~\ref{chapter:algorithm}.
 
 \section{Distributed computing}\label{sec:distributed_computing}
 
@@ -22,7 +18,7 @@ A \emph{distributed program} is composed of an ordered-set of $n$ asynchronous p
 
 \textbf{Predicates.} A \emph{predicate} represents a property or a relation of a set of data-tuples. A \emph{unary} predicate is a predicate that represents properties of individual data-tuples. A data-tuple $t$ \emph{satisfies} predicate $P$, denote $t \Vdash P$, iff $t \in P$. Furthermore, a set of data-tuples $T$ satisfies $P$, denoted by $T \Vdash P$, iff $\displaystyle\mathop{\forall}_{t \in T} t \vDash P$.
 
-\section{Complex Event Logic}\label{sec:ceql}
+\section{Complex Event Query Language}\label{sec:ceql}
 
 \emph{Complex Event Query Language (CEQL)} \cite{core} is a CER query language based on \emph{Complex Event Logic (CEL)} \cite{formal-framework-cep}. We introduce the most relevant features of CEQL by means of an example.
 
@@ -120,7 +116,6 @@ Note, \code{SELECT} clause corresponds to a projection in CEL. Finally, the (opt
 
 \section{Computational model}\label{sec:cea}
 
-% TODO
 As explained in Section~\ref{sec:ceql}, evaluating a CEQL query corresponds to evaluating the query's \code{SELECT-WHERE-WITHIN} clauses on either a single stream, or multiple different substreams. In our work, the \code{SELECT-WHERE} part of a query is compiled into a \emph{Complex Event Automaton} \cite{formal-framework-cep,formal-framework-cer}, which is a form of finite automaton that produces complex events. Our evaluation algorithm is then defined in terms of CEA: it takes as input a CEA $\mathcal{A}$, the time-window $\epsilon$ specified in the \code{WITHIN} clause, and a stream $S$, and uses this to compute $\InDBrackets{\varphi}(S)$. Formally, a \emph{Complex Event Automaton (CEA)} is a tuple $\mathcal{A} = (Q, \Delta, q_{0}, F)$ where $Q$ is a finite set of states, $\Delta \subseteq Q \times \textbf{P} \times \{\bullet, \circ\} \times (Q \setminus \{ q_{0} \})$ is a finite transition, $q_{0} \in Q$ is the initial state, and $F \subseteq Q$ is the set of final states. We will denote transitions in $\Delta$ by $q \xrightarrow[]{P/m} q'$. A \emph{run} of $\mathcal{A}$ over stream $S$ from positions $i$ to $j$ is a sequence $\rho := q_{i} \xrightarrow[]{P_{i}/m_{i}} q_{i+1} \xrightarrow[]{P_{i+1}/m_{i+1}} \ldots \xrightarrow[]{P_{j}/m_{j}} q_{j+1}$ such that $q_{i}$ is the initial state of $\mathcal{A}$ and for every $k \in [i,j]$ it holds that $q_{k} \xrightarrow[]{P_{k}/m_{k}} q_{k+1} \in \Delta$ and $t_{k} \vDash P_{k}$. A run $\rho$ is \emph{accepting} if $q_{j+1} \in F$. An accepting run of $\mathcal{A}$ over $S$ from $i$ to $j$ naturally defines the complex event $C_{\rho} := ([i, j], \{ k \ | \ i \le k \le j \land m_{k} = \bullet \})$. Finally, we define the semantics of $\mathcal{A}$ over a stream $S$ as $\InDBrackets{\mathcal{A}}(S) := \{ C_{\rho} \ | \ \rho \text{ is an accepting run of } \mathcal{A} \text{ over } S\}$.
 
 \begin{figure}[t]
@@ -154,6 +149,107 @@ The usefulness of CEA comes from the fact that CEL can be translated into CEA \c
 
 Our evaluation algorithm will compute the right-hand side of this equation. It requires that the input CEA $\mathcal{A}$ is \emph{I/O deterministic}: for every pair of transitions $q \xrightarrow[]{P_{1}/m_{1}} q_{1}$ and $q \xrightarrow[]{P_{2}/m_{2}} q_{2}$ from the state $q$, if $P_{1} \cap P_{2} \ne \emptyset$ then $m_{1} \ne m_{2}$. To put it another way, an event $t$ may trigger both transitions at the same time only if one transition marks the event, but the other does not. In \cite{formal-framework-cep,formal-framework-cer}, it was shown that any CEA can be I/O-determinized, with a possibly exponential blow-up in the size of the automaton.
 
+\section{Timed Enumerable Compact Data Structure}\label{sec:data_structure}
+
+The data structure that represents the set of partial matches is called \acrfull{tecs}. A tECS is a \acrfull{dag} $\mathcal{E}$ with two kinds of nodes: \emph{union nodes} and \emph{non-union nodes}. Every union node \textrm{u} has exactly two children, the left child \code{left(\textrm{u})} and the right child \code{right(\textrm{u})}. Every non-union node \textrm{n} is labelled by a stream position (an element of $\mathbb{N}$) and has at most one child. If non-union node \textrm{n} has no child it is called a \emph{bottom node}, otherwise it is an \emph{output node}. We write \code{pos(\textrm{n})} for the label of non-union node \textrm{n} and \code{next(\textrm{o})} for the unique child of output node \textrm{o}. For a node \textrm{n}, define its \emph{descending-paths}, denoted \code{paths(\textrm{n})}, recursively as follows: if \textrm{n} is a bottom node, then \code{paths(\textrm{n})} = 1; if \textrm{n} is an output node, then \code{paths(\textrm{n}) = paths(next(\textrm{n}))}; if \textrm{n} is a union node, \code{paths(\textrm{n}) = paths(left(\textrm{n})) + paths(right(\textrm{n}))}. Every node \textrm{n} carries paths(\textrm{n}) as an extra label; thus the descending-paths can be retrieved in constant time. To simplify presentation in what follows, we write nodes of any kind as \textrm{n}, bottom, output and union nodes as \textrm{b, o, u}, respectively, and we denote the sets of bottom, output and union nodes by $N_{B}$, $N_{O}$ and $N_{U}$, respectively.
+
+A \acrshort{tecs} represents sets of open complex events. An \emph{open complex event} is a pair $(i, D)$ where $i \in \mathbb{N}$ is the starting position and $D$ is a finite subset of $\{i, i+1, \ldots\}$ positions. An open complex event is almost a complex event, but the end time is missing: if we choose $j \ge max(D)$, then $([i, j], D)$ is a complex event. Intuitively, when processing a stream, the open complex events represented by a tECS are partial results that may later become complex events.
+
+Let $\bar{p} = n_{1}, n_{2}, \ldots, n_{k}$ be a \emph{full-path} in $\mathcal{E}$ such that $n_{k}$ is a bottom node. Then $\bar{p}$ represents the open complex event ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}} = (i, D)$, where $i = pos(n_{k})$ is the label of bottom node $n_{k}$ and $D$ are the labels of the other non-union nodes in $\bar{p}$.
+
+Given a node $n$, ${\llbracket \textrm{n} \rrbracket}_{\mathcal{E}}$ is the set of open complex events represented by \textrm{n} and consists of all open complex events ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}}$ with $\bar{p}$ a full-path in $\mathcal{E}$ starting at \textrm{n}.
+
+To enumerate, at every position $j$, the set of complex events ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$, we will need to enumerate, for some nodes in $\mathcal{E}$, the set ${\llbracket \textrm{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j) := \{ ([i, j], D) \ | \ (i, D) \in {\llbracket \textrm{n} \rrbracket}_{\mathcal{E}} \land j - i \leq \epsilon \}$ i.e. all open complex events represented by \textrm{n} that, when closed with $j$, are within a time window of size $\epsilon$.
+
+In order to enumerate the set of complex events ${\llbracket \textrm{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$, one by one, without duplicates, and with output-linear delay, it will be necessary to impose three restrictions on the structure of the tECS $\mathcal{E}$:
+
+\textbf{Time-ordered}. For a node \textrm{n} define its \emph{maximum-start}, denoted max(\textrm{n}), as max(\textrm{n}) = max(${ i \ | \ (i, D) \in {\llbracket \textrm{n} \rrbracket}_{\mathcal{E}}}$). Then, a tECS is \emph{time-ordered} if (1) every node \textrm{n} includes max(\textrm{n}) as an attribute that can be access in constant time, and (2) for every union node \textrm{u} it holds that max(left(\textrm{u})) $\ge$ max(right(\textrm{u})). Needless path traversals are avoided on a time-ordered tECS: we always check first that $j - \text{max({\textrm{n}})} \le \epsilon$, and when we traverse a union node \textrm{u}, we always visit left(\textrm{u}) before right(\textrm{u}) and we only visit right(\textrm{u}) if $j - \text{max(right(\textrm{u}))} \le \epsilon$.
+
+\textbf{$K$-bounded}. For a node \textrm{n} define its \emph{output-depth}, denoted odepth(\textrm{n}), recursively as: if \textrm{n} is a non-union node, then odepth(\textrm{n}) = 0; otherwise, $\text{odepth(\textrm{n})} = \text{odepth(left(\textrm{n}))} + 1$. Then, a $\mathcal{E}$ is \emph{k-bounded} if odepth(\textrm{n}) $\leq k$ for every node \textrm{n}. The $k$-boundedness restriction is necessary to preserve output-linear delay; otherwise the corresponding full-path $\bar{p}$ of a node \textrm{n} in $\mathcal{E}$ may contain an unbounded number of union nodes to visit before reaching the bottom node violating the output-linear delay.
+
+\textbf{Duplicate-free}. A tECS $\mathcal{E}$ is \emph{duplicate-free} if all of its nodes are duplicate-free, and a node \textrm{n} is duplicate-free if for every pair of distinct full-paths $\bar{p}$ and $\bar{q}$ that start at \textrm{n} holds that ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}} \ne {\llbracket \bar{q} \rrbracket}_{\mathcal{E}}$.
+
+Remember that the purpose of constructing tECS $\mathcal{E}$ is to be able to enumerate the set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$ at every position $j$. If $\mathcal{E}$ is time-ordered, $k$-bounded for $k = 3$, and duplicate-free, then Theorem~\ref{theorem:enumeration} ensures that we enumerate set ${\llbracket \mathcal{A} \rrbracket}^{\epsilon}_{j}(S)$.
+\begin{theorem}\label{theorem:enumeration}
+  Let $\mathcal{E}$ be a time-ordered \acrshort{tecs}, \textrm{n} a duplicate-free node of $\mathcal{E}$, $\epsilon$ a time-window, $\mathcal{P}$ the set of all processes. Let $C_{p}$ be the output of \aref{algo:enumeration} on process $p \in \mathcal{P}$. Then, $\bigcup\limits_{P \in \mathcal{P}} C_{P} = {\llbracket \text{n} \rrbracket}^{\epsilon}_{\mathcal{E}}(j)$.
+\end{theorem}
+
+\vspace{-10pt}
+In Section~\ref{sec:enumeration}, we describe Algorithm~\ref{algo:enumeration}, and show its correctness.
+
+\textbf{Operations on tECS}. We define three operations on $\mathcal{E}$. In order to ensure that newly created nodes are $3$-bounded, we require that the argument nodes of these operations are safe. A node is \emph{safe} if it is a non-union node or if both $\text{odepth(\textrm{u})} = 1$ and $\text{odepth(right(\textrm{u}))} \le 2$. All three operations on tECS return safe nodes.
+
+\code{$\text{b} \leftarrow \text{new-botom}(i)$}. The first method adds a new bottom node \textrm{b} labelled by $i \in \mathbb{N}$ to $\mathcal{E}$.
+
+\code{$o \leftarrow \text{extend}(\textrm{n}, j)$}. The second method adds a new output node \textrm{o} to $\mathcal{E}$ with $\text{pos(\textrm{o})} = j$ and $\text{next(\textrm{o})} = n$.
+
+\code{$\textrm{u} \leftarrow \text{union}(\text{n}_{1},\text{n}_{2})$}. The third method returns a union node \textrm{u} such that ${\llbracket u \rrbracket}_{\mathcal{E}} = {\llbracket \textrm{n}_{1} \rrbracket}_{\mathcal{E}} \cup {\llbracket \textrm{n}_{2} \rrbracket}_{\mathcal{E}}$. Both $\textrm{n}_{1}$ and $\textrm{n}_{2}$ are required to be safe and max($\textrm{n}_{1}$) $=$ max($\textrm{n}_{2}$). If $\textrm{n}_{1}$ is a non-union then a new union node \textrm{u} is created which is connected to $\textrm{n}_{1}$ and $\textrm{n}_{2}$ as shown in Figure~\ref{fig:union:a}. If $\textrm{n}_{2}$ is a non-union node, then \textrm{u} is created as shown in Figure~\ref{fig:union:b}. When $\textrm{n}_{1}$ and $\textrm{n}_{2}$ are union nodes: if max(right($\textrm{n}_{1}$)) $\ge$ max(right($\textrm{n}_{2}$)), three new union nodes, \textrm{u}, $\textrm{u}_{1}$, $\textrm{u}_{2}$ are added and connected as show in Figure~\ref{fig:union:c}; otherwise, as in Figure~\ref{fig:union:d}. Notice, the output-depth  of the created union nodes is at most 3.
+
+\begin{figure}[t]
+  \centering
+  \begin{subfigure}[b]{0.15\linewidth}
+    \centering
+    \inputtikz{union_a}
+    \caption{}
+    \label{fig:union:a}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.15\linewidth}
+    \centering
+    \inputtikz{union_b}
+    \caption{}
+    \label{fig:union:b}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.3\linewidth}
+    \centering
+    \inputtikz{union_c}
+    \caption{}
+    \label{fig:union:c}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.3\linewidth}
+    \centering
+    \inputtikz{union_d}
+    \caption{}
+    \label{fig:union:d}
+  \end{subfigure}
+  \caption{Visualisation of the four cases of method union(\textrm{u}). The \textrm{u} are union nodes, where the dashed and bold arrows point to the left and right node, respectively.}
+  \label{fig:union}
+\end{figure}
+
+Because nodes created by new-bottom, extend and union are time-ordered, and have output-depth at most 3, it follows that any tECS created using only these three methods is time-ordered and 3-bounded. Moreover, all these methods take constant time.
+
+\section{Auxiliary data structures}\label{sec:auxiliary_data_structure}
+
+In this section, we introduce two auxiliary data structures that are going to be used to incrementally maintain $\mathcal{E}$ during the evaluation of the algorithm.
+
+\textbf{Union-lists and its operations}. A \emph{union-list} is a non-empty sequence of safe nodes, denoted $\textrm{ul} = \textrm{n}_{0}, \textrm{n}_{1}, \ldots, \textrm{n}_{k}$ such that $\textrm{n}_{0}$ is a non-union node, max($\textrm{n}_{0}$) $\ge$ max($\textrm{n}_{i}$), and max($\textrm{n}_{i}$) $>$ max($\textrm{n}_{i+1}$) for every $0 < i \le k$. We define three operations on union-lists, all of them taking safe nodes as arguments.
+
+\code{$\textrm{ul} \leftarrow \text{new-ulist(\textrm{n})}$}. The first method creates a new union-list with a single non-union node \textrm{n}.
+
+\code{$\text{insert(\textrm{ul, n})}$}. The second method mutates, in situ, the union-list $\textrm{ul} = \textrm{n}_{0}, \ldots, \textrm{n}_{k}$ by inserting a safe node \textrm{n} such that max($\textrm{n}$) $\le$ max($\textrm{n}_{0}$). If there is a $i > 0$ such that max($\textrm{n}_{i}$) $=$ max($\textrm{n}$), then it replaces $\textrm{n}_{i}$ in \textrm{ul} by the result of union($\textrm{n}_{i}, \textrm{n}$). Otherwise, we consider two cases: if max($\textrm{n}$) $=$ max($\textrm{n}_{0}$), then \textrm{n} is inserted after $\textrm{n}_{0}$; otherwise,  \textrm{n} is inserted between $\textrm{n}_{i}$ and $\textrm{n}_{i+1}$ with $i > 0$ such that max($\textrm{n}_{i}$) $>$ max($\textrm{n}$) $>$ max($\textrm{n}_{i+1}$).
+
+\code{$\textrm{u} \leftarrow \text{merge(\textrm{ul})}$}. The third method takes a union-list \textrm{ul} and returns a node \textrm{u} such that ${\llbracket \textrm{u} \rrbracket}_{\mathcal{E}} = {\llbracket \textrm{n}_{0} \rrbracket}_{\mathcal{E}} \cup \ldots \cup {\llbracket \textrm{n}_{k} \rrbracket}_{\mathcal{E}} $. If $k = 0$, then $\textrm{u} = \textrm{n}_{0}$, or else, we add $k$ union nodes to $\mathcal{E}$, and connect them as shown in Figure~\ref{fig:merge}. Since $\textrm{n}_{0}$ is a non-union node, $\text{odepth(\textrm{u})} \le 1$. And, because all $\textrm{n}_{i}$ are safe, odepth($\textrm{u}_i$) $\le 2$. As a result, it is easy to see that \textrm{u} is safe. Furthermore, all of the new union nodes are time-ordered and $3$-bounded.
+
+\begin{figure}[t]
+  \centering
+  \inputtikz{merge}
+  \caption{Visualisation of method merge(\textrm{ul}). The \textrm{u} are union nodes, where the dashed and bold arrows point to the left and right node, respectively.}
+  \label{fig:merge}
+\end{figure}
+
+We remark that all operations on union-lists take time linear in the length of \textrm{ul}.
+
+\textbf{Hash table and its operations}. A \emph{hash table} is an abstract data structure that maps keys to values by the use of a \emph{hash function}. During the evaluation of the algorithm, we will use a hash table to map CEA states to nodes of union-lists. Let $T$ be such a hash table, we write $T[q]$ for the union-list associated to state $q$ and $T[q] \leftarrow ul$ for inserting or updating the union-list associated with state $q$. We define two methods on hash tables.
+
+\code{keys($T$)}. The first method returns the set of states $q$ that have a union-list associated with. We write $q \in \text{keys(T)}$ for checking if $q$ is present in $T$.
+
+\code{ordered-keys($T$)}. The second method returns keys($T$) as a list sorted in the order in which keys have been inserted into $T$. If a key is insert multiple times, then it is the time of the first that is used for sorting.
+
+We assume that hash table lookups and insertions take constant time, and iterating over has constant delay.
+
+
 \section{Chapter summary}
 
-In this chapter we have presented the preliminary work that is required for our work. First, we introduced the concept of distributed computing. Then, we described the syntax and semantics of CEQL and CEL. Afterwards, we presented the selection strategies, and explained the semantics of \textsc{max}. Finally, we introduced the computational model CEA, which is used to evaluate CEQL.
+In this chapter we have presented the preliminary work that is required for our work. First, we introduced the concept of distributed computing. Then, we described the syntax and semantics of CEQL and CEL. Afterwards, we presented the selection strategies, and explained the semantics of \textsc{max}. Then, we introduced the computational model CEA, which is used to evaluate CEQL. Finally, we introduced the data structures used in the evaluation algorithm.
