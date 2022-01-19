@@ -98,7 +98,7 @@
      \item Content
      \item Position in the stream
      \item Order w.r.t other events
-     \item More constraints
+     % \item More constraints
    \end{itemize}
   \end{block}
 \end{frame}
@@ -258,10 +258,7 @@ WITHIN 10 events
 
 \begin{frame}{Introduction}
  \begin{block}<1->{Partial Matches Problem}
-   Problem:
-   \begin{itemize}
-     \item Under the default \emph{skip-till-any-match} \cite{skip-till-any-match} policy, the set of partial matches grow \emph{exponentially} in $N$.
-   \end{itemize}
+   Under the default \emph{skip-till-any-match} \cite{skip-till-any-match} policy, the set of partial matches grow \emph{exponentially} in $N$.
  \end{block}
  \begin{block}<2->{Related Work}
     CER systems (e.g., Cayuga, Esper, SASE, TESLA/T-REX) still suffer from:
@@ -333,7 +330,7 @@ WITHIN 10 events
 %%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}{Preliminaries}
-  \begin{block}{Complex Event Logic}
+  \begin{block}{Complex Event Logic (CEL)}
     Formal logic that is built from the common operators in the literature of CER.
     \begin{equation*}
       \varphi := R    \ | \ \varphi \ \text{AS} \ X    \ | \    \varphi \ \text{FILTER} \ X[P]  \ | \   \varphi \ \text{OR} \ \varphi   \ | \  \varphi ; \varphi    \ | \  \varphi+ \ | \ \pi_{L}(\varphi).
@@ -360,26 +357,26 @@ WITHIN 10 events
   \end{block}
 \end{frame}
 
-\begin{frame}[fragile]{Preliminaries}
-  \begin{block}{Semantics}
-    \begin{figure}[H]
-      \begin{minted}[xleftmargin=0pt, linenos=false, fontsize=\footnotesize]{text}
-        SELECT        [selection strategy] <list of variables>
-        FROM          <list of streams>
-        WHERE         <CEL formula>
-        (PARTITION BY <list of attributes>)?
-        (WHITHIN      <time>)?
-      \end{minted}
-    \end{figure}
-    \begin{enumerate}
-      \item \code{FROM}
-      \item \code{PARTITION BY}
-      \item \code{WHERE}
-      \item \code{SELECT}
-      \item \code{WITHIN}
-    \end{enumerate}
-  \end{block}
-\end{frame}
+% \begin{frame}[fragile]{Preliminaries}
+%   \begin{block}{Semantics}
+%     \begin{figure}[H]
+%       \begin{minted}[xleftmargin=0pt, linenos=false, fontsize=\footnotesize]{text}
+%         SELECT        [selection strategy] <list of variables>
+%         FROM          <list of streams>
+%         WHERE         <CEL formula>
+%         (PARTITION BY <list of attributes>)?
+%         (WHITHIN      <time>)?
+%       \end{minted}
+%     \end{figure}
+%     \begin{enumerate}
+%       \item \code{FROM}
+%       \item \code{PARTITION BY}
+%       \item \code{WHERE}
+%       \item \code{SELECT}
+%       \item \code{WITHIN}
+%     \end{enumerate}
+%   \end{block}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%
 
@@ -415,24 +412,24 @@ WITHIN 10 events
 
 \section{Distributed CER}
 
-\begin{frame}{Distributed CER}
-  \begin{block}{Observations}
-    \begin{itemize}
-        \item CORE's sequential evaluation of CEA is \emph{fast}.
-          \begin{itemize}
-            \item Big overhead when distributed.
-          \end{itemize}
-        \pause
-        \item The automaton model is \emph{limited to unary predicates}.
-          \begin{itemize}
-            \item Binary predicates: \code{t1[id] = h1[id]}
-            \item Second-order predicates: the sequence of \code{t[val]} must monotonically increase
-          \end{itemize}
-        \pause
-        \item The \emph{enumeration} process is still slow.
-   \end{itemize}
-  \end{block}
-\end{frame}
+% \begin{frame}{Distributed CER}
+%   \begin{block}{Observations}
+%     \begin{itemize}
+%         \item CORE's sequential evaluation of CEA is \emph{fast}.
+%           \begin{itemize}
+%             \item Big overhead when distributed.
+%           \end{itemize}
+%         \pause
+%         \item The automaton model is \emph{limited to unary predicates}.
+%           \begin{itemize}
+%             \item Binary predicates: \code{t1[id] = h1[id]}
+%             \item Second-order predicates: the sequence of \code{t[val]} must monotonically increase
+%           \end{itemize}
+%         \pause
+%         \item The \emph{enumeration} process is still slow.
+%    \end{itemize}
+%   \end{block}
+% \end{frame}
 
 \begin{frame}{Distributed CER}
   \begin{block}{Ideas}
@@ -518,61 +515,61 @@ WITHIN 10 events
 
 %%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}{Distributed evaluation algorithm}
-  \begin{block}{The data structure}
-    The data structure is called \emph{timed Enumerable Compact Set (tECS)}.
+% \begin{frame}{Distributed evaluation algorithm}
+%   \begin{block}{The data structure}
+%     The data structure is called \emph{timed Enumerable Compact Set (tECS)}.
 
-    A tECS is a directed acyclic graph $\mathcal{E}$ with two kinds of nodes:
+%     A tECS is a directed acyclic graph $\mathcal{E}$ with two kinds of nodes:
 
-   \begin{itemize}
-     \item Union nodes \textrm{u}.
-     \item Non-union nodes:
-      \begin{itemize}
-        \item Bottom nodes \textrm{b}.
-        \item Output nodes \textrm{o}.
-      \end{itemize}
-   \end{itemize}
+%    \begin{itemize}
+%      \item Union nodes \textrm{u}.
+%      \item Non-union nodes:
+%       \begin{itemize}
+%         \item Bottom nodes \textrm{b}.
+%         \item Output nodes \textrm{o}.
+%       \end{itemize}
+%    \end{itemize}
 
-   Additionally, nodes carry \emph{desceding-paths} attribute.
+%    Additionally, nodes carry \emph{desceding-paths} attribute.
 
-   A tECS represents sets of \emph{open complex events}.
-  \end{block}
-\end{frame}
+%    A tECS represents sets of \emph{open complex events}.
+%   \end{block}
+% \end{frame}
 
-\begin{frame}{Distributed evaluation algorithm}
-  \begin{block}{Operations on tECS}
-   \begin{itemize}
-     \item \code{$\text{b} \leftarrow \text{new-bottom}(i)$}.
-     \item \code{$o \leftarrow \text{extend}(\textrm{n}, j)$}.
-     \item \code{$\textrm{u} \leftarrow \text{union}(\text{n}_{1},\text{n}_{2})$}.
-   \end{itemize}
-    \begin{figure}[H]
-      \centering
-      \resizebox{0.9\textwidth}{!}{%
-        \begin{subfigure}[b]{0.2\linewidth}
-          \centering
-          \inputtikz{union_a}
-        \end{subfigure}
-        \hfill
-        \begin{subfigure}[b]{0.2\linewidth}
-          \centering
-          \inputtikz{union_b}
-        \end{subfigure}
-        \hfill
-        \begin{subfigure}[b]{0.40\linewidth}
-          \centering
-          \inputtikz{union_c}
-        \end{subfigure}
-        \hfill
-        \begin{subfigure}[b]{0.40\linewidth}
-          \centering
-          \inputtikz{union_d}
-        \end{subfigure}
-      }
-      \caption{Visualisation of the four cases of method union(\textrm{u}). The \textrm{u} are union nodes, where the dashed and bold arrows point to the left and right node, respectively.}
-    \end{figure}
-  \end{block}
-\end{frame}
+% \begin{frame}{Distributed evaluation algorithm}
+%   \begin{block}{Operations on tECS}
+%    \begin{itemize}
+%      \item \code{$\text{b} \leftarrow \text{new-bottom}(i)$}.
+%      \item \code{$o \leftarrow \text{extend}(\textrm{n}, j)$}.
+%      \item \code{$\textrm{u} \leftarrow \text{union}(\text{n}_{1},\text{n}_{2})$}.
+%    \end{itemize}
+%     \begin{figure}[H]
+%       \centering
+%       \resizebox{0.9\textwidth}{!}{%
+%         \begin{subfigure}[b]{0.2\linewidth}
+%           \centering
+%           \inputtikz{union_a}
+%         \end{subfigure}
+%         \hfill
+%         \begin{subfigure}[b]{0.2\linewidth}
+%           \centering
+%           \inputtikz{union_b}
+%         \end{subfigure}
+%         \hfill
+%         \begin{subfigure}[b]{0.40\linewidth}
+%           \centering
+%           \inputtikz{union_c}
+%         \end{subfigure}
+%         \hfill
+%         \begin{subfigure}[b]{0.40\linewidth}
+%           \centering
+%           \inputtikz{union_d}
+%         \end{subfigure}
+%       }
+%       \caption{Visualisation of the four cases of method union(\textrm{u}). The \textrm{u} are union nodes, where the dashed and bold arrows point to the left and right node, respectively.}
+%     \end{figure}
+%   \end{block}
+% \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 
