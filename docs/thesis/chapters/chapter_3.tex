@@ -39,7 +39,7 @@ We retake the previous example on the detection of fires in a stream produced by
   \label{fig:query:2}
 \end{figure}
 
-The \code{SELECT} clause allows to project the matches complex event. In our query, the \code{*} operator retrieves all events in the complex event. The \code{FROM} clause indicates the input streams (e.g., \code{warehouse}). The \code{WHERE} clause indicates the pattern of the complex event to capture in \emph{unary} CEL. In our query, the pattern \code{T as t1; T+ as ts} indicates that we want to capture all complex events that consist of an event type \code{T} followed by an arbitrary number of events of type \code{T}. We remark that events do not need to be contiguous under the default policy \emph{skip-till-any-match}. The \code{FILTER} clause allows to filter events by predicates. The clause \code{PARTITION BY} allows to partition the events using equi-joins. In our query, we partition the events by sensors that belong to the same zone of the warehouse. The \code{WITHIN} clause specifies the time window. In our query, the time between the first event \code{T} and the last event \code{T} must be within 5 minutes.
+The \code{SELECT} clause allows to project the matched complex event. In our query, the \code{*} operator retrieves all events in the complex event. The \code{FROM} clause indicates the input streams (e.g., the \code{warehouse}). The \code{WHERE} clause indicates the pattern of the complex event to capture in \emph{unary} CEL. In our query, the pattern \code{T as t1; T+ as ts} indicates that we want to capture all complex events that consist of an event type \code{T} followed by an arbitrary number of events of type \code{T}. We remark that events do not need to be contiguous under the default policy \emph{skip-till-any-match}. The \code{FILTER} clause allows to filter events by predicates. The clause \code{PARTITION BY} allows to partition the events using equi-joins. In our query, we partition the events by sensors that belong to the same zone of the warehouse. The \code{WITHIN} clause specifies the time window. In our query, the time between the first event \code{T} and the last event \code{T} must be within 5 minutes.
 \end{example}
 
 \newpage
@@ -116,7 +116,7 @@ Note, \code{SELECT} clause corresponds to a projection in CEL. Finally, the (opt
 
 \section{Computational model}\label{sec:cea}
 
-We introduce the computational model called \emph{Complex Event Automaton (CEA)} \cite{formal-framework-cep}, which is a form of finite automaton that produces complex events. We introduce CEA by means of an example.
+We introduce the computational model \emph{Complex Event Automaton (CEA)} \cite{formal-framework-cep}, which is a form of finite automaton that produces complex events. We introduce CEA by means of an example.
 
 \begin{example}
   In this example we show the compilation of the query from Figure~\ref{fig:query:2} into an equivalent CEA $\mathcal{A}$. There are three states in this automaton $q_{1}$, $q_{2}$, and $q_{3}$. The initial state is $q_{1}$ and the final state is $q_{3}$. There can only be one initial state but multiple final states. The transitions contain a set of predicate \textbf{P} and a marking symbol $m := \{\bullet, \circ\}$. We depict predicates by listing, in array notation, the event type, and the constraint on the temperature attribute. A transition is only traversed if the input event satisfies the predicates in \textbf{P}.
@@ -219,7 +219,7 @@ In this section, we introduce two auxiliary data structures that are going to be
 
 \code{$\text{insert(\textrm{ul, n})}$}. This method mutates, in situ, the union-list $\textrm{ul} = \textrm{n}_{0}, \ldots, \textrm{n}_{k}$ by inserting a safe node \textrm{n} such that max($\textrm{n}$) $\le$ max($\textrm{n}_{0}$). If there is a $i > 0$ such that max($\textrm{n}_{i}$) $=$ max($\textrm{n}$), then it replaces $\textrm{n}_{i}$ in \textrm{ul} by the result of union($\textrm{n}_{i}, \textrm{n}$). Otherwise, we consider two cases: if max($\textrm{n}$) $=$ max($\textrm{n}_{0}$), then \textrm{n} is inserted after $\textrm{n}_{0}$; otherwise,  \textrm{n} is inserted between $\textrm{n}_{i}$ and $\textrm{n}_{i+1}$ with $i > 0$ such that max($\textrm{n}_{i}$) $>$ max($\textrm{n}$) $>$ max($\textrm{n}_{i+1}$).
 
-\code{$\textrm{u} \leftarrow \text{merge(\textrm{ul})}$}. This method takes a union-list \textrm{ul} and returns a node \textrm{u} such that ${\llbracket \textrm{u} \rrbracket}_{\mathcal{E}} = {\llbracket \textrm{n}_{0} \rrbracket}_{\mathcal{E}} \cup \ldots \cup {\llbracket \textrm{n}_{k} \rrbracket}_{\mathcal{E}} $. If $k = 0$, then $\textrm{u} = \textrm{n}_{0}$, or else, we add $k$ union nodes to $\mathcal{E}$, and connect them. Since $\textrm{n}_{0}$ is a non-union node, $\text{odepth(\textrm{u})} \le 1$. And, because all $\textrm{n}_{i}$ are safe, odepth($\textrm{u}_i$) $\le 2$. As a result, it is easy to see that \textrm{u} is safe. Furthermore, all of the new union nodes are time-ordered and $3$-bounded.
+\code{$\textrm{u} \leftarrow \text{merge(\textrm{ul})}$}. This method takes a union-list \textrm{ul} and returns a node \textrm{u} such that ${\llbracket \textrm{u} \rrbracket}_{\mathcal{E}} = {\llbracket \textrm{n}_{0} \rrbracket}_{\mathcal{E}} \cup \ldots \cup {\llbracket \textrm{n}_{k} \rrbracket}_{\mathcal{E}} $. If $k = 0$, then $\textrm{u} = \textrm{n}_{0}$, or else, we add $k$ union nodes to $\mathcal{E}$, and connect them.
 
 % \begin{figure}[t]
 %   \centering
@@ -230,9 +230,11 @@ In this section, we introduce two auxiliary data structures that are going to be
 
 We remark that all operations on union-lists take time linear in the length of \textrm{ul}.
 
+\newpage
+
 \textbf{Hash table and its operations}. A \emph{hash table} is an abstract data structure that maps keys to values by the use of a \emph{hash function}. During the evaluation of the algorithm, we will use a hash table to map CEA states to nodes of union-lists. We define two methods on hash tables.
 
-\code{keys($T$)}. The first method returns the set of states $q$ that have a union-list associated with. We write $q \in \text{keys(T)}$ for checking if $q$ is present in $T$.
+\code{keys($T$)}. The first method returns the set of states $q$ that have a union-list associated with.
 
 \code{ordered-keys($T$)}. The second method returns keys($T$) as a list sorted in the order in which keys have been inserted into $T$. If a key is insert multiple times, then it is the time of the first that is used for sorting.
 
