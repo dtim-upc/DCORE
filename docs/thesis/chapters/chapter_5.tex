@@ -151,7 +151,7 @@ We defer the proof of Theorem~\ref{theorem:isomorphism} to Appendix~\ref{appendi
   \SetKwProg{Procedure}{procedure}{}{}
   \SetKwFunction{Enumerate}{\textsc{Enumerate}}
   \Procedure{\Enumerate{$\mathcal{E}, n, \epsilon, j, p$}}{
-    $\delta \leftarrow \lceil \text{paths(n)} \ / \ {|\mathcal{P}|} \rceil$\;
+    {\color{Added}$\delta \leftarrow \lceil \text{pathsc(n, }\tau) \ / \ {|\mathcal{P}|} \rceil$}\;
     $\sigma \leftarrow \text{index}(p) \cdot \delta$\;
     st $\leftarrow$ new-stack()\;
     $\tau \leftarrow j - \epsilon $\;
@@ -168,18 +168,20 @@ We defer the proof of Theorem~\ref{theorem:isomorphism} to Appendix~\ref{appendi
           $P \leftarrow P \ \cup $ {pos($n'$)}\;
           $n' \leftarrow $ next($n'$)\;
         }
-        \ElseIf{$n' \in N_{U}$}{
-          \If{$max(right(n')) \ge \tau$}{\label{line:enumeration:if:1}
-            $\delta'' \leftarrow \delta' - max(0, paths(left(n')) - \sigma')$\;
-            \If{$\delta'' > 0$}{\label{line:enumeration:if:2}
-              $\sigma'' \leftarrow \sigma' - paths(left(n'))$\;
-              push(st, $\langle$right($n'$), $P$, $\sigma''$, $\delta''\rangle$)\;
+        {\color{Added}
+          \ElseIf{$n' \in N_{U}$}{
+            \If{$max(right(n')) \ge \tau$}{\label{line:enumeration:if:1}
+              $\delta'' \leftarrow \delta' - max(0, pathsc(left(n'), \tau) - \sigma')$\;
+              \If{$\delta'' > 0$}{\label{line:enumeration:if:2}
+                $\sigma'' \leftarrow \sigma' - pathsc(left(n'), \tau)$\;
+                push(st, $\langle$right($n'$), $P$, $\sigma''$, $\delta''\rangle$)\;
+              }
             }
-          }
-          \eIf{$paths(left(n')) > \sigma'$}{\label{line:enumeration:if:3}
-            $n' \leftarrow left(n')$\;
-          }{
-            \textbf{break}\;
+            \eIf{$pathsc(left(n'), \tau) > \sigma'$}{\label{line:enumeration:if:3}
+              $n' \leftarrow left(n')$\;
+            }{
+              \textbf{break}\;
+            }
           }
         }
       }
@@ -215,7 +217,9 @@ We defer the proof of Theorem~\ref{theorem:isomorphism} to Appendix~\ref{appendi
 \end{figure}
 
 
-\aref{algo:enumeration} receives as an input a \acrshort{tecs}, a node $n$, a time-window $\epsilon$, a position $j$, and a process $p$ and traverses a fraction of $G_{\mathcal{E}}$ in a DFS-way left-to-right order. First, computes the parameters $\sigma, \delta$ corresponding to the starting and ending path to enumerate, respectively. The value of these parameters can be computed statically i.e. without message passing. Notice, the last process may have less paths to enumerate due to the rounding on $\delta$. The enumeration starts from the root node $n$. Each iteration of the \code{while} of line~\ref{line:enumeration:while:1} traverses a new path starting from the point it branches from the previous path. The stack $st$ is used to store the node, the partial complex event, and the parameters $\sigma, \delta$ of that branching point. The \code{while} of line~\ref{line:enumeration:while:2} traverses through the nodes of the next path, following the left direction whenever a union node is reached and adding the right node to the stack whenever need. The \code{if} of line~\ref{line:enumeration:if:1} guarantees that traversed paths $\in paths_{\ge \tau}$ i.e. paths outside the time window are skipped. The \code{if}s of line~\ref{line:enumeration:if:2}~and~\ref{line:enumeration:if:3} assert that we enumerate at most $\delta$ paths and the enumeration starts on path $\pi_{\sigma}$, respectively. All three conditionals guarantee that only paths $\in paths_{\ge \tau, \sigma, \delta}$ are enumerated on process $p$.
+{\color{Added} \aref{algo:enumeration} receives as an input a \acrshort{tecs}, a node $n$, a time-window $\epsilon$, a position $j$, and a process $p$ and traverses a fraction of $G_{\mathcal{E}}$ in a DFS-way left-to-right order. First, it computes the parameters $\sigma$ and $\delta$ corresponding to the starting and ending path to enumerate using the method \code{pathsc(n, $j - \epsilon$)}. This method can be executed in constant time. We remark that the value of parameters  $\sigma$ and $\delta$ can be computed statically and locally before the execution of the algorithm on each node.}
+
+The enumeration starts from the root node $n$. Each iteration of the \code{while} of line~\ref{line:enumeration:while:1} traverses a new path starting from the point it branches from the previous path. The stack $st$ is used to store the node, the partial complex event, and the parameters $\sigma, \delta$ of that branching point. {\color{Added} The \code{while} of line~\ref{line:enumeration:while:2} traverses through the nodes of the next path, following the left direction whenever a union node is reached and adding the right node to the stack whenever need. The \code{if} of line~\ref{line:enumeration:if:1} guarantees that traversed paths $\in paths_{\ge \tau}$ i.e. paths outside the time window are skipped. The \code{if}s of line~\ref{line:enumeration:if:2}~and~\ref{line:enumeration:if:3} assert that we enumerate at most $\delta$ paths and the enumeration starts on path $\pi_{\sigma}$, respectively. All three conditionals guarantee that only paths $\in paths_{\ge \tau, \sigma, \delta}$ are enumerated on process $p$.}
 
 \begin{remark*}
 A simpler recursive algorithm could have been used, however, the constant-delay output might not be guaranteed because the number of backtracking steps after branching might be as long as the longest path of $G_{\mathcal{E}}$. To guarantee constant steps after branching and assure constant-delay output, \aref{algo:enumeration} uses a stack which allows to jump immediately to the next branch. We assume that storing $P$ in the stack takes constant time. We materialize this assumption by modelling $P$ as a linked list of positions, where the list is ordered by the last element added. To update $P$ with position $i$, we only need to create a node $i$ that points to the previous last element of $P$. Then, storing $P$ on the stack is just storing the pointer of the last element added.

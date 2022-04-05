@@ -144,9 +144,9 @@ As explained in Section~\ref{sec:ceql}, evaluating a CEQL query corresponds to e
 
 \section{Timed Enumerable Compact Set}\label{sec:data_structure}
 
-The data structure that lazily represents the set of partial matches in CORE is called \acrfull{tecs}. A tECS is a \emph{directed acyclic graph (DAG)} $\mathcal{E}$ with two types of nodes: \emph{union nodes} and \emph{non-union nodes}. Union nodes have two children: \code{left} and \code{right}. Non-union nodes are labelled by a stream position and are divided in \emph{output nodes} and \emph{bottom nodes}. The former have exactly one child and the latter have none. To simplify presentation in what follows, we write nodes of any kind as \textrm{n}, bottom, output and union nodes as \textrm{b, o, u}, respectively, and we denote the sets of bottom, output and union nodes by $N_{B}$, $N_{O}$ and $N_{U}$, respectively.
-
-For a node \textrm{n}, define its \emph{descending-paths}, denoted \code{paths(\textrm{n})}, recursively as follows: if \textrm{n} is a bottom node, then \code{paths(\textrm{n})} = 1; if \textrm{n} is an output node, then \code{paths(\textrm{n}) = paths(next(\textrm{n}))}; if \textrm{n} is a union node, \code{paths(\textrm{n}) = paths(left(\textrm{n})) + paths(right(\textrm{n}))}. Every node \textrm{n} carries paths(\textrm{n}) as an extra label; thus the descending-paths can be retrieved in constant time. The descending-paths attribute is going to be used during the enumeration phase of the distributed evaluation algorithm to balance the workload of each processing unit.
+The data structure that lazily represents the set of partial matches in CORE is called \acrfull{tecs}. A tECS is a \emph{directed acyclic graph (DAG)} $\mathcal{E}$ with two types of nodes: \emph{union nodes} and \emph{non-union nodes}. Union nodes have two children: \code{left} and \code{right}. Non-union nodes are labelled by a stream position and are divided in \emph{output nodes} and \emph{bottom nodes}. The former have exactly one child and the latter have none.
+{\color{Comment} We should integrate descending-paths here (or at least mention it)}.
+To simplify presentation in what follows, we write nodes of any kind as \textrm{n}, bottom, output and union nodes as \textrm{b, o, u}, respectively, and we denote the sets of bottom, output and union nodes by $N_{B}$, $N_{O}$ and $N_{U}$, respectively. {\color{Comment} missing definition of $pos$, $next$, $right$ and $left$}.
 
 An \emph{open complex event}, denoted $(i, D)$, is a complex event $([i, j], D)$, where the closing event $j$ hasn't been reached yet. A \acrshort{tecs} represents sets of open complex events. Let $\bar{p} = n_{1}, n_{2}, \ldots, n_{k}$ be a \emph{full-path} in $\mathcal{E}$ such that $n_{k}$ is a bottom node. Then $\bar{p}$ represents the open complex event ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}} = (i, D)$, where $i = pos(n_{k})$ is the label of bottom node $n_{k}$ and $D$ are the labels of the other non-union nodes in $\bar{p}$. Given a node \textrm{n} in $\mathcal{E}$, ${\llbracket \textrm{n} \rrbracket}_{\mathcal{E}}$ is the set of open complex events represented by \textrm{n} and consists of all open complex events ${\llbracket \bar{p} \rrbracket}_{\mathcal{E}}$ with $\bar{p}$ a full-path in $\mathcal{E}$ starting at \textrm{n}.
 
@@ -240,6 +240,44 @@ We remark that all operations on union-lists take time linear in the length of \
 
 We assume that hash table lookups and insertions take constant time, and iterating over has constant delay.
 
+{\color{Added}
+\section{Descending-paths}\label{sec:desc-path}
+
+{\color{Comment} I don't think we need an exclusive section for this, but when I tried to integrate this into the description of the tECS it was too much information interrupting the flow of the description}
+
+For a node \textrm{n}, define its \emph{descending-paths}, denoted \code{paths(\textrm{n})}, as a binary relation $R$ between event position and the number of paths starting from that position that reaches \textrm{n}. This binary relation is defined recursively as follows:
+
+\[
+paths(\textrm{n}) =
+\begin{cases}
+  \{(pos(\textrm{n}), 1)\} &\quad \textrm{n} \in N_{B}  \\
+  paths(next(\textrm{n}))  &\quad \textrm{n} \in N_{O}  \\
+  paths(left(\textrm{n})) \cup paths(right(\textrm{n})) &\quad \textrm{n} \in N_{U}  \\
+\end{cases}
+\]
+
+We define the union of two binary relations $R := R_{1} \cup R_{2}$ as follows:
+
+\begin{align*}
+  R := & \{ \ (x_{1}, y_{1} + y_{2}) \ | \ \forall (x_{1}, y_{1}) \in R_{1}, \exists (x_{2}, y_{2}) \in R_{2}, x_{1} = x_{2} \ \} \\
+       & \cup \{ \ (x_{1}, y_{1}) \ | \ \forall (x_{1}, y_{1}) \in R_{1}, \nexists (x_{2}, y_{2}) \in R_{2} \ \} \\
+       & \cup \{ \ (x_{2}, y_{2}) \ | \ \forall (x_{2}, y_{2}) \in R_{2}, \nexists (x_{1}, y_{1}) \in R_{1} \ \}
+\end{align*}
+
+For example, suppose node \textrm{n} has two paths: one starting at position $0$ and the other starting at position $2$, then $paths(\textrm{n}) = {\{0 \to 1, 2 \to 1\}}$. The descending-paths attribute is used during the enumeration phase of the distributed evaluation algorithm to balance the workload of each processing unit.
+
+Every node \textrm{n} carries paths(\textrm{n}) as an extra attribute; thus the descending-paths can be retrieved in constant time. This attribute will contain a pointer to a hash table that encodes the descending-path binary relation efficiently. Additionally, we define the method \code{pathsc(n, $\tau$)} that counts the number of paths starting after position $\tau$. This method will be useful for the enumeration phase of the evaluation algorithm \ref{sec:enumeration}.
+
+Notice, the size of this hash table may grow linearly with respect to the length of the stream. During the evaluation algorithm \ref{sec:evaluation}, to keep the size constant, we will only preserve paths that are inside the time window. The hash table can be efficiently generated as follows:
+
+\begin{itemize}
+  \item Bottom nodes will create a new hash table with a single entry corresponding to the current position.
+  \item Output nodes will point to the hash table of their child node.
+  \item Union nodes will create a fresh hash table and initialize it with all binary relations from \code{left(\textrm{u})} and \code{right(\textrm{u})} such that $\{(x, y) \ | \ x \ge \tau\}$, where $\tau = j - \epsilon$, $j$ is the current position and $\epsilon$ is the time window.
+\end{itemize}
+
+All three operations can be computed in constant time $\mathcal{O}(\tau)$.
+}
 
 \section{Chapter summary}
 
